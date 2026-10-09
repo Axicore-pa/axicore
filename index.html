@@ -176,6 +176,53 @@
   @media (max-width:480px) {
     .cards-row { grid-template-columns: 1fr; }
   }
+
+  /* CONDOMINIUM SELECTOR SCREEN */
+  #condo-selector {
+    display:none; align-items:center; justify-content:center; min-height:100vh;
+    background: linear-gradient(135deg, var(--ax-primary) 0%, #163050 100%);
+  }
+  .condo-selector-box {
+    background: var(--ax-card); border-radius: var(--ax-radius); padding: 2.5rem;
+    width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .condo-selector-box h1 { color: var(--ax-primary); font-size: 1.5rem; margin-bottom: .3rem; }
+  .condo-selector-box p.sub { color: var(--ax-muted); font-size: .85rem; margin-bottom: 1.5rem; }
+  .condo-list { list-style:none; display:flex; flex-direction:column; gap:.6rem; }
+  .condo-list li {
+    padding: 1rem 1.2rem; border: 2px solid var(--ax-border); border-radius: 8px;
+    cursor: pointer; display:flex; align-items:center; justify-content:space-between;
+    transition: all .2s;
+  }
+  .condo-list li:hover { border-color: var(--ax-accent); background: #f0f7ff; }
+  .condo-list li .condo-name { font-weight:600; font-size:1rem; color:var(--ax-text); }
+  .condo-list li .condo-rol { font-size:.75rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; }
+
+  /* TOPBAR CONDOMINIUM SWITCHER */
+  .topbar-condo {
+    display:flex; align-items:center; gap:.5rem; margin-left:.5rem;
+    padding: .3rem .7rem; background:rgba(255,255,255,0.15); border-radius:6px;
+    cursor:pointer; position:relative; transition: background .2s;
+  }
+  .topbar-condo:hover { background:rgba(255,255,255,0.25); }
+  .topbar-condo .condo-label { font-size:.85rem; color:#fff; font-weight:500; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .topbar-condo .condo-arrow { font-size:.65rem; color:rgba(255,255,255,0.7); transition:transform .2s; }
+  .topbar-condo.open .condo-arrow { transform:rotate(180deg); }
+  .condo-dropdown {
+    display:none; position:absolute; top:100%; left:0; margin-top:.4rem;
+    background:var(--ax-card); border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,0.2);
+    min-width:220px; z-index:1000; overflow:hidden;
+  }
+  .condo-dropdown.open { display:block; }
+  .condo-dropdown a {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1rem; color:var(--ax-text); text-decoration:none; font-size:.85rem;
+    transition: background .15s; border-bottom:1px solid var(--ax-border);
+  }
+  .condo-dropdown a:last-child { border-bottom:none; }
+  .condo-dropdown a:hover { background:var(--ax-bg); }
+  .condo-dropdown a.active-condo { background:#eaf4fd; font-weight:600; color:var(--ax-accent); }
+  .condo-dropdown .dd-rol { font-size:.7rem; color:var(--ax-muted); text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -201,12 +248,29 @@
   </div>
 </div>
 
+<!-- ==================== CONDOMINIUM SELECTOR ==================== -->
+<div id="condo-selector">
+  <div class="condo-selector-box">
+    <div class="logo">🏢</div>
+    <h1>AXICORE</h1>
+    <p class="sub">Selecciona el condominio con el que deseas trabajar</p>
+    <ul class="condo-list" id="condo-list">
+      <div class="loading">Cargando condominios...</div>
+    </ul>
+  </div>
+</div>
+
 <!-- ==================== APP SHELL ==================== -->
 <div id="app-shell">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:.8rem">
       <button class="hamburger" onclick="toggleSidebar()">☰</button>
       <h2>AXICORE</h2>
+      <div class="topbar-condo" id="topbar-condo" onclick="toggleCondoDropdown()" style="display:none">
+        <span class="condo-label" id="topbar-condo-name"></span>
+        <span class="condo-arrow">▼</span>
+        <div class="condo-dropdown" id="condo-dropdown"></div>
+      </div>
     </div>
     <div class="user-info">
       <span id="user-name"></span>
@@ -820,6 +884,7 @@ try {
   document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + e.message + '</div>';
 }
 let sesion = null; // {rol, usuario_id, nombre, condominio_id}
+let condominiosUsuario = []; // [{condominio_id, nombre, rol}]
 
 // ==================== UTILIDADES ====================
 const $ = id => document.getElementById(id);
@@ -866,13 +931,124 @@ async function iniciarApp() {
   }
   sesion = data;
 
-  // Mostrar app
+  // Obtener condominios del usuario
+  const {data: condos, error: condoErr} = await sb.rpc('axi_sesion_condominios');
+  condominiosUsuario = condoErr ? [] : (condos || []);
+
   $('login-screen').style.display = 'none';
+
+  if (condominiosUsuario.length > 1) {
+    // Mostrar pantalla de selección de condominio
+    mostrarSelectorCondominio();
+  } else {
+    // Un solo condominio — entrar directamente
+    entrarAlApp();
+  }
+}
+
+function mostrarSelectorCondominio() {
+  $('app-shell').style.display = 'none';
+  $('condo-selector').style.display = 'flex';
+  const lista = $('condo-list');
+  lista.innerHTML = '';
+  condominiosUsuario.forEach(c => {
+    const li = document.createElement('li');
+    li.onclick = () => seleccionarCondominio(c.condominio_id, c.nombre, c.rol);
+    li.innerHTML = `<span class="condo-name">🏢 ${c.nombre}</span><span class="condo-rol">${c.rol}</span>`;
+    lista.appendChild(li);
+  });
+}
+
+function seleccionarCondominio(id, nombre, rol) {
+  sesion.condominio_id = id;
+  // Actualizar rol si cambia por condominio
+  if (rol) sesion.rol = rol;
+  $('condo-selector').style.display = 'none';
+  entrarAlApp();
+}
+
+function entrarAlApp() {
+  // Mostrar app
   $('app-shell').style.display = 'block';
   $('user-name').textContent = sesion.nombre;
   $('user-role').textContent = sesion.rol;
 
+  // Mostrar condominio activo en topbar
+  const condoActivo = condominiosUsuario.find(c => c.condominio_id === sesion.condominio_id);
+  const condoNombre = condoActivo ? condoActivo.nombre : 'Condominio';
+  $('topbar-condo-name').textContent = condoNombre;
+
+  if (condominiosUsuario.length > 1) {
+    $('topbar-condo').style.display = 'flex';
+    renderCondoDropdown();
+  } else if (condominiosUsuario.length === 1) {
+    // Mostrar nombre sin dropdown
+    $('topbar-condo').style.display = 'flex';
+    $('topbar-condo').style.cursor = 'default';
+    $('topbar-condo').onclick = null;
+    $('topbar-condo').querySelector('.condo-arrow').style.display = 'none';
+  }
+
+  // Actualizar nombre del condo en dashboard
+  const dashCondoEl = $('dash-condo-name');
+  if (dashCondoEl) dashCondoEl.textContent = condoNombre;
+
   // Routing por rol
+  if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
+    $('sidebar-ceo').style.display = 'block';
+    $('sidebar-residente').style.display = 'none';
+    navegar('dashboard');
+  } else {
+    $('sidebar-ceo').style.display = 'none';
+    $('sidebar-residente').style.display = 'block';
+    navegar('mi-cuenta');
+  }
+}
+
+function renderCondoDropdown() {
+  const dd = $('condo-dropdown');
+  dd.innerHTML = '';
+  condominiosUsuario.forEach(c => {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = c.condominio_id === sesion.condominio_id ? 'active-condo' : '';
+    a.innerHTML = `<span>${c.nombre}</span><span class="dd-rol">${c.rol}</span>`;
+    a.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      cerrarCondoDropdown();
+      if (c.condominio_id !== sesion.condominio_id) {
+        cambiarCondominio(c.condominio_id, c.nombre, c.rol);
+      }
+    };
+    dd.appendChild(a);
+  });
+}
+
+function toggleCondoDropdown() {
+  const el = $('topbar-condo');
+  const dd = $('condo-dropdown');
+  el.classList.toggle('open');
+  dd.classList.toggle('open');
+}
+
+function cerrarCondoDropdown() {
+  $('topbar-condo').classList.remove('open');
+  $('condo-dropdown').classList.remove('open');
+}
+
+function cambiarCondominio(id, nombre, rol) {
+  sesion.condominio_id = id;
+  if (rol) sesion.rol = rol;
+  $('topbar-condo-name').textContent = nombre;
+  $('user-role').textContent = sesion.rol;
+  renderCondoDropdown();
+
+  // Actualizar nombre del condo en dashboard
+  const dashCondoEl = $('dash-condo-name');
+  if (dashCondoEl) dashCondoEl.textContent = nombre;
+
+  // Re-routing por si el rol cambió
   if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
     $('sidebar-ceo').style.display = 'block';
     $('sidebar-residente').style.display = 'none';
@@ -888,9 +1064,14 @@ async function cerrarSesion() {
   await sb.rpc('axi_sesion_cerrar');
   await sb.auth.signOut();
   sesion = null;
+  condominiosUsuario = [];
   $('app-shell').style.display = 'none';
+  $('condo-selector').style.display = 'none';
   $('login-screen').style.display = 'flex';
   $('login-pass').value = '';
+  // Reset topbar condo
+  $('topbar-condo').style.display = 'none';
+  cerrarCondoDropdown();
 }
 
 // Auto-login si ya hay sesión
@@ -898,6 +1079,12 @@ sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session && !sesion) {
     await iniciarApp();
   }
+});
+
+// Cerrar dropdown al hacer clic fuera
+document.addEventListener('click', (e) => {
+  const tc = $('topbar-condo');
+  if (tc && !tc.contains(e.target)) cerrarCondoDropdown();
 });
 
 // ==================== NAVEGACIÓN ====================
