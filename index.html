@@ -327,6 +327,7 @@
           <a href="#" onclick="navegar('pagos')" data-page="pagos">💳 Pagos</a>
           <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
           <a href="#" onclick="navegar('pagos-gastos')" data-page="pagos-gastos">🧾 Pagos a Proveedores</a>
+          <a href="#" onclick="navegar('aprobaciones')" data-page="aprobaciones" id="nav-aprobaciones">✅ Aprobaciones <span id="nav-aprob-badge" style="display:none;background:#a63a2b;color:#fff;border-radius:10px;padding:0 .4rem;font-size:.7rem;margin-left:.3rem"></span></a>
         </div>
       </div>
 
@@ -465,6 +466,20 @@
             Comprobantes de pago contra gastos registrados
           </div>
           <div class="card-body" id="pagos-gastos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== BANDEJA DE APROBACIONES ===== -->
+      <div id="page-aprobaciones" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+          <h2 class="page-title" style="margin-bottom:0">Bandeja de Aprobaciones</h2>
+          <span id="aprob-rol-nota" style="font-size:.85rem;color:#4d4742"></span>
+        </div>
+        <div class="card">
+          <div class="card-header">Todo lo que mueve dinero somete → evaluación (Administración) → aprobación del CEO</div>
+          <div class="card-body" id="aprob-lista">
             <div class="loading">Cargando...</div>
           </div>
         </div>
@@ -658,6 +673,26 @@
         <label>Recibido de</label>
         <input type="text" id="pago-recibido-de" placeholder="Nombre de quien paga">
       </div>
+      <div class="form-group">
+        <label>Tipo de movimiento</label>
+        <select id="pago-tipo-mov">
+          <option value="Ingreso recibido">Ingreso recibido</option>
+          <option value="Pago a suplidor">Pago a suplidor</option>
+          <option value="Ajuste">Ajuste</option>
+          <option value="Anulación">Anulación</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de aplicación</label>
+        <select id="pago-tipo-apl">
+          <option value="Propietario">Propietario</option>
+          <option value="Inquilino">Inquilino</option>
+          <option value="Suplidor">Suplidor</option>
+          <option value="Unidad">Unidad</option>
+          <option value="Área común">Área común</option>
+        </select>
+      </div>
+      <p id="pago-fc-nota" style="font-size:.8rem;color:#4d4742;margin:-.3rem 0 .6rem">La afectación al fondo común y al estado de cuenta se calcula automáticamente según el tipo, igual que en Access.</p>
       <div class="form-group">
         <label>Observaciones (opcional)</label>
         <textarea id="pago-obs" placeholder="Notas adicionales"></textarea>
@@ -1136,12 +1171,33 @@ function entrarAlApp() {
   if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
     $('sidebar-ceo').style.display = 'block';
     $('sidebar-residente').style.display = 'none';
+    aplicarRestriccionesRol();
     navegar('dashboard');
+    actualizarBadgeAprobaciones();
   } else {
     $('sidebar-ceo').style.display = 'none';
     $('sidebar-residente').style.display = 'block';
     navegar('mi-cuenta');
   }
+}
+
+// Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
+function aplicarRestriccionesRol() {
+  const esCEO = sesion.rol === 'CEO';
+  const soloCEO = ['ecg', 'cap-usuarios'];            // Asistente no ve ECG ni Usuarios
+  soloCEO.forEach(p => {
+    const a = document.querySelector('.sidebar a[data-page="' + p + '"]');
+    if (a) a.style.display = esCEO ? '' : 'none';
+  });
+}
+
+async function actualizarBadgeAprobaciones() {
+  try {
+    const {data} = await sb.rpc('fn_aprobaciones_bandeja', {p_condominio_id: sesion.condominio_id});
+    const pend = (data || []).filter(r => r.estado === 'Sometido' || r.estado === 'En proceso').length;
+    const b = $('nav-aprob-badge');
+    if (b && sesion.rol === 'CEO') { b.textContent = pend; b.style.display = pend ? 'inline-block' : 'none'; }
+  } catch(_) {}
 }
 
 function renderCondoDropdown() {
@@ -1258,6 +1314,7 @@ function navegar(page) {
     'pagos': cargarPagos,
     'gastos': cargarGastos,
     'pagos-gastos': cargarPagosGastos,
+    'aprobaciones': cargarAprobaciones,
     'mi-cuenta': cargarMiCuenta,
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
@@ -1859,6 +1916,59 @@ function toggleSidebar() {
   backdrop.classList.toggle('open');
 }
 
+// ==================== BANDEJA DE APROBACIONES ====================
+const APROB_BADGE = {'Sometido':'#a63a2b','En proceso':'#b8860b','Aprobado':'#2e7d32','Rechazado':'#777'};
+async function cargarAprobaciones() {
+  const cont = $('aprob-lista');
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const esCEO = sesion.rol === 'CEO';
+  $('aprob-rol-nota').textContent = esCEO ? 'Como CEO puedes aprobar, poner en proceso o rechazar.' : 'Ves el estado de lo que tú sometiste.';
+  const {data, error} = await sb.rpc('fn_aprobaciones_bandeja', {p_condominio_id: sesion.condominio_id});
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">No hay elementos pendientes.</p>'; return; }
+  const filas = data.map((r, i) => {
+    const color = APROB_BADGE[r.estado] || '#777';
+    const badge = `<span style="background:${color};color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.75rem">${r.estado}</span>`;
+    const monto = r.monto != null ? 'RD$ ' + fmt(r.monto) : '—';
+    let acciones = '';
+    if (esCEO && (r.estado === 'Sometido' || r.estado === 'En proceso')) {
+      const mod = r.modulo === 'Solicitud' ? 'Solicitud' : r.modulo;
+      acciones = `
+        <button class="btn btn-sm btn-success" onclick="revisarAprob('${mod}',${r.registro_id},'Aprobado')">Aprobar</button>
+        ${r.estado === 'Sometido' ? `<button class="btn btn-sm btn-outline" onclick="revisarAprob('${mod}',${r.registro_id},'En proceso')">En proceso</button>` : ''}
+        <button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="revisarAprob('${mod}',${r.registro_id},'Rechazado')">Rechazar</button>`;
+    }
+    const rechazo = r.motivo_rechazo ? `<div style="font-size:.78rem;color:#a63a2b;margin-top:.2rem">Rechazo: ${r.motivo_rechazo}</div>` : '';
+    return `<tr>
+      <td><strong>${r.modulo}</strong><br><span style="font-size:.8rem;color:#4d4742">${r.referencia || ''}</span></td>
+      <td>${r.descripcion || ''}${rechazo}</td>
+      <td style="text-align:right">${monto}</td>
+      <td>${badge}<br><span style="font-size:.72rem;color:#777">${r.sometido_por || ''}</span></td>
+      <td style="white-space:nowrap">${acciones}</td>
+    </tr>`;
+  }).join('');
+  cont.innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr>
+    <th>Tipo</th><th>Detalle</th><th style="text-align:right">Monto</th><th>Estado / Sometido por</th><th>Acciones</th>
+    </tr></thead><tbody>${filas}</tbody></table></div>`;
+  // badge en el nav (solo pendientes para CEO)
+  if (esCEO) {
+    const pend = data.filter(r => r.estado === 'Sometido' || r.estado === 'En proceso').length;
+    const b = $('nav-aprob-badge');
+    if (b) { b.textContent = pend; b.style.display = pend ? 'inline-block' : 'none'; }
+  }
+}
+
+async function revisarAprob(modulo, id, estado) {
+  let motivo = null;
+  if (estado === 'Rechazado') {
+    motivo = prompt('Motivo del rechazo (obligatorio):');
+    if (!motivo || !motivo.trim()) return;
+  }
+  const {error} = await sb.rpc('fn_aprobacion_revisar', {p_modulo: modulo, p_id: id, p_estado: estado, p_motivo: motivo});
+  if (error) { alert('⚠ ' + error.message); return; }
+  cargarAprobaciones();
+}
+
 // ==================== MODALES ====================
 function cerrarModal(id) { $(id).classList.remove('show'); }
 
@@ -1878,6 +1988,7 @@ async function abrirModalPago() {
 
   const {data} = await sb.from('facturas').select('id, no_factura, unidad_id, concepto, balance_pendiente, unidades(codigo)')
     .eq('condominio_id', sesion.condominio_id)
+    .eq('estado_aprobacion', 'Aprobado')
     .gt('balance_pendiente', 0)
     .in('estado', ['Pendiente', 'Vencida', 'Parcial'])
     .order('fecha_vencimiento');
@@ -1913,6 +2024,8 @@ async function guardarPago(e) {
       banco: $('pago-banco').value || null,
       referencia: $('pago-referencia').value || null,
       recibido_de: $('pago-recibido-de').value || null,
+      tipo_movimiento: $('pago-tipo-mov').value,
+      tipo_aplicacion: $('pago-tipo-apl').value,
       observaciones: $('pago-obs').value || null,
     };
     const {data, error} = await sb.rpc('fn_pago_registrar', {p: payload});
@@ -1920,7 +2033,11 @@ async function guardarPago(e) {
     if (error) throw error;
     cerrarModal('modal-pago');
     cargarPagos();
-    alert('✅ Pago registrado: ' + (data?.codigo || 'OK'));
+    const estadoAp = data?.estado_aprobacion || 'Aprobado';
+    if (estadoAp === 'Sometido')
+      alert('✅ Pago sometido: ' + (data?.codigo || '') + '\nQueda PENDIENTE de aprobación del CEO antes de afectar el fondo común.');
+    else
+      alert('✅ Pago registrado y aprobado: ' + (data?.codigo || 'OK'));
   } catch(err) {
     $('pago-alert').textContent = err.message;
     $('pago-alert').style.display = 'block';
