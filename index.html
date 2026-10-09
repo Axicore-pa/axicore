@@ -1036,7 +1036,12 @@
         <div class="form-group"><label>Banco</label><input type="text" id="pg-banco" placeholder="Ej: BHD, Popular..."></div>
       </div>
       <div class="form-group"><label>Referencia / No. Comprobante</label><input type="text" id="pg-referencia" placeholder="No. transferencia, cheque..."></div>
-      <div class="form-group"><label>URL del Comprobante</label><input type="url" id="pg-comprobante-url" placeholder="https://..."></div>
+      <div class="form-group">
+        <label>Comprobante de pago (PDF o foto)</label>
+        <input type="file" id="pg-comprobante-file" accept=".pdf,image/*">
+        <small style="color:#4d4742">O pega un enlace si ya está en Drive/Photos:</small>
+        <input type="url" id="pg-comprobante-url" placeholder="https://... (opcional)" style="margin-top:.3rem">
+      </div>
       <div class="form-group"><label>Nota</label><textarea id="pg-nota" rows="2" placeholder="Observaciones opcionales..."></textarea></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
         <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-pago-gasto')">Cancelar</button>
@@ -1062,6 +1067,20 @@ let condominiosUsuario = []; // [{condominio_id, nombre, rol}]
 
 // ==================== UTILIDADES ====================
 const $ = id => document.getElementById(id);
+
+// Ver comprobante: enlace http abre directo; ruta de Storage privada abre con URL firmada
+function btnComprobante(url) {
+  if (!url) return '—';
+  const safe = String(url).replace(/'/g, "\\'");
+  return `<button class="btn btn-sm btn-outline" onclick="verComprobante('${safe}')">📄 Ver</button>`;
+}
+async function verComprobante(url) {
+  if (!url) return;
+  if (/^https?:\/\//i.test(url)) { window.open(url, '_blank'); return; }
+  const {data, error} = await sb.storage.from('pagos-proveedores').createSignedUrl(url, 120);
+  if (error || !data?.signedUrl) { alert('No se pudo abrir el comprobante: ' + (error?.message || 'sin acceso')); return; }
+  window.open(data.signedUrl, '_blank');
+}
 const fmt = n => new Intl.NumberFormat('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n || 0);
 const fmtMoney = n => 'RD$ ' + fmt(n);
 
@@ -1617,7 +1636,7 @@ async function verDetalleGasto(gastoId) {
             <td>${p.metodo_pago || '—'}</td>
             <td>${p.banco || '—'}</td>
             <td style="font-family:monospace;font-size:.8rem">${p.referencia || '—'}</td>
-            <td class="text-center">${p.comprobante_url ? `<a href="${p.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+            <td class="text-center">${btnComprobante(p.comprobante_url)}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
@@ -1679,7 +1698,7 @@ async function cargarPagosGastos() {
           <td>${r.banco || '—'}</td>
           <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
           <td class="text-right money">${fmt(r.monto)}</td>
-          <td class="text-center">${r.comprobante_url ? `<a href="${r.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+          <td class="text-center">${btnComprobante(r.comprobante_url)}</td>
         </tr>`;
       }).join('')}
       </tbody>
@@ -1728,15 +1747,30 @@ async function guardarPagoGasto(e) {
 
   try {
     const {data: {user}} = await sb.auth.getUser();
+    const gastoId = parseInt($('pg-gasto-id').value);
+
+    // Subir archivo de comprobante si se seleccionó uno
+    let comprobante = $('pg-comprobante-url').value.trim() || null;
+    const file = $('pg-comprobante-file').files[0];
+    if (file) {
+      btn.textContent = 'Subiendo comprobante...';
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const ruta = `${sesion.condominio_id}/${gastoId}/${Date.now()}.${ext}`;
+      const {error: upErr} = await sb.storage.from('pagos-proveedores').upload(ruta, file, {upsert:false});
+      if (upErr) throw new Error('No se pudo subir el comprobante: ' + upErr.message);
+      comprobante = ruta; // se guarda la ruta interna; se ve con enlace firmado
+    }
+
+    btn.textContent = 'Guardando...';
     const payload = {
       condominio_id: sesion.condominio_id,
-      gasto_id: parseInt($('pg-gasto-id').value),
+      gasto_id: gastoId,
       fecha_pago: $('pg-fecha').value,
       monto: parseFloat($('pg-monto').value),
       metodo_pago: $('pg-metodo').value || null,
       banco: $('pg-banco').value.trim() || null,
       referencia: $('pg-referencia').value.trim() || null,
-      comprobante_url: $('pg-comprobante-url').value.trim() || null,
+      comprobante_url: comprobante,
       nota: $('pg-nota').value.trim() || null,
       registrado_por: user?.id || null,
     };
@@ -2239,7 +2273,7 @@ async function cargarComprobantesCondo() {
           <td>${r.banco || '—'}</td>
           <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
           <td class="text-right money">${fmt(r.monto)}</td>
-          <td class="text-center">${r.comprobante_url ? `<a href="${r.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+          <td class="text-center">${btnComprobante(r.comprobante_url)}</td>
         </tr>`;
       }).join('')}
       </tbody>
