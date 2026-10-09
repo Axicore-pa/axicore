@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXICORE Property Administration</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" onerror="document.body.innerHTML='<div style=padding:2rem;color:red;font-size:1.2rem>Error: No se pudo cargar el SDK de Supabase. Verifica tu conexión a internet y recarga.</div>'"></script>
+<style>
+  :root {
+    --ax-primary: #1e3a5f;
+    --ax-accent: #2980b9;
+    --ax-success: #27ae60;
+    --ax-warning: #f39c12;
+    --ax-danger: #e74c3c;
+    --ax-bg: #f4f6f9;
+    --ax-card: #ffffff;
+    --ax-text: #2c3e50;
+    --ax-muted: #7f8c8d;
+    --ax-border: #dce1e8;
+    --ax-radius: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--ax-bg); color: var(--ax-text); min-height:100vh; }
+
+  /* LOGIN */
+  #login-screen {
+    display:flex; align-items:center; justify-content:center; min-height:100vh;
+    background: linear-gradient(135deg, var(--ax-primary) 0%, #163050 100%);
+  }
+  .login-box {
+    background: var(--ax-card); border-radius: var(--ax-radius); padding: 2.5rem;
+    width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-box h1 { color: var(--ax-primary); font-size: 1.5rem; margin-bottom: .3rem; }
+  .login-box p.sub { color: var(--ax-muted); font-size: .85rem; margin-bottom: 1.8rem; }
+  .login-box .logo { text-align:center; margin-bottom: 1.5rem; font-size: 2rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display:block; font-size:.8rem; font-weight:600; margin-bottom:.3rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; }
+  .form-group input {
+    width:100%; padding:.7rem .9rem; border:1px solid var(--ax-border); border-radius:6px;
+    font-size:.95rem; transition: border-color .2s;
+  }
+  .form-group input:focus { outline:none; border-color:var(--ax-accent); }
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    padding:.7rem 1.4rem; border:none; border-radius:6px; font-size:.9rem; font-weight:600;
+    cursor:pointer; transition: all .2s;
+  }
+  .btn-primary { background:var(--ax-accent); color:#fff; width:100%; }
+  .btn-primary:hover { background:#2471a3; }
+  .btn-sm { padding:.45rem .9rem; font-size:.8rem; }
+  .btn-success { background:var(--ax-success); color:#fff; }
+  .btn-warning { background:var(--ax-warning); color:#fff; }
+  .btn-danger { background:var(--ax-danger); color:#fff; }
+  .btn-outline { background:transparent; border:1px solid var(--ax-border); color:var(--ax-text); }
+  .btn-outline:hover { background:var(--ax-bg); }
+  .alert { padding:.8rem 1rem; border-radius:6px; font-size:.85rem; margin-bottom:1rem; display:none; }
+  .alert-error { background:#fdecea; color:var(--ax-danger); border:1px solid #f5c6cb; }
+  .alert-info { background:#e8f4fd; color:var(--ax-accent); border:1px solid #b8daff; }
+
+  /* APP SHELL */
+  #app-shell { display:none; }
+  .topbar {
+    background: var(--ax-primary); color:#fff; padding:.8rem 1.5rem;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+  }
+  .topbar h2 { font-size:1rem; font-weight:600; }
+  .topbar .user-info { display:flex; align-items:center; gap:.8rem; font-size:.85rem; }
+  .topbar .user-info .role-badge {
+    background:rgba(255,255,255,.2); padding:.2rem .6rem; border-radius:4px; font-size:.75rem;
+  }
+  .topbar .btn-logout { background:rgba(255,255,255,.15); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; font-size:.8rem; }
+  .topbar .btn-logout:hover { background:rgba(255,255,255,.25); }
+
+  /* SIDEBAR */
+  .app-layout { display:flex; min-height:calc(100vh - 52px); }
+  .sidebar {
+    width:220px; background:var(--ax-card); border-right:1px solid var(--ax-border);
+    padding:1rem 0; flex-shrink:0;
+  }
+  .sidebar a {
+    display:flex; align-items:center; gap:.6rem; padding:.65rem 1.2rem;
+    text-decoration:none; color:var(--ax-text); font-size:.85rem; transition:all .15s;
+  }
+  .sidebar a:hover, .sidebar a.active { background:var(--ax-bg); color:var(--ax-accent); border-right:3px solid var(--ax-accent); }
+  .sidebar .section-title { font-size:.7rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; padding:.8rem 1.2rem .3rem; font-weight:700; }
+
+  /* MAIN CONTENT */
+  .main-content { flex:1; padding:1.5rem; overflow-y:auto; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-title { font-size:1.3rem; font-weight:700; margin-bottom:1.2rem; }
+
+  /* CARDS */
+  .cards-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem; }
+  .stat-card {
+    background:var(--ax-card); border-radius:var(--ax-radius); padding:1.2rem;
+    border:1px solid var(--ax-border); position:relative; overflow:hidden;
+  }
+  .stat-card .label { font-size:.75rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.3rem; }
+  .stat-card .value { font-size:1.6rem; font-weight:700; }
+  .stat-card .value.green { color:var(--ax-success); }
+  .stat-card .value.red { color:var(--ax-danger); }
+  .stat-card .value.blue { color:var(--ax-accent); }
+  .stat-card .accent-bar { position:absolute; top:0; left:0; right:0; height:3px; }
+  .stat-card .accent-bar.green { background:var(--ax-success); }
+  .stat-card .accent-bar.red { background:var(--ax-danger); }
+  .stat-card .accent-bar.blue { background:var(--ax-accent); }
+  .stat-card .accent-bar.yellow { background:var(--ax-warning); }
+
+  .card {
+    background:var(--ax-card); border-radius:var(--ax-radius); border:1px solid var(--ax-border);
+    margin-bottom:1.2rem;
+  }
+  .card-header { padding:1rem 1.2rem; border-bottom:1px solid var(--ax-border); font-weight:600; font-size:.95rem; display:flex; align-items:center; justify-content:space-between; }
+  .card-body { padding:1rem 1.2rem; }
+
+  /* TABLE */
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { text-align:left; padding:.6rem .8rem; border-bottom:2px solid var(--ax-border); color:var(--ax-muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+  td { padding:.6rem .8rem; border-bottom:1px solid var(--ax-border); }
+  tr:hover { background:var(--ax-bg); }
+  .text-right { text-align:right; }
+  .text-center { text-align:center; }
+  .badge { display:inline-block; padding:.15rem .5rem; border-radius:4px; font-size:.75rem; font-weight:600; }
+  .badge-danger { background:#fdecea; color:var(--ax-danger); }
+  .badge-warning { background:#fef5e7; color:#d68910; }
+  .badge-success { background:#e8f8f0; color:var(--ax-success); }
+  .badge-info { background:#e8f4fd; color:var(--ax-accent); }
+
+  .money { font-variant-numeric: tabular-nums; }
+  .loading { text-align:center; padding:2rem; color:var(--ax-muted); }
+  .empty { text-align:center; padding:2rem; color:var(--ax-muted); font-style:italic; }
+
+  /* MODAL */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
+    align-items:center; justify-content:center;
+  }
+  .modal-overlay.show { display:flex; }
+  .modal {
+    background:var(--ax-card); border-radius:var(--ax-radius); padding:1.8rem;
+    width:95%; max-width:520px; max-height:90vh; overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal h3 { font-size:1.1rem; margin-bottom:1.2rem; }
+  .modal .form-group { margin-bottom:.9rem; }
+  .modal .form-group select,
+  .modal .form-group textarea {
+    width:100%; padding:.6rem .8rem; border:1px solid var(--ax-border); border-radius:6px;
+    font-size:.9rem; font-family:inherit;
+  }
+  .modal .form-group textarea { resize:vertical; min-height:60px; }
+  .modal-actions { display:flex; gap:.8rem; justify-content:flex-end; margin-top:1.2rem; }
+
+  /* HAMBURGER */
+  .hamburger {
+    display:none; background:none; border:none; color:#fff; font-size:1.4rem;
+    cursor:pointer; padding:.2rem .5rem;
+  }
+  .sidebar-mobile-backdrop {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:90;
+  }
+
+  /* Responsive */
+  @media (max-width:768px) {
+    .hamburger { display:inline-block; }
+    .sidebar { display:none; position:fixed; left:0; top:52px; bottom:0; z-index:95; width:240px; box-shadow:4px 0 20px rgba(0,0,0,.2); }
+    .sidebar.open { display:block; }
+    .sidebar-mobile-backdrop.open { display:block; }
+    .cards-row { grid-template-columns: 1fr 1fr; }
+    .main-content { padding:1rem; }
+    table { font-size:.78rem; }
+  }
+  @media (max-width:480px) {
+    .cards-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo">🏢</div>
+    <h1>AXICORE</h1>
+    <p class="sub">Property Administration</p>
+    <div id="login-alert" class="alert alert-error"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label>Correo electrónico</label>
+        <input type="email" id="login-email" required placeholder="usuario@correo.com">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary" id="login-btn">Iniciar Sesión</button>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== APP SHELL ==================== -->
+<div id="app-shell">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <h2>AXICORE</h2>
+    </div>
+    <div class="user-info">
+      <span id="user-name"></span>
+      <span class="role-badge" id="user-role"></span>
+      <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </div>
+  <div class="app-layout">
+    <!-- Sidebar CEO -->
+    <nav class="sidebar" id="sidebar-ceo">
+      <div class="section-title">Principal</div>
+      <a href="#" onclick="navegar('dashboard')" class="active" data-page="dashboard">📊 Dashboard</a>
+      <a href="#" onclick="navegar('cobros')" data-page="cobros">💰 Cobros Pendientes</a>
+      <div class="section-title">Operaciones</div>
+      <a href="#" onclick="navegar('facturacion')" data-page="facturacion">📄 Facturación</a>
+      <a href="#" onclick="navegar('pagos')" data-page="pagos">💳 Pagos</a>
+      <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
+      <div class="section-title">Reportes</div>
+      <a href="#" onclick="navegar('ecg')" data-page="ecg">📈 Estado de Cuenta</a>
+      <a href="#" onclick="navegar('unidades')" data-page="unidades">🏠 Unidades</a>
+      <div class="section-title">Captura</div>
+      <a href="#" onclick="navegar('cap-condominios')" data-page="cap-condominios">🏢 Condominio</a>
+      <a href="#" onclick="navegar('cap-unidades')" data-page="cap-unidades">📋 Unidades</a>
+      <a href="#" onclick="navegar('cap-propietarios')" data-page="cap-propietarios">👤 Propietarios</a>
+      <a href="#" onclick="navegar('cap-inquilinos')" data-page="cap-inquilinos">🔑 Inquilinos</a>
+      <a href="#" onclick="navegar('cap-proveedores')" data-page="cap-proveedores">🛠️ Proveedores</a>
+      <a href="#" onclick="navegar('cap-usuarios')" data-page="cap-usuarios">👥 Usuarios</a>
+    </nav>
+
+    <!-- Sidebar Residente (propietario/inquilino) -->
+    <nav class="sidebar" id="sidebar-residente" style="display:none">
+      <div class="section-title">Mi Portal</div>
+      <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta">🏠 Mi Cuenta</a>
+      <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas">📄 Mis Facturas</a>
+      <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos">💳 Mis Pagos</a>
+      <div class="section-title">General</div>
+      <a href="#" onclick="navegar('fondo-comun')" data-page="fondo-comun">📊 Fondo Común</a>
+    </nav>
+
+    <div class="main-content">
+      <!-- ===== DASHBOARD CEO ===== -->
+      <div id="page-dashboard" class="page active">
+        <h2 class="page-title">Dashboard — <span id="dash-condo-name">DH2</span></h2>
+        <div class="cards-row" id="dash-stats">
+          <div class="loading">Cargando estadísticas...</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            Cobros Pendientes (vencidos)
+            <button class="btn btn-sm btn-outline" onclick="navegar('cobros')">Ver todos</button>
+          </div>
+          <div class="card-body" id="dash-cobros">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COBROS PENDIENTES ===== -->
+      <div id="page-cobros" class="page">
+        <h2 class="page-title">Cobros Pendientes</h2>
+        <div class="card">
+          <div class="card-body" id="cobros-tabla">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ECG ===== -->
+      <div id="page-ecg" class="page">
+        <h2 class="page-title">Estado de Cuenta General</h2>
+        <div class="cards-row" id="ecg-stats"></div>
+        <div class="card">
+          <div class="card-header">Movimientos</div>
+          <div class="card-body" id="ecg-movimientos">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== UNIDADES ===== -->
+      <div id="page-unidades" class="page">
+        <h2 class="page-title">Estado por Unidad</h2>
+        <div class="card">
+          <div class="card-body" id="unidades-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FACTURACIÓN ===== -->
+      <div id="page-facturacion" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Facturación Mensual</h2>
+          <button class="btn btn-success btn-sm" id="btn-generar-fact" onclick="abrirModalFacturacion()">Generar Facturación</button>
+        </div>
+        <div class="card">
+          <div class="card-header">Preview — Próximo período</div>
+          <div class="card-body" id="fact-preview">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGOS ===== -->
+      <div id="page-pagos" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Pagos Recibidos</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalPago()">+ Registrar Pago</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="pagos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== GASTOS ===== -->
+      <div id="page-gastos" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Gastos</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalGasto()">+ Registrar Gasto</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="gastos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MI CUENTA (Residente) ===== -->
+      <div id="page-mi-cuenta" class="page">
+        <h2 class="page-title">Mi Estado de Cuenta</h2>
+        <div class="cards-row" id="mi-resumen"></div>
+        <div class="card">
+          <div class="card-header">Movimientos</div>
+          <div class="card-body" id="mi-movimientos">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MIS FACTURAS ===== -->
+      <div id="page-mis-facturas" class="page">
+        <h2 class="page-title">Mis Facturas</h2>
+        <div class="card">
+          <div class="card-body" id="mis-facturas-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MIS PAGOS ===== -->
+      <div id="page-mis-pagos" class="page">
+        <h2 class="page-title">Mis Pagos</h2>
+        <div class="card">
+          <div class="card-body" id="mis-pagos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FONDO COMÚN ===== -->
+      <div id="page-fondo-comun" class="page">
+        <h2 class="page-title">Fondo Común del Condominio</h2>
+        <div class="cards-row" id="fc-stats"></div>
+        <div class="card">
+          <div class="card-header">Movimientos</div>
+          <div class="card-body" id="fc-movimientos">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: CONDOMINIO ===== -->
+      <div id="page-cap-condominios" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Datos del Condominio</h2>
+          <button class="btn btn-warning btn-sm" onclick="abrirModalCapCondominio()">✏️ Editar</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-condo-detalle">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: UNIDADES ===== -->
+      <div id="page-cap-unidades" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Unidades</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapUnidad()">+ Nueva Unidad</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-unidades-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: PROPIETARIOS ===== -->
+      <div id="page-cap-propietarios" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Propietarios</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapPropietario()">+ Nuevo Propietario</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-propietarios-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: INQUILINOS ===== -->
+      <div id="page-cap-inquilinos" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Inquilinos</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapInquilino()">+ Nuevo Inquilino</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-inquilinos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: PROVEEDORES ===== -->
+      <div id="page-cap-proveedores" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Proveedores</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapProveedor()">+ Nuevo Proveedor</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-proveedores-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAPTURA: USUARIOS ===== -->
+      <div id="page-cap-usuarios" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Usuarios del Sistema</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapUsuario()">+ Nuevo Usuario</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-usuarios-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="sidebar-mobile-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+</div>
+
+<!-- MODAL: Registrar Pago -->
+<div class="modal-overlay" id="modal-pago">
+  <div class="modal">
+    <h3>Registrar Pago</h3>
+    <div id="pago-alert" class="alert alert-error"></div>
+    <form id="form-pago" onsubmit="return guardarPago(event)">
+      <div class="form-group">
+        <label>Factura</label>
+        <select id="pago-factura" required><option value="">Cargando facturas...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Fecha de pago</label>
+        <input type="date" id="pago-fecha" required>
+      </div>
+      <div class="form-group">
+        <label>Monto (RD$)</label>
+        <input type="number" id="pago-monto" step="0.01" min="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>Método</label>
+        <select id="pago-metodo" required>
+          <option value="Transferencia">Transferencia</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Depósito">Depósito</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Banco (opcional)</label>
+        <input type="text" id="pago-banco" placeholder="Ej: BHD, Popular, Reservas">
+      </div>
+      <div class="form-group">
+        <label>Referencia (opcional)</label>
+        <input type="text" id="pago-referencia" placeholder="No. transferencia o cheque">
+      </div>
+      <div class="form-group">
+        <label>Recibido de</label>
+        <input type="text" id="pago-recibido-de" placeholder="Nombre de quien paga">
+      </div>
+      <div class="form-group">
+        <label>Observaciones (opcional)</label>
+        <textarea id="pago-obs" placeholder="Notas adicionales"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-pago')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="pago-btn-guardar">Registrar Pago</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Generar Facturación Mensual -->
+<div class="modal-overlay" id="modal-facturacion">
+  <div class="modal">
+    <h3>Generar Facturación Mensual</h3>
+    <div id="fact-alert" class="alert alert-error"></div>
+    <p id="fact-confirm-msg" style="margin-bottom:1rem;font-size:.9rem;"></p>
+    <div class="form-group">
+      <label>Fecha de factura</label>
+      <input type="date" id="fact-fecha-factura" required>
+    </div>
+    <div class="form-group">
+      <label>Fecha de vencimiento</label>
+      <input type="date" id="fact-fecha-venc" required>
+    </div>
+    <div class="form-group">
+      <label>Concepto</label>
+      <input type="text" id="fact-concepto" value="Cuota de mantenimiento" required>
+    </div>
+    <div id="fact-preview-detail"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-facturacion')">Cancelar</button>
+      <button type="button" class="btn btn-success" id="fact-btn-generar" onclick="ejecutarFacturacion()">Confirmar y Generar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Registrar Gasto -->
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <h3>Registrar Gasto</h3>
+    <div id="gasto-alert" class="alert alert-error"></div>
+    <form id="form-gasto" onsubmit="return guardarGasto(event)">
+      <div class="form-group">
+        <label>Proveedor</label>
+        <select id="gasto-proveedor" required><option value="">Cargando...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="gasto-fecha" required>
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="gasto-categoria" required>
+          <option value="Mantenimiento">Mantenimiento</option>
+          <option value="Servicios generales">Servicios generales</option>
+          <option value="Seguridad">Seguridad</option>
+          <option value="Administración">Administración</option>
+          <option value="Materiales">Materiales</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo aplicación</label>
+        <select id="gasto-tipo-apl" required>
+          <option value="Común">Común</option>
+          <option value="Individual">Individual</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Área de aplicación</label>
+        <select id="gasto-area" required>
+          <option value="Pasillos">Pasillos</option>
+          <option value="Área BBQ">Área BBQ</option>
+          <option value="Área de mantenimiento">Área de mantenimiento</option>
+          <option value="Oficina administrativa">Oficina administrativa</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group" id="gasto-area-otro-grp" style="display:none">
+        <label>Especifique área</label>
+        <input type="text" id="gasto-area-otro">
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="gasto-desc" required placeholder="Descripción del gasto"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Monto (RD$)</label>
+        <input type="number" id="gasto-monto" step="0.01" min="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>Método de pago</label>
+        <select id="gasto-metodo">
+          <option value="Transferencia">Transferencia</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Cheque">Cheque</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Factura proveedor (opcional)</label>
+        <input type="text" id="gasto-factura-prov" placeholder="No. factura del suplidor">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-gasto')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="gasto-btn-guardar">Registrar Gasto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Editar Condominio -->
+<div class="modal-overlay" id="modal-cap-condominio">
+  <div class="modal">
+    <h3>Editar Condominio</h3>
+    <div id="cap-condo-alert" class="alert alert-error"></div>
+    <form id="form-cap-condominio" onsubmit="return guardarCapCondominio(event)">
+      <input type="hidden" id="cap-condo-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Código</label><input type="text" id="cap-condo-codigo" required></div>
+        <div class="form-group"><label>RNC</label><input type="text" id="cap-condo-rnc"></div>
+      </div>
+      <div class="form-group"><label>Nombre</label><input type="text" id="cap-condo-nombre" required></div>
+      <div class="form-group"><label>Dirección (calle y número)</label><input type="text" id="cap-condo-direccion"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Sector</label><input type="text" id="cap-condo-sector"></div>
+        <div class="form-group"><label>Municipio</label><input type="text" id="cap-condo-municipio"></div>
+        <div class="form-group"><label>Ciudad</label><input type="text" id="cap-condo-ciudad"></div>
+        <div class="form-group"><label>Código Postal</label><input type="text" id="cap-condo-cp"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cap-condo-telefono"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cap-condo-email"></div>
+        <div class="form-group"><label>Banco</label><input type="text" id="cap-condo-banco"></div>
+        <div class="form-group"><label>Cuenta Bancaria</label><input type="text" id="cap-condo-cuenta"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-condominio')">Cancelar</button>
+        <button type="submit" class="btn btn-success">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Unidad -->
+<div class="modal-overlay" id="modal-cap-unidad">
+  <div class="modal">
+    <h3 id="cap-unidad-titulo">Nueva Unidad</h3>
+    <div id="cap-unidad-alert" class="alert alert-error"></div>
+    <form id="form-cap-unidad" onsubmit="return guardarCapUnidad(event)">
+      <input type="hidden" id="cap-unidad-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Código</label><input type="text" id="cap-unidad-codigo" required placeholder="Ej: DH2-A1"></div>
+        <div class="form-group"><label>Torre</label><input type="text" id="cap-unidad-torre" placeholder="Ej: A"></div>
+        <div class="form-group"><label>Nivel</label><input type="text" id="cap-unidad-nivel" placeholder="Ej: 1"></div>
+        <div class="form-group"><label>Tipo</label>
+          <select id="cap-unidad-tipo"><option value="Apartamento">Apartamento</option><option value="Penthouse">Penthouse</option><option value="Local">Local</option><option value="Oficina">Oficina</option><option value="Parqueo">Parqueo</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Propietario</label><select id="cap-unidad-propietario"><option value="">— Sin propietario —</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Cuota Mantenimiento (RD$)</label><input type="number" id="cap-unidad-cuota" step="0.01" min="0"></div>
+        <div class="form-group"><label>Moneda</label>
+          <select id="cap-unidad-moneda"><option value="DOP">DOP (Pesos)</option><option value="USD">USD (Dólares)</option></select>
+        </div>
+        <div class="form-group"><label>Estado</label>
+          <select id="cap-unidad-estado"><option value="Ocupado">Ocupado</option><option value="Vacío">Vacío</option><option value="En remodelación">En remodelación</option></select>
+        </div>
+        <div class="form-group"><label>Estado Registro</label>
+          <select id="cap-unidad-estado-reg"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Observaciones</label><textarea id="cap-unidad-obs" placeholder="Notas adicionales"></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-unidad')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-unidad-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Propietario -->
+<div class="modal-overlay" id="modal-cap-propietario">
+  <div class="modal">
+    <h3 id="cap-prop-titulo">Nuevo Propietario</h3>
+    <div id="cap-prop-alert" class="alert alert-error"></div>
+    <form id="form-cap-propietario" onsubmit="return guardarCapPropietario(event)">
+      <input type="hidden" id="cap-prop-id">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="cap-prop-nombre" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Documento (cédula/pasaporte)</label><input type="text" id="cap-prop-documento"></div>
+        <div class="form-group"><label>Fecha de ingreso</label><input type="date" id="cap-prop-fecha"></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cap-prop-telefono"></div>
+        <div class="form-group"><label>WhatsApp</label><input type="text" id="cap-prop-whatsapp"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="cap-prop-email"></div>
+      <div class="form-group"><label>Dirección</label><input type="text" id="cap-prop-direccion"></div>
+      <div class="form-group"><label>Estado</label>
+        <select id="cap-prop-estado"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-propietario')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-prop-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Inquilino -->
+<div class="modal-overlay" id="modal-cap-inquilino">
+  <div class="modal">
+    <h3 id="cap-inq-titulo">Nuevo Inquilino</h3>
+    <div id="cap-inq-alert" class="alert alert-error"></div>
+    <form id="form-cap-inquilino" onsubmit="return guardarCapInquilino(event)">
+      <input type="hidden" id="cap-inq-id">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="cap-inq-nombre" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Documento</label><input type="text" id="cap-inq-documento"></div>
+        <div class="form-group"><label>Unidad</label><select id="cap-inq-unidad" required><option value="">— Seleccione —</option></select></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cap-inq-telefono"></div>
+        <div class="form-group"><label>WhatsApp</label><input type="text" id="cap-inq-whatsapp"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="cap-inq-email"></div>
+      <div class="form-group"><label>Estado</label>
+        <select id="cap-inq-estado"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-inquilino')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-inq-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Proveedor -->
+<div class="modal-overlay" id="modal-cap-proveedor">
+  <div class="modal">
+    <h3 id="cap-prov-titulo">Nuevo Proveedor</h3>
+    <div id="cap-prov-alert" class="alert alert-error"></div>
+    <form id="form-cap-proveedor" onsubmit="return guardarCapProveedor(event)">
+      <input type="hidden" id="cap-prov-id">
+      <div class="form-group"><label>Nombre / Razón Social</label><input type="text" id="cap-prov-nombre" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Nombre Comercial</label><input type="text" id="cap-prov-comercial"></div>
+        <div class="form-group"><label>RNC / Cédula</label><input type="text" id="cap-prov-rnc"></div>
+        <div class="form-group"><label>Servicio</label><input type="text" id="cap-prov-servicio" placeholder="Ej: Limpieza, Electricidad"></div>
+        <div class="form-group"><label>Tipo Proveedor</label>
+          <select id="cap-prov-tipo"><option value="Servicios">Servicios</option><option value="Materiales">Materiales</option><option value="Profesional">Profesional</option><option value="Otro">Otro</option></select>
+        </div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cap-prov-telefono"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cap-prov-email"></div>
+        <div class="form-group"><label>Contacto</label><input type="text" id="cap-prov-contacto" placeholder="Persona de contacto"></div>
+        <div class="form-group"><label>Condición de Pago</label>
+          <select id="cap-prov-condicion"><option value="Contado">Contado</option><option value="Crédito 15 días">Crédito 15 días</option><option value="Crédito 30 días">Crédito 30 días</option><option value="Crédito 60 días">Crédito 60 días</option></select>
+        </div>
+        <div class="form-group"><label>Método de Pago</label>
+          <select id="cap-prov-metodo"><option value="Transferencia">Transferencia</option><option value="Cheque">Cheque</option><option value="Efectivo">Efectivo</option></select>
+        </div>
+        <div class="form-group"><label>Banco</label><input type="text" id="cap-prov-banco"></div>
+        <div class="form-group"><label>Cuenta Bancaria</label><input type="text" id="cap-prov-cuenta-banco"></div>
+        <div class="form-group"><label>Titular Cuenta</label><input type="text" id="cap-prov-titular"></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input type="text" id="cap-prov-direccion" placeholder="Calle y número"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Sector</label><input type="text" id="cap-prov-sector"></div>
+        <div class="form-group"><label>Municipio</label><input type="text" id="cap-prov-municipio"></div>
+      </div>
+      <div class="form-group"><label>Notas</label><textarea id="cap-prov-notas"></textarea></div>
+      <div class="form-group"><label>Estado</label>
+        <select id="cap-prov-activo"><option value="true">Activo</option><option value="false">Inactivo</option></select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-proveedor')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-prov-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Usuario -->
+<div class="modal-overlay" id="modal-cap-usuario">
+  <div class="modal">
+    <h3 id="cap-usr-titulo">Nuevo Usuario</h3>
+    <div id="cap-usr-alert" class="alert alert-error"></div>
+    <form id="form-cap-usuario" onsubmit="return guardarCapUsuario(event)">
+      <input type="hidden" id="cap-usr-id">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="cap-usr-nombre" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Usuario (login)</label><input type="text" id="cap-usr-login" required></div>
+        <div class="form-group"><label>Rol</label>
+          <select id="cap-usr-rol" required><option value="CEO">CEO</option><option value="Asistente">Asistente</option><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option></select>
+        </div>
+        <div class="form-group"><label>Email</label><input type="email" id="cap-usr-email"></div>
+        <div class="form-group"><label>WhatsApp</label><input type="text" id="cap-usr-whatsapp"></div>
+      </div>
+      <div class="form-group"><label>Estado</label>
+        <select id="cap-usr-activo"><option value="true">Activo</option><option value="false">Inactivo</option></select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-usuario')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-usr-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmZ3lmdHNud3puc3FpenJpZ2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDgxODgsImV4cCI6MjEwNjk4NDE4OH0.i-icCG4lJ7Vjkp6c_j_a4Mrwt2w5Ig2GYUcfgWoIugQ';
+
+let sb;
+try {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) {
+  document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + e.message + '</div>';
+}
+let sesion = null; // {rol, usuario_id, nombre, condominio_id}
+
+// ==================== UTILIDADES ====================
+const $ = id => document.getElementById(id);
+const fmt = n => new Intl.NumberFormat('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n || 0);
+const fmtMoney = n => 'RD$ ' + fmt(n);
+
+function showAlert(msg) {
+  const el = $('login-alert');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ==================== AUTH ====================
+$('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('login-btn');
+  btn.textContent = 'Verificando...';
+  btn.disabled = true;
+  $('login-alert').style.display = 'none';
+
+  try {
+    const {data, error} = await sb.auth.signInWithPassword({
+      email: $('login-email').value.trim(),
+      password: $('login-pass').value,
+    });
+    if (error) throw error;
+    await iniciarApp();
+  } catch(err) {
+    showAlert(err.message === 'Invalid login credentials'
+      ? 'Correo o contraseña incorrectos'
+      : err.message);
+  } finally {
+    btn.textContent = 'Iniciar Sesión';
+    btn.disabled = false;
+  }
+});
+
+async function iniciarApp() {
+  // Obtener sesión del sistema AXICORE
+  const {data, error} = await sb.rpc('axi_sesion_iniciar');
+  if (error) {
+    showAlert('Error de acceso: ' + error.message);
+    return;
+  }
+  sesion = data;
+
+  // Mostrar app
+  $('login-screen').style.display = 'none';
+  $('app-shell').style.display = 'block';
+  $('user-name').textContent = sesion.nombre;
+  $('user-role').textContent = sesion.rol;
+
+  // Routing por rol
+  if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
+    $('sidebar-ceo').style.display = 'block';
+    $('sidebar-residente').style.display = 'none';
+    navegar('dashboard');
+  } else {
+    $('sidebar-ceo').style.display = 'none';
+    $('sidebar-residente').style.display = 'block';
+    navegar('mi-cuenta');
+  }
+}
+
+async function cerrarSesion() {
+  await sb.rpc('axi_sesion_cerrar');
+  await sb.auth.signOut();
+  sesion = null;
+  $('app-shell').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  $('login-pass').value = '';
+}
+
+// Auto-login si ya hay sesión
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session && !sesion) {
+    await iniciarApp();
+  }
+});
+
+// ==================== NAVEGACIÓN ====================
+function navegar(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = $('page-' + page);
+  if (el) el.classList.add('active');
+
+  // Sidebar active state
+  document.querySelectorAll('.sidebar a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === page);
+  });
+
+  // Cargar datos de la página
+  const loaders = {
+    'dashboard': cargarDashboard,
+    'cobros': cargarCobros,
+    'ecg': cargarECG,
+    'unidades': cargarUnidades,
+    'facturacion': cargarFacturacion,
+    'pagos': cargarPagos,
+    'gastos': cargarGastos,
+    'mi-cuenta': cargarMiCuenta,
+    'mis-facturas': cargarMisFacturas,
+    'mis-pagos': cargarMisPagos,
+    'fondo-comun': cargarFondoComun,
+    'cap-condominios': cargarCapCondominios,
+    'cap-unidades': cargarCapUnidades,
+    'cap-propietarios': cargarCapPropietarios,
+    'cap-inquilinos': cargarCapInquilinos,
+    'cap-proveedores': cargarCapProveedores,
+    'cap-usuarios': cargarCapUsuarios,
+  };
+  if (loaders[page]) loaders[page]();
+  return false;
+}
+
+// ==================== CEO: DASHBOARD ====================
+async function cargarDashboard() {
+  const cid = sesion.condominio_id;
+
+  // Paralelo: ECG totales + cobros + conteos
+  const [ecg, cobros, facturas, pagosCount] = await Promise.all([
+    sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
+    sb.from('v_cobros_pendientes').select('*').eq('condominio_id', cid).order('fecha_vencimiento').limit(5),
+    sb.from('facturas').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
+    sb.from('pagos').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
+  ]);
+
+  // Stats
+  const e = ecg.data?.[0] || {};
+  $('dash-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="accent-bar green"></div>
+      <div class="label">Ingresos totales</div>
+      <div class="value green money">${fmtMoney(e.total_ingresos)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="accent-bar red"></div>
+      <div class="label">Egresos totales</div>
+      <div class="value red money">${fmtMoney(e.total_egresos)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="accent-bar blue"></div>
+      <div class="label">Balance fondo común</div>
+      <div class="value blue money">${fmtMoney(e.balance)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="accent-bar yellow"></div>
+      <div class="label">Facturas / Pagos</div>
+      <div class="value">${facturas.count || 0} / ${pagosCount.count || 0}</div>
+    </div>
+  `;
+
+  // Cobros pendientes (top 5)
+  if (!cobros.data?.length) {
+    $('dash-cobros').innerHTML = '<div class="empty">No hay cobros vencidos 🎉</div>';
+    return;
+  }
+  $('dash-cobros').innerHTML = renderTablaCobros(cobros.data);
+}
+
+// ==================== CEO: COBROS PENDIENTES ====================
+async function cargarCobros() {
+  const {data, error} = await sb.from('v_cobros_pendientes')
+    .select('*').eq('condominio_id', sesion.condominio_id)
+    .order('fecha_vencimiento');
+
+  if (error) { $('cobros-tabla').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cobros-tabla').innerHTML = '<div class="empty">No hay cobros pendientes</div>'; return; }
+
+  $('cobros-tabla').innerHTML = renderTablaCobros(data);
+}
+
+function renderTablaCobros(rows) {
+  return `<table>
+    <thead><tr><th>Unidad</th><th>Propietario</th><th>Período</th><th class="text-right">Monto</th><th class="text-right">Balance</th><th class="text-center">Atraso</th></tr></thead>
+    <tbody>${rows.map(r => `
+      <tr>
+        <td><strong>${r.unidad_codigo}</strong></td>
+        <td>${r.propietario_nombre}</td>
+        <td>${r.periodo}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.balance_pendiente)}</td>
+        <td class="text-center"><span class="badge ${r.dias_atraso > 15 ? 'badge-danger' : 'badge-warning'}">${r.dias_atraso}d</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== CEO: ECG ====================
+async function cargarECG() {
+  const cid = sesion.condominio_id;
+  const [totales, movs] = await Promise.all([
+    sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
+    sb.rpc('axi_ecg_movimientos', {p_condominio_id: cid}),
+  ]);
+
+  const t = totales.data?.[0] || {};
+  $('ecg-stats').innerHTML = `
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Ingresos</div><div class="value green money">${fmtMoney(t.total_ingresos)}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Egresos</div><div class="value red money">${fmtMoney(t.total_egresos)}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Balance</div><div class="value blue money">${fmtMoney(t.balance)}</div></div>
+  `;
+
+  const rows = movs.data || [];
+  if (!rows.length) { $('ecg-movimientos').innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
+  $('ecg-movimientos').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-right">Entrada</th><th class="text-right">Salida</th></tr></thead>
+    <tbody>${rows.map(r => `
+      <tr>
+        <td>${r.fecha}</td>
+        <td><span class="badge ${r.tipo_movimiento.includes('Ingreso') ? 'badge-success' : 'badge-danger'}">${r.tipo_movimiento}</span></td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
+        <td class="text-right money" style="color:var(--ax-success)">${r.entrada > 0 ? fmt(r.entrada) : ''}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${r.salida > 0 ? fmt(r.salida) : ''}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== CEO: UNIDADES ====================
+async function cargarUnidades() {
+  const {data} = await sb.from('unidades').select('id, codigo, propietario_id, propietarios(nombre)')
+    .eq('condominio_id', sesion.condominio_id).order('codigo');
+
+  if (!data?.length) { $('unidades-lista').innerHTML = '<div class="empty">Sin unidades</div>'; return; }
+
+  // Obtener resumen de cada unidad
+  const resPromises = data.map(u => sb.rpc('axi_ec_unidad_resumen', {p_unidad_id: u.id}));
+  const resultados = await Promise.all(resPromises);
+
+  $('unidades-lista').innerHTML = `<table>
+    <thead><tr><th>Unidad</th><th>Propietario</th><th class="text-right">Facturado</th><th class="text-right">Pagado</th><th class="text-right">Balance</th></tr></thead>
+    <tbody>${resultados.map((r, i) => {
+      const d = r.data?.[0] || {};
+      const bal = parseFloat(d.balance_pendiente || 0);
+      return `<tr>
+        <td><strong>${d.unidad_codigo || data[i].codigo}</strong></td>
+        <td>${d.propietario_nombre || ''}</td>
+        <td class="text-right money">${fmt(d.total_facturado)}</td>
+        <td class="text-right money">${fmt(d.total_pagado)}</td>
+        <td class="text-right money" style="color:${bal > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${fmt(bal)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== CEO: FACTURACIÓN ====================
+async function cargarFacturacion() {
+  // Calcular próximo período
+  const hoy = new Date();
+  const mes = hoy.getMonth() + 2; // próximo mes
+  const anio = mes > 12 ? hoy.getFullYear() + 1 : hoy.getFullYear();
+  const periodo = `${anio}-${String(mes > 12 ? 1 : mes).padStart(2,'0')}`;
+
+  const {data, error} = await sb.rpc('fn_facturacion_mensual_preview', {
+    p_condominio_id: sesion.condominio_id,
+    p_periodo: periodo
+  });
+
+  if (error) { $('fact-preview').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('fact-preview').innerHTML = '<div class="empty">Sin unidades para facturar</div>'; return; }
+
+  const total = data.reduce((s,r) => s + parseFloat(r.monto_calculado || 0), 0);
+  $('fact-preview').innerHTML = `
+    <p style="margin-bottom:1rem;font-size:.9rem">Período <strong>${periodo}</strong> — ${data.length} unidades — Total: <strong class="money">${fmtMoney(total)}</strong></p>
+    <table>
+      <thead><tr><th>Unidad</th><th>Propietario</th><th class="text-right">Cuota</th><th class="text-right">Calculado</th><th class="text-center">Prorrateada</th><th class="text-center">Ya facturada</th></tr></thead>
+      <tbody>${data.map(r => `
+        <tr>
+          <td><strong>${r.unidad_codigo}</strong></td>
+          <td>${r.propietario_nombre}</td>
+          <td class="text-right money">${fmt(r.cuota)}</td>
+          <td class="text-right money">${fmt(r.monto_calculado)}</td>
+          <td class="text-center">${r.prorrateada ? '✓' : '—'}</td>
+          <td class="text-center">${r.ya_facturada ? '<span class="badge badge-info">Sí</span>' : '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ==================== CEO: PAGOS ====================
+async function cargarPagos() {
+  const {data} = await sb.from('pagos').select('*')
+    .eq('condominio_id', sesion.condominio_id)
+    .order('fecha_pago', {ascending: false}).limit(20);
+
+  if (!data?.length) { $('pagos-lista').innerHTML = '<div class="empty">Sin pagos</div>'; return; }
+  $('pagos-lista').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Código</th><th>Recibido de</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+    <tbody>${data.map(r => `
+      <tr>
+        <td>${r.fecha_pago}</td>
+        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
+        <td>${r.recibido_de || '—'}</td>
+        <td>${r.metodo || '—'}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== CEO: GASTOS ====================
+async function cargarGastos() {
+  const {data} = await sb.from('gastos').select('*')
+    .eq('condominio_id', sesion.condominio_id)
+    .neq('estado', 'Eliminado')
+    .order('fecha', {ascending: false}).limit(20);
+
+  if (!data?.length) { $('gastos-lista').innerHTML = '<div class="empty">Sin gastos</div>'; return; }
+  $('gastos-lista').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Código</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+    <tbody>${data.map(r => `
+      <tr>
+        <td>${r.fecha}</td>
+        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
+        <td>${r.categoria || '—'}</td>
+        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || '—'}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-center"><span class="badge badge-info">${r.estado || '—'}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== UTILIDAD RESIDENTE ====================
+async function obtenerMiUnidad() {
+  const {data: {user}} = await sb.auth.getUser();
+  if (!user) return null;
+
+  const {data: acceso} = await sb.from('accesos')
+    .select('propietario_id, inquilino_id')
+    .eq('auth_user_id', user.id).eq('activo', true).limit(1).single();
+  if (!acceso) return null;
+
+  if (acceso.propietario_id) {
+    const {data: u} = await sb.from('unidades').select('id')
+      .eq('propietario_id', acceso.propietario_id).limit(1).single();
+    return u?.id || null;
+  }
+  if (acceso.inquilino_id) {
+    const {data: inq} = await sb.from('inquilinos').select('unidad_id')
+      .eq('id', acceso.inquilino_id).limit(1).single();
+    return inq?.unidad_id || null;
+  }
+  return null;
+}
+
+// ==================== RESIDENTE: MI CUENTA ====================
+async function cargarMiCuenta() {
+  const unidadId = await obtenerMiUnidad();
+
+  if (!unidadId) {
+    $('mi-resumen').innerHTML = '';
+    $('mi-movimientos').innerHTML = '<div class="empty">No tiene unidad asignada</div>';
+    return;
+  }
+
+  const [resumen, movs] = await Promise.all([
+    sb.rpc('axi_ec_unidad_resumen', {p_unidad_id: unidadId}),
+    sb.rpc('axi_ec_unidad_movimientos', {p_unidad_id: unidadId}),
+  ]);
+
+  const r = resumen.data?.[0] || {};
+  const bal = parseFloat(r.balance_pendiente || 0);
+  $('mi-resumen').innerHTML = `
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${r.unidad_codigo || '—'}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total pagado</div><div class="value green money">${fmtMoney(r.total_pagado)}</div></div>
+    <div class="stat-card"><div class="accent-bar ${bal > 0 ? 'red' : 'green'}"></div><div class="label">Balance pendiente</div><div class="value ${bal > 0 ? 'red' : 'green'} money">${fmtMoney(bal)}</div></div>
+  `;
+
+  const rows = movs.data || [];
+  if (!rows.length) { $('mi-movimientos').innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
+  $('mi-movimientos').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Concepto</th><th class="text-right">Cargo</th><th class="text-right">Abono</th></tr></thead>
+    <tbody>${rows.map(r => `
+      <tr>
+        <td>${r.fecha}</td>
+        <td><span class="badge ${r.tipo === 'Factura' ? 'badge-warning' : 'badge-success'}">${r.tipo}</span></td>
+        <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
+        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || '—'}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${r.cargo > 0 ? fmt(r.cargo) : ''}</td>
+        <td class="text-right money" style="color:var(--ax-success)">${r.abono > 0 ? fmt(r.abono) : ''}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== RESIDENTE: MIS FACTURAS ====================
+async function cargarMisFacturas() {
+  const unidadId = await obtenerMiUnidad();
+
+  if (!unidadId) { $('mis-facturas-lista').innerHTML = '<div class="empty">Sin acceso</div>'; return; }
+
+  const {data} = await sb.from('facturas').select('*')
+    .eq('unidad_id', unidadId)
+    .neq('estado', 'Anulada')
+    .order('fecha_factura', {ascending: false});
+
+  if (!data?.length) { $('mis-facturas-lista').innerHTML = '<div class="empty">Sin facturas</div>'; return; }
+  $('mis-facturas-lista').innerHTML = `<table>
+    <thead><tr><th>No.</th><th>Fecha</th><th>Concepto</th><th class="text-right">Monto</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th class="text-center">Estado</th></tr></thead>
+    <tbody>${data.map(r => `
+      <tr>
+        <td style="font-family:monospace">${r.no_factura}</td>
+        <td>${r.fecha_factura}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-right money">${fmt(r.monto_pagado)}</td>
+        <td class="text-right money" style="color:${parseFloat(r.balance_pendiente||0) > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${fmt(r.balance_pendiente)}</td>
+        <td class="text-center"><span class="badge ${r.estado === 'Pagada' ? 'badge-success' : r.estado === 'Vencida' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== RESIDENTE: MIS PAGOS ====================
+async function cargarMisPagos() {
+  const unidadId = await obtenerMiUnidad();
+
+  if (!unidadId) { $('mis-pagos-lista').innerHTML = '<div class="empty">Sin acceso</div>'; return; }
+
+  // Pagos de facturas de mi unidad
+  const {data: factIds} = await sb.from('facturas').select('id').eq('unidad_id', unidadId);
+  if (!factIds?.length) { $('mis-pagos-lista').innerHTML = '<div class="empty">Sin pagos</div>'; return; }
+
+  const {data} = await sb.from('pagos').select('*')
+    .in('factura_id', factIds.map(f => f.id))
+    .order('fecha_pago', {ascending: false});
+
+  if (!data?.length) { $('mis-pagos-lista').innerHTML = '<div class="empty">Sin pagos</div>'; return; }
+  $('mis-pagos-lista').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Código</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+    <tbody>${data.map(r => `
+      <tr>
+        <td>${r.fecha_pago}</td>
+        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
+        <td>${r.metodo || '—'}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : 'badge-warning'}">${r.estado}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== RESIDENTE: FONDO COMÚN ====================
+async function cargarFondoComun() {
+  const cid = sesion.condominio_id;
+  const [totales, movs] = await Promise.all([
+    sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
+    sb.rpc('axi_ecg_movimientos', {p_condominio_id: cid}),
+  ]);
+
+  const t = totales.data?.[0] || {};
+  $('fc-stats').innerHTML = `
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Ingresos</div><div class="value green money">${fmtMoney(t.total_ingresos)}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Egresos</div><div class="value red money">${fmtMoney(t.total_egresos)}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Balance</div><div class="value blue money">${fmtMoney(t.balance)}</div></div>
+  `;
+
+  // Solo gastos del fondo común (operativos con afecta_fondo_comun)
+  const rows = (movs.data || []);
+  if (!rows.length) { $('fc-movimientos').innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
+  $('fc-movimientos').innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-right">Entrada</th><th class="text-right">Salida</th></tr></thead>
+    <tbody>${rows.slice(0, 50).map(r => `
+      <tr>
+        <td>${r.fecha}</td>
+        <td><span class="badge ${r.tipo_movimiento.includes('Ingreso') ? 'badge-success' : 'badge-danger'}">${r.tipo_movimiento}</span></td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
+        <td class="text-right money" style="color:var(--ax-success)">${r.entrada > 0 ? fmt(r.entrada) : ''}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${r.salida > 0 ? fmt(r.salida) : ''}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ==================== SIDEBAR MOBILE ====================
+function toggleSidebar() {
+  const ceo = $('sidebar-ceo');
+  const res = $('sidebar-residente');
+  const backdrop = $('sidebar-backdrop');
+  const active = ceo.style.display !== 'none' ? ceo : res;
+  active.classList.toggle('open');
+  backdrop.classList.toggle('open');
+}
+
+// ==================== MODALES ====================
+function cerrarModal(id) { $(id).classList.remove('show'); }
+
+// ==================== REGISTRAR PAGO ====================
+async function abrirModalPago() {
+  $('pago-alert').style.display = 'none';
+  $('form-pago').reset();
+
+  // Fecha por defecto = hoy
+  const hoy = new Date().toISOString().split('T')[0];
+  $('pago-fecha').value = hoy;
+
+  // Cargar facturas pendientes del condominio
+  const sel = $('pago-factura');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  $('modal-pago').classList.add('show');
+
+  const {data} = await sb.from('facturas').select('id, no_factura, unidad_id, concepto, balance_pendiente, unidades(codigo)')
+    .eq('condominio_id', sesion.condominio_id)
+    .gt('balance_pendiente', 0)
+    .in('estado', ['Pendiente', 'Vencida', 'Parcial'])
+    .order('fecha_vencimiento');
+
+  if (!data?.length) {
+    sel.innerHTML = '<option value="">No hay facturas pendientes</option>';
+    return;
+  }
+
+  sel.innerHTML = '<option value="">— Seleccione factura —</option>' +
+    data.map(f => `<option value="${f.id}" data-balance="${f.balance_pendiente}">${f.no_factura} — ${f.unidades?.codigo || ''} — ${f.concepto || ''} (Pend: RD$ ${fmt(f.balance_pendiente)})</option>`).join('');
+
+  // Auto-fill monto al seleccionar factura
+  sel.onchange = () => {
+    const opt = sel.selectedOptions[0];
+    if (opt?.dataset.balance) $('pago-monto').value = opt.dataset.balance;
+  };
+}
+
+async function guardarPago(e) {
+  e.preventDefault();
+  const btn = $('pago-btn-guardar');
+  btn.textContent = 'Registrando...';
+  btn.disabled = true;
+  $('pago-alert').style.display = 'none';
+
+  try {
+    const payload = {
+      factura_id: parseInt($('pago-factura').value),
+      fecha_pago: $('pago-fecha').value,
+      monto: parseFloat($('pago-monto').value),
+      metodo: $('pago-metodo').value,
+      banco: $('pago-banco').value || null,
+      referencia: $('pago-referencia').value || null,
+      recibido_de: $('pago-recibido-de').value || null,
+      observaciones: $('pago-obs').value || null,
+    };
+    const {data, error} = await sb.rpc('fn_pago_registrar', {p: payload});
+
+    if (error) throw error;
+    cerrarModal('modal-pago');
+    cargarPagos();
+    alert('✅ Pago registrado: ' + (data?.codigo || 'OK'));
+  } catch(err) {
+    $('pago-alert').textContent = err.message;
+    $('pago-alert').style.display = 'block';
+  } finally {
+    btn.textContent = 'Registrar Pago';
+    btn.disabled = false;
+  }
+}
+
+// ==================== GENERAR FACTURACIÓN ====================
+let factPeriodo = '';
+async function abrirModalFacturacion() {
+  $('fact-alert').style.display = 'none';
+  const hoy = new Date();
+  const mes = hoy.getMonth() + 2;
+  const anio = mes > 12 ? hoy.getFullYear() + 1 : hoy.getFullYear();
+  factPeriodo = `${anio}-${String(mes > 12 ? 1 : mes).padStart(2,'0')}`;
+
+  $('fact-confirm-msg').textContent = `¿Generar facturas para el período ${factPeriodo}?`;
+
+  // Fechas por defecto: primer día del mes / último día del mes
+  const primerDia = `${factPeriodo}-01`;
+  const lastDay = new Date(anio, (mes > 12 ? 1 : mes), 0).getDate();
+  const ultimoDia = `${factPeriodo}-${String(lastDay).padStart(2,'0')}`;
+  $('fact-fecha-factura').value = primerDia;
+  $('fact-fecha-venc').value = ultimoDia;
+  $('fact-concepto').value = `Cuota de mantenimiento ${factPeriodo}`;
+
+  $('fact-preview-detail').innerHTML = '<div class="loading">Cargando preview...</div>';
+  $('modal-facturacion').classList.add('show');
+
+  const {data} = await sb.rpc('fn_facturacion_mensual_preview', {
+    p_condominio_id: sesion.condominio_id,
+    p_periodo: factPeriodo,
+  });
+
+  if (!data?.length) {
+    $('fact-preview-detail').innerHTML = '<div class="empty">Sin unidades para facturar</div>';
+    return;
+  }
+
+  const yaFacturadas = data.filter(r => r.ya_facturada).length;
+  const nuevas = data.length - yaFacturadas;
+  const total = data.filter(r => !r.ya_facturada).reduce((s,r) => s + parseFloat(r.monto_calculado || 0), 0);
+
+  $('fact-preview-detail').innerHTML = `
+    <p style="font-size:.9rem;margin-bottom:.5rem"><strong>${nuevas}</strong> facturas nuevas por <strong class="money">${fmtMoney(total)}</strong></p>
+    ${yaFacturadas > 0 ? `<p style="font-size:.85rem;color:var(--ax-muted);margin-bottom:.5rem">${yaFacturadas} ya facturadas (se omitirán)</p>` : ''}
+  `;
+}
+
+async function ejecutarFacturacion() {
+  const btn = $('fact-btn-generar');
+  btn.textContent = 'Generando...';
+  btn.disabled = true;
+  $('fact-alert').style.display = 'none';
+
+  try {
+    const {data, error} = await sb.rpc('fn_facturacion_mensual_generar', {
+      p_condominio_id: sesion.condominio_id,
+      p_periodo: factPeriodo,
+      p_fecha_factura: $('fact-fecha-factura').value,
+      p_fecha_vencimiento: $('fact-fecha-venc').value,
+      p_concepto: $('fact-concepto').value,
+    });
+    if (error) throw error;
+    cerrarModal('modal-facturacion');
+    cargarFacturacion();
+    alert('✅ Facturación generada: ' + (data?.facturas_creadas || 0) + ' facturas');
+  } catch(err) {
+    $('fact-alert').textContent = err.message;
+    $('fact-alert').style.display = 'block';
+  } finally {
+    btn.textContent = 'Confirmar y Generar';
+    btn.disabled = false;
+  }
+}
+
+// ==================== REGISTRAR GASTO ====================
+async function abrirModalGasto() {
+  $('gasto-alert').style.display = 'none';
+  $('form-gasto').reset();
+  $('gasto-fecha').value = new Date().toISOString().split('T')[0];
+  $('gasto-area-otro-grp').style.display = 'none';
+
+  // Toggle "Otro" field
+  $('gasto-area').onchange = () => {
+    $('gasto-area-otro-grp').style.display = $('gasto-area').value === 'Otro' ? 'block' : 'none';
+  };
+
+  // Cargar proveedores
+  const sel = $('gasto-proveedor');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  $('modal-gasto').classList.add('show');
+
+  const {data} = await sb.from('proveedores').select('id, nombre, codigo')
+    .order('nombre');
+
+  if (!data?.length) {
+    sel.innerHTML = '<option value="">Sin proveedores</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— Seleccione proveedor —</option>' +
+    data.map(p => `<option value="${p.id}">${p.codigo ? p.codigo + ' — ' : ''}${p.nombre}</option>`).join('');
+}
+
+async function guardarGasto(e) {
+  e.preventDefault();
+  const btn = $('gasto-btn-guardar');
+  btn.textContent = 'Registrando...';
+  btn.disabled = true;
+  $('gasto-alert').style.display = 'none';
+
+  try {
+    const payload = {
+      condominio_id: sesion.condominio_id,
+      proveedor_id: parseInt($('gasto-proveedor').value),
+      fecha: $('gasto-fecha').value,
+      categoria: $('gasto-categoria').value,
+      tipo_aplicacion: $('gasto-tipo-apl').value,
+      area_aplicacion: $('gasto-area').value,
+      area_aplicacion_otro: $('gasto-area').value === 'Otro' ? $('gasto-area-otro').value : null,
+      descripcion: $('gasto-desc').value,
+      monto: parseFloat($('gasto-monto').value),
+      metodo_pago: $('gasto-metodo').value,
+      factura_proveedor: $('gasto-factura-prov').value || null,
+    };
+
+    const {data, error} = await sb.rpc('axi_gasto_registrar', {p: payload});
+    if (error) throw error;
+    cerrarModal('modal-gasto');
+    cargarGastos();
+    alert('✅ Gasto registrado: ' + (data?.codigo || 'OK'));
+  } catch(err) {
+    $('gasto-alert').textContent = err.message;
+    $('gasto-alert').style.display = 'block';
+  } finally {
+    btn.textContent = 'Registrar Gasto';
+    btn.disabled = false;
+  }
+}
+
+// ==================== CAPTURA: CONDOMINIO ====================
+async function cargarCapCondominios() {
+  const {data, error} = await sb.from('condominios').select('*').eq('id', sesion.condominio_id).single();
+  if (error || !data) { $('cap-condo-detalle').innerHTML = '<div class="alert alert-error" style="display:block">'+(error?.message||'No encontrado')+'</div>'; return; }
+  const campos = [
+    ['Código', data.codigo], ['Nombre', data.nombre], ['RNC', data.rnc],
+    ['Dirección', [data.calle_numero, data.sector, data.municipio, data.ciudad].filter(Boolean).join(', ')],
+    ['Código Postal', data.codigo_postal], ['Teléfono', data.telefono], ['Email', data.email],
+    ['Banco', data.banco], ['Cuenta Bancaria', data.cuenta_bancaria], ['Estado', data.estado],
+  ];
+  $('cap-condo-detalle').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem">${campos.map(([l,v]) =>
+    `<div><div style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">${l}</div><div style="font-size:.95rem;font-weight:500">${v||'—'}</div></div>`).join('')}</div>`;
+}
+
+async function abrirModalCapCondominio() {
+  $('cap-condo-alert').style.display='none';
+  const {data} = await sb.from('condominios').select('*').eq('id', sesion.condominio_id).single();
+  if (!data) return;
+  $('cap-condo-id').value = data.id;
+  $('cap-condo-codigo').value = data.codigo||'';
+  $('cap-condo-nombre').value = data.nombre||'';
+  $('cap-condo-rnc').value = data.rnc||'';
+  $('cap-condo-direccion').value = data.calle_numero||'';
+  $('cap-condo-sector').value = data.sector||'';
+  $('cap-condo-municipio').value = data.municipio||'';
+  $('cap-condo-ciudad').value = data.ciudad||'';
+  $('cap-condo-cp').value = data.codigo_postal||'';
+  $('cap-condo-telefono').value = data.telefono||'';
+  $('cap-condo-email').value = data.email||'';
+  $('cap-condo-banco').value = data.banco||'';
+  $('cap-condo-cuenta').value = data.cuenta_bancaria||'';
+  $('modal-cap-condominio').classList.add('show');
+}
+
+async function guardarCapCondominio(e) {
+  e.preventDefault();
+  try {
+    const {error} = await sb.from('condominios').update({
+      codigo: $('cap-condo-codigo').value, nombre: $('cap-condo-nombre').value,
+      rnc: $('cap-condo-rnc').value||null, calle_numero: $('cap-condo-direccion').value||null,
+      sector: $('cap-condo-sector').value||null, municipio: $('cap-condo-municipio').value||null,
+      ciudad: $('cap-condo-ciudad').value||null, codigo_postal: $('cap-condo-cp').value||null,
+      telefono: $('cap-condo-telefono').value||null, email: $('cap-condo-email').value||null,
+      banco: $('cap-condo-banco').value||null, cuenta_bancaria: $('cap-condo-cuenta').value||null,
+    }).eq('id', parseInt($('cap-condo-id').value));
+    if (error) throw error;
+    cerrarModal('modal-cap-condominio'); cargarCapCondominios();
+    alert('✅ Condominio actualizado');
+  } catch(err) { $('cap-condo-alert').textContent=err.message; $('cap-condo-alert').style.display='block'; }
+}
+
+// ==================== CAPTURA: UNIDADES ====================
+async function cargarCapUnidades() {
+  const {data, error} = await sb.from('unidades')
+    .select('*, propietarios(nombre)').eq('condominio_id', sesion.condominio_id).order('codigo');
+  if (error) { $('cap-unidades-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cap-unidades-lista').innerHTML='<div class="empty">Sin unidades registradas</div>'; return; }
+  $('cap-unidades-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Torre</th><th>Nivel</th><th>Tipo</th><th>Propietario</th><th class="text-right">Cuota</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
+    <tbody>${data.map(r => `<tr>
+      <td><strong>${r.codigo||''}</strong></td><td>${r.torre||'—'}</td><td>${r.nivel||'—'}</td><td>${r.tipo||'—'}</td>
+      <td>${r.propietarios?.nombre||'<span style="color:var(--ax-muted)">Sin asignar</span>'}</td>
+      <td class="text-right money">${fmt(r.cuota_mantenimiento)}</td>
+      <td class="text-center"><span class="badge ${r.estado==='Ocupado'?'badge-success':r.estado==='Vacío'?'badge-warning':'badge-info'}">${r.estado||'—'}</span></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapUnidad(${r.id})">✏️</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function abrirModalCapUnidad(id) {
+  $('cap-unidad-alert').style.display='none';
+  $('form-cap-unidad').reset();
+  // Cargar propietarios para el selector
+  const sel = $('cap-unidad-propietario');
+  const {data: props} = await sb.from('propietarios').select('id,nombre,codigo').eq('condominio_id', sesion.condominio_id).order('nombre');
+  sel.innerHTML = '<option value="">— Sin propietario —</option>' + (props||[]).map(p => `<option value="${p.id}">${p.codigo?p.codigo+' — ':''}${p.nombre}</option>`).join('');
+
+  if (id) {
+    $('cap-unidad-titulo').textContent = 'Editar Unidad';
+    const {data} = await sb.from('unidades').select('*').eq('id', id).single();
+    if (!data) return;
+    $('cap-unidad-id').value = data.id;
+    $('cap-unidad-codigo').value = data.codigo||'';
+    $('cap-unidad-torre').value = data.torre||'';
+    $('cap-unidad-nivel').value = data.nivel||'';
+    $('cap-unidad-tipo').value = data.tipo||'Apartamento';
+    sel.value = data.propietario_id||'';
+    $('cap-unidad-cuota').value = data.cuota_mantenimiento||'';
+    $('cap-unidad-moneda').value = data.moneda||'DOP';
+    $('cap-unidad-estado').value = data.estado||'Ocupado';
+    $('cap-unidad-estado-reg').value = data.estado_registro||'Activo';
+    $('cap-unidad-obs').value = data.observaciones||'';
+  } else {
+    $('cap-unidad-titulo').textContent = 'Nueva Unidad';
+    $('cap-unidad-id').value = '';
+    $('cap-unidad-moneda').value = 'DOP';
+  }
+  $('modal-cap-unidad').classList.add('show');
+}
+
+async function guardarCapUnidad(e) {
+  e.preventDefault();
+  const btn = $('cap-unidad-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const payload = {
+      condominio_id: sesion.condominio_id,
+      codigo: $('cap-unidad-codigo').value,
+      torre: $('cap-unidad-torre').value||null, nivel: $('cap-unidad-nivel').value||null,
+      tipo: $('cap-unidad-tipo').value, propietario_id: $('cap-unidad-propietario').value?parseInt($('cap-unidad-propietario').value):null,
+      cuota_mantenimiento: $('cap-unidad-cuota').value?parseFloat($('cap-unidad-cuota').value):null,
+      moneda: $('cap-unidad-moneda').value, estado: $('cap-unidad-estado').value,
+      estado_registro: $('cap-unidad-estado-reg').value, observaciones: $('cap-unidad-obs').value||null,
+    };
+    const id = $('cap-unidad-id').value;
+    const {error} = id
+      ? await sb.from('unidades').update(payload).eq('id', parseInt(id))
+      : await sb.from('unidades').insert(payload);
+    if (error) throw error;
+    cerrarModal('modal-cap-unidad'); cargarCapUnidades();
+    alert(id ? '✅ Unidad actualizada' : '✅ Unidad creada');
+  } catch(err) { $('cap-unidad-alert').textContent=err.message; $('cap-unidad-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ==================== CAPTURA: PROPIETARIOS ====================
+async function cargarCapPropietarios() {
+  const {data, error} = await sb.from('propietarios').select('*').eq('condominio_id', sesion.condominio_id).order('nombre');
+  if (error) { $('cap-propietarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cap-propietarios-lista').innerHTML='<div class="empty">Sin propietarios registrados</div>'; return; }
+  $('cap-propietarios-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Email</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
+    <tbody>${data.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
+      <td>${r.documento||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
+      <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapPropietario(${r.id})">✏️</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function abrirModalCapPropietario(id) {
+  $('cap-prop-alert').style.display='none'; $('form-cap-propietario').reset();
+  if (id) {
+    $('cap-prop-titulo').textContent = 'Editar Propietario';
+    const {data} = await sb.from('propietarios').select('*').eq('id', id).single();
+    if (!data) return;
+    $('cap-prop-id').value = data.id;
+    $('cap-prop-nombre').value = data.nombre||'';
+    $('cap-prop-documento').value = data.documento||'';
+    $('cap-prop-fecha').value = data.fecha_ingreso||'';
+    $('cap-prop-telefono').value = data.telefono||'';
+    $('cap-prop-whatsapp').value = data.whatsapp||'';
+    $('cap-prop-email').value = data.email||'';
+    $('cap-prop-direccion').value = data.direccion||'';
+    $('cap-prop-estado').value = data.estado||'Activo';
+  } else {
+    $('cap-prop-titulo').textContent = 'Nuevo Propietario';
+    $('cap-prop-id').value = '';
+    $('cap-prop-fecha').value = new Date().toISOString().split('T')[0];
+  }
+  $('modal-cap-propietario').classList.add('show');
+}
+
+async function guardarCapPropietario(e) {
+  e.preventDefault();
+  const btn = $('cap-prop-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const payload = {
+      condominio_id: sesion.condominio_id, nombre: $('cap-prop-nombre').value,
+      documento: $('cap-prop-documento').value||null, fecha_ingreso: $('cap-prop-fecha').value||null,
+      telefono: $('cap-prop-telefono').value||null, whatsapp: $('cap-prop-whatsapp').value||null,
+      email: $('cap-prop-email').value||null, direccion: $('cap-prop-direccion').value||null,
+      estado: $('cap-prop-estado').value,
+    };
+    const id = $('cap-prop-id').value;
+    if (!id) {
+      // Generar código automático
+      const {data: codData} = await sb.rpc('axi_codigo_propietario', {p_condominio_id: sesion.condominio_id});
+      payload.codigo = codData;
+    }
+    const {error} = id
+      ? await sb.from('propietarios').update(payload).eq('id', parseInt(id))
+      : await sb.from('propietarios').insert(payload);
+    if (error) throw error;
+    cerrarModal('modal-cap-propietario'); cargarCapPropietarios();
+    alert(id ? '✅ Propietario actualizado' : '✅ Propietario creado');
+  } catch(err) { $('cap-prop-alert').textContent=err.message; $('cap-prop-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ==================== CAPTURA: INQUILINOS ====================
+async function cargarCapInquilinos() {
+  const {data, error} = await sb.from('inquilinos')
+    .select('*, unidades(codigo), propietarios(nombre)').eq('condominio_id', sesion.condominio_id).order('nombre');
+  if (error) { $('cap-inquilinos-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cap-inquilinos-lista').innerHTML='<div class="empty">Sin inquilinos registrados</div>'; return; }
+  $('cap-inquilinos-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Unidad</th><th>Propietario</th><th>Teléfono</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
+    <tbody>${data.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
+      <td>${r.unidades?.codigo||'—'}</td><td>${r.propietarios?.nombre||'—'}</td><td>${r.telefono||'—'}</td>
+      <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapInquilino(${r.id})">✏️</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function abrirModalCapInquilino(id) {
+  $('cap-inq-alert').style.display='none'; $('form-cap-inquilino').reset();
+  // Cargar unidades
+  const sel = $('cap-inq-unidad');
+  const {data: unis} = await sb.from('unidades').select('id,codigo,propietario_id').eq('condominio_id', sesion.condominio_id).order('codigo');
+  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (unis||[]).map(u => `<option value="${u.id}" data-prop="${u.propietario_id||''}">${u.codigo}</option>`).join('');
+
+  if (id) {
+    $('cap-inq-titulo').textContent = 'Editar Inquilino';
+    const {data} = await sb.from('inquilinos').select('*').eq('id', id).single();
+    if (!data) return;
+    $('cap-inq-id').value = data.id;
+    $('cap-inq-nombre').value = data.nombre||'';
+    $('cap-inq-documento').value = data.documento||'';
+    sel.value = data.unidad_id||'';
+    $('cap-inq-telefono').value = data.telefono||'';
+    $('cap-inq-whatsapp').value = data.whatsapp||'';
+    $('cap-inq-email').value = data.email||'';
+    $('cap-inq-estado').value = data.estado||'Activo';
+  } else {
+    $('cap-inq-titulo').textContent = 'Nuevo Inquilino';
+    $('cap-inq-id').value = '';
+  }
+  $('modal-cap-inquilino').classList.add('show');
+}
+
+async function guardarCapInquilino(e) {
+  e.preventDefault();
+  const btn = $('cap-inq-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const unidadSel = $('cap-inq-unidad');
+    const propId = unidadSel.selectedOptions[0]?.dataset.prop;
+    const payload = {
+      condominio_id: sesion.condominio_id, nombre: $('cap-inq-nombre').value,
+      documento: $('cap-inq-documento').value||null, unidad_id: parseInt(unidadSel.value),
+      propietario_id: propId ? parseInt(propId) : null,
+      telefono: $('cap-inq-telefono').value||null, whatsapp: $('cap-inq-whatsapp').value||null,
+      email: $('cap-inq-email').value||null, estado: $('cap-inq-estado').value,
+    };
+    const id = $('cap-inq-id').value;
+    if (!id) {
+      const {data: codData} = await sb.rpc('axi_codigo_inquilino', {p_condominio_id: sesion.condominio_id});
+      payload.codigo = codData;
+    }
+    const {error} = id
+      ? await sb.from('inquilinos').update(payload).eq('id', parseInt(id))
+      : await sb.from('inquilinos').insert(payload);
+    if (error) throw error;
+    cerrarModal('modal-cap-inquilino'); cargarCapInquilinos();
+    alert(id ? '✅ Inquilino actualizado' : '✅ Inquilino creado');
+  } catch(err) { $('cap-inq-alert').textContent=err.message; $('cap-inq-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ==================== CAPTURA: PROVEEDORES ====================
+async function cargarCapProveedores() {
+  const {data, error} = await sb.from('proveedores').select('*').order('nombre');
+  if (error) { $('cap-proveedores-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cap-proveedores-lista').innerHTML='<div class="empty">Sin proveedores registrados</div>'; return; }
+  $('cap-proveedores-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>RNC</th><th>Servicio</th><th>Teléfono</th><th>Email</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
+    <tbody>${data.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
+      <td>${r.rnc_cedula||'—'}</td><td>${r.servicio||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
+      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Activo':'Inactivo'}</span></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapProveedor(${r.id})">✏️</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function abrirModalCapProveedor(id) {
+  $('cap-prov-alert').style.display='none'; $('form-cap-proveedor').reset();
+  if (id) {
+    $('cap-prov-titulo').textContent = 'Editar Proveedor';
+    const {data} = await sb.from('proveedores').select('*').eq('id', id).single();
+    if (!data) return;
+    $('cap-prov-id').value = data.id;
+    $('cap-prov-nombre').value = data.nombre||'';
+    $('cap-prov-comercial').value = data.nombre_comercial||'';
+    $('cap-prov-rnc').value = data.rnc_cedula||'';
+    $('cap-prov-servicio').value = data.servicio||'';
+    $('cap-prov-tipo').value = data.tipo_proveedor||'Servicios';
+    $('cap-prov-telefono').value = data.telefono||'';
+    $('cap-prov-email').value = data.email||'';
+    $('cap-prov-contacto').value = data.contacto||'';
+    $('cap-prov-condicion').value = data.condicion_pago||'Contado';
+    $('cap-prov-metodo').value = data.metodo_pago||'Transferencia';
+    $('cap-prov-banco').value = data.banco||'';
+    $('cap-prov-cuenta-banco').value = data.cuenta_bancaria||'';
+    $('cap-prov-titular').value = data.titular_cuenta||'';
+    $('cap-prov-direccion').value = data.calle_numero||'';
+    $('cap-prov-sector').value = data.sector||'';
+    $('cap-prov-municipio').value = data.municipio||'';
+    $('cap-prov-notas').value = data.notas||'';
+    $('cap-prov-activo').value = data.activo ? 'true' : 'false';
+  } else {
+    $('cap-prov-titulo').textContent = 'Nuevo Proveedor';
+    $('cap-prov-id').value = '';
+  }
+  $('modal-cap-proveedor').classList.add('show');
+}
+
+async function guardarCapProveedor(e) {
+  e.preventDefault();
+  const btn = $('cap-prov-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const payload = {
+      nombre: $('cap-prov-nombre').value,
+      nombre_comercial: $('cap-prov-comercial').value||null, rnc_cedula: $('cap-prov-rnc').value||null,
+      servicio: $('cap-prov-servicio').value||null, tipo_proveedor: $('cap-prov-tipo').value,
+      telefono: $('cap-prov-telefono').value||null, email: $('cap-prov-email').value||null,
+      contacto: $('cap-prov-contacto').value||null, condicion_pago: $('cap-prov-condicion').value,
+      metodo_pago: $('cap-prov-metodo').value, banco: $('cap-prov-banco').value||null,
+      cuenta_bancaria: $('cap-prov-cuenta-banco').value||null, titular_cuenta: $('cap-prov-titular').value||null,
+      calle_numero: $('cap-prov-direccion').value||null, sector: $('cap-prov-sector').value||null,
+      municipio: $('cap-prov-municipio').value||null, notas: $('cap-prov-notas').value||null,
+      activo: $('cap-prov-activo').value === 'true',
+    };
+    const id = $('cap-prov-id').value;
+    if (!id) {
+      const {data: codData} = await sb.rpc('axi_codigo_proveedor', {p_condominio_id: sesion.condominio_id});
+      payload.codigo = codData;
+    }
+    const {error} = id
+      ? await sb.from('proveedores').update(payload).eq('id', parseInt(id))
+      : await sb.from('proveedores').insert(payload);
+    if (error) throw error;
+    cerrarModal('modal-cap-proveedor'); cargarCapProveedores();
+    alert(id ? '✅ Proveedor actualizado' : '✅ Proveedor creado');
+  } catch(err) { $('cap-prov-alert').textContent=err.message; $('cap-prov-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ==================== CAPTURA: USUARIOS ====================
+async function cargarCapUsuarios() {
+  const {data, error} = await sb.from('usuarios').select('*').order('nombre_completo');
+  if (error) { $('cap-usuarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('cap-usuarios-lista').innerHTML='<div class="empty">Sin usuarios registrados</div>'; return; }
+  $('cap-usuarios-lista').innerHTML = `<table>
+    <thead><tr><th>Nombre</th><th>Login</th><th>Rol</th><th>Email</th><th>WhatsApp</th><th class="text-center">Activo</th><th class="text-center">Último Login</th><th class="text-center">Acciones</th></tr></thead>
+    <tbody>${data.map(r => `<tr>
+      <td><strong>${r.nombre_completo||'—'}</strong></td><td style="font-family:monospace;font-size:.8rem">${r.usuario_login||'—'}</td>
+      <td><span class="badge badge-info">${r.rol||'—'}</span></td>
+      <td>${r.email||'—'}</td><td>${r.whatsapp||'—'}</td>
+      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Sí':'No'}</span></td>
+      <td class="text-center" style="font-size:.8rem">${r.ultimo_login||'Nunca'}</td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapUsuario(${r.id})">✏️</button></td>
+    </tr>`).join('')}</tbody></table>
+    <p style="margin-top:1rem;font-size:.8rem;color:var(--ax-muted)">⚠️ Crear usuarios con acceso al sistema requiere también crear credenciales en Supabase Auth y registro en la tabla accesos.</p>`;
+}
+
+async function abrirModalCapUsuario(id) {
+  $('cap-usr-alert').style.display='none'; $('form-cap-usuario').reset();
+  if (id) {
+    $('cap-usr-titulo').textContent = 'Editar Usuario';
+    const {data} = await sb.from('usuarios').select('*').eq('id', id).single();
+    if (!data) return;
+    $('cap-usr-id').value = data.id;
+    $('cap-usr-nombre').value = data.nombre_completo||'';
+    $('cap-usr-login').value = data.usuario_login||'';
+    $('cap-usr-rol').value = data.rol||'Asistente';
+    $('cap-usr-email').value = data.email||'';
+    $('cap-usr-whatsapp').value = data.whatsapp||'';
+    $('cap-usr-activo').value = data.activo ? 'true' : 'false';
+  } else {
+    $('cap-usr-titulo').textContent = 'Nuevo Usuario';
+    $('cap-usr-id').value = '';
+  }
+  $('modal-cap-usuario').classList.add('show');
+}
+
+async function guardarCapUsuario(e) {
+  e.preventDefault();
+  const btn = $('cap-usr-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const payload = {
+      nombre_completo: $('cap-usr-nombre').value, usuario_login: $('cap-usr-login').value,
+      rol: $('cap-usr-rol').value, email: $('cap-usr-email').value||null,
+      whatsapp: $('cap-usr-whatsapp').value||null, activo: $('cap-usr-activo').value === 'true',
+    };
+    const id = $('cap-usr-id').value;
+    const {error} = id
+      ? await sb.from('usuarios').update(payload).eq('id', parseInt(id))
+      : await sb.from('usuarios').insert(payload);
+    if (error) throw error;
+    cerrarModal('modal-cap-usuario'); cargarCapUsuarios();
+    alert(id ? '✅ Usuario actualizado' : '✅ Usuario creado');
+  } catch(err) { $('cap-usr-alert').textContent=err.message; $('cap-usr-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// Cerrar modales con Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+  }
+});
+</script>
+</body>
+</html>
