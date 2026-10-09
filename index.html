@@ -358,7 +358,9 @@
       <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta">🏠 Mi Cuenta</a>
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas">📄 Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos">💳 Mis Pagos</a>
-      <div class="section-title">General</div>
+      <div class="section-title">Condominio</div>
+      <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo">🧾 Gastos del Condominio</a>
+      <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo">📎 Comprobantes de Pago</a>
       <a href="#" onclick="navegar('fondo-comun')" data-page="fondo-comun">📊 Fondo Común</a>
     </nav>
 
@@ -454,7 +456,10 @@
 
       <!-- ===== PAGOS A PROVEEDORES ===== -->
       <div id="page-pagos-gastos" class="page">
-        <h2 class="page-title">Pagos a Proveedores</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+          <h2 class="page-title" style="margin-bottom:0">Pagos a Proveedores</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalPagoGasto()">+ Registrar Pago</button>
+        </div>
         <div class="card">
           <div class="card-header">
             Comprobantes de pago contra gastos registrados
@@ -492,6 +497,28 @@
         <h2 class="page-title">Mis Pagos</h2>
         <div class="card">
           <div class="card-body" id="mis-pagos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== GASTOS DEL CONDOMINIO (Residente) ===== -->
+      <div id="page-gastos-condo" class="page">
+        <h2 class="page-title">Gastos del Condominio</h2>
+        <div class="card">
+          <div class="card-header">Gastos registrados en tu condominio</div>
+          <div class="card-body" id="gastos-condo-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COMPROBANTES DE PAGO (Residente) ===== -->
+      <div id="page-comprobantes-condo" class="page">
+        <h2 class="page-title">Comprobantes de Pago</h2>
+        <div class="card">
+          <div class="card-header">Pagos realizados a proveedores</div>
+          <div class="card-body" id="comprobantes-condo-lista">
             <div class="loading">Cargando...</div>
           </div>
         </div>
@@ -950,6 +977,40 @@
   </div>
 </div>
 
+<!-- MODAL: Registrar Pago a Proveedor -->
+<div class="modal-overlay" id="modal-pago-gasto">
+  <div class="modal" style="max-width:580px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="margin-bottom:0">Registrar Pago a Proveedor</h3>
+      <button class="btn btn-sm btn-outline" onclick="cerrarModal('modal-pago-gasto')">✕</button>
+    </div>
+    <form id="form-pago-gasto" onsubmit="return guardarPagoGasto(event)">
+      <div class="form-group">
+        <label>Gasto Pendiente *</label>
+        <select id="pg-gasto-id" required><option value="">Cargando gastos...</option></select>
+      </div>
+      <div id="pg-gasto-info" style="display:none;background:var(--ax-surface);border:1px solid var(--ax-border);border-radius:8px;padding:.75rem;margin-bottom:1rem;font-size:.85rem"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group"><label>Fecha de Pago *</label><input type="date" id="pg-fecha" required></div>
+        <div class="form-group"><label>Monto *</label><input type="number" id="pg-monto" step="0.01" min="0.01" required></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group"><label>Método de Pago</label>
+          <select id="pg-metodo"><option value="">— Seleccionar —</option><option>Transferencia</option><option>Cheque</option><option>Efectivo</option><option>Tarjeta</option></select>
+        </div>
+        <div class="form-group"><label>Banco</label><input type="text" id="pg-banco" placeholder="Ej: BHD, Popular..."></div>
+      </div>
+      <div class="form-group"><label>Referencia / No. Comprobante</label><input type="text" id="pg-referencia" placeholder="No. transferencia, cheque..."></div>
+      <div class="form-group"><label>URL del Comprobante</label><input type="url" id="pg-comprobante-url" placeholder="https://..."></div>
+      <div class="form-group"><label>Nota</label><textarea id="pg-nota" rows="2" placeholder="Observaciones opcionales..."></textarea></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-pago-gasto')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="pg-btn-guardar">Registrar Pago</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -1201,6 +1262,8 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'fondo-comun': cargarFondoComun,
+    'gastos-condo': cargarGastosCondo,
+    'comprobantes-condo': cargarComprobantesCondo,
     'cap-condominios': cargarCapCondominios,
     'cap-unidades': cargarCapUnidades,
     'cap-propietarios': cargarCapPropietarios,
@@ -1216,16 +1279,22 @@ function navegar(page) {
 async function cargarDashboard() {
   const cid = sesion.condominio_id;
 
-  // Paralelo: ECG totales + cobros + conteos
-  const [ecg, cobros, facturas, pagosCount] = await Promise.all([
+  // Paralelo: ECG totales + cobros + conteos + gastos
+  const [ecg, cobros, facturas, pagosCount, gastosRes, gastosPendientes] = await Promise.all([
     sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
     sb.from('v_cobros_pendientes').select('*').eq('condominio_id', cid).order('fecha_vencimiento').limit(5),
     sb.from('facturas').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('pagos').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
+    sb.from('gastos').select('id, monto, estado').eq('condominio_id', cid).neq('estado', 'Eliminado'),
+    sb.from('gastos').select('id, codigo, fecha, categoria, monto, estado, proveedores(nombre)').eq('condominio_id', cid).eq('estado', 'Registrado').order('fecha', {ascending: false}).limit(5),
   ]);
 
   // Stats
   const e = ecg.data?.[0] || {};
+  const allGastos = gastosRes.data || [];
+  const totalGastos = allGastos.reduce((s, g) => s + parseFloat(g.monto || 0), 0);
+  const gastosPend = allGastos.filter(g => g.estado === 'Registrado').length;
+
   $('dash-stats').innerHTML = `
     <div class="stat-card">
       <div class="accent-bar green"></div>
@@ -1247,14 +1316,49 @@ async function cargarDashboard() {
       <div class="label">Facturas / Pagos</div>
       <div class="value">${facturas.count || 0} / ${pagosCount.count || 0}</div>
     </div>
+    <div class="stat-card">
+      <div class="accent-bar" style="background:var(--ax-accent)"></div>
+      <div class="label">Gastos${gastosPend ? ` (${gastosPend} pend.)` : ''}</div>
+      <div class="value money">${fmtMoney(totalGastos)}</div>
+    </div>
   `;
 
   // Cobros pendientes (top 5)
   if (!cobros.data?.length) {
     $('dash-cobros').innerHTML = '<div class="empty">No hay cobros vencidos 🎉</div>';
-    return;
+  } else {
+    $('dash-cobros').innerHTML = renderTablaCobros(cobros.data);
   }
-  $('dash-cobros').innerHTML = renderTablaCobros(cobros.data);
+
+  // Gastos pendientes card
+  const oldGpCard = $('dash-gastos-pend');
+  if (oldGpCard) oldGpCard.remove();
+  const gpData = gastosPendientes.data || [];
+  if (gpData.length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'dash-gastos-pend';
+    card.style.marginTop = '1.5rem';
+    card.innerHTML = `
+      <div class="card-header">
+        Gastos Pendientes de Pago
+        <button class="btn btn-sm btn-outline" onclick="navegar('gastos')">Ver todos</button>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th class="text-right">Monto</th></tr></thead>
+          <tbody>${gpData.map(g => `<tr>
+            <td>${g.fecha}</td>
+            <td style="font-family:monospace;font-size:.8rem">${g.codigo || '—'}</td>
+            <td>${g.proveedores?.nombre || '—'}</td>
+            <td>${g.categoria || '—'}</td>
+            <td class="text-right money">${fmt(g.monto)}</td>
+          </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    $('page-dashboard').appendChild(card);
+  }
 }
 
 // ==================== CEO: COBROS PENDIENTES ====================
@@ -1523,6 +1627,74 @@ async function cargarPagosGastos() {
       }).join('')}
       </tbody>
     </table>`;
+}
+
+async function abrirModalPagoGasto() {
+  $('form-pago-gasto').reset();
+  $('pg-gasto-info').style.display = 'none';
+  $('pg-fecha').value = new Date().toISOString().slice(0, 10);
+  $('pg-btn-guardar').disabled = false;
+  $('pg-btn-guardar').textContent = 'Registrar Pago';
+
+  const sel = $('pg-gasto-id');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  $('modal-pago-gasto').classList.add('show');
+
+  const {data, error} = await sb.from('gastos')
+    .select('id, codigo, descripcion, monto, categoria, proveedor_id, proveedores(nombre)')
+    .eq('condominio_id', sesion.condominio_id)
+    .eq('estado', 'Registrado')
+    .order('fecha', {ascending: false});
+
+  if (error || !data?.length) {
+    sel.innerHTML = '<option value="">— No hay gastos pendientes —</option>';
+    return;
+  }
+
+  sel.innerHTML = '<option value="">— Seleccionar gasto —</option>' +
+    data.map(g => `<option value="${g.id}" data-monto="${g.monto}" data-desc="${g.descripcion || ''}" data-prov="${g.proveedores?.nombre || '—'}" data-cat="${g.categoria || ''}">${g.codigo} — ${(g.proveedores?.nombre || 'Sin proveedor')} — ${fmtMoney(g.monto)}</option>`).join('');
+
+  sel.onchange = function() {
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) { $('pg-gasto-info').style.display = 'none'; $('pg-monto').value = ''; return; }
+    $('pg-monto').value = opt.dataset.monto || '';
+    $('pg-gasto-info').style.display = 'block';
+    $('pg-gasto-info').innerHTML = `<strong>Proveedor:</strong> ${opt.dataset.prov} · <strong>Categoría:</strong> ${opt.dataset.cat}<br><strong>Descripción:</strong> ${opt.dataset.desc}`;
+  };
+}
+
+async function guardarPagoGasto(e) {
+  e.preventDefault();
+  const btn = $('pg-btn-guardar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    const {data: {user}} = await sb.auth.getUser();
+    const payload = {
+      condominio_id: sesion.condominio_id,
+      gasto_id: parseInt($('pg-gasto-id').value),
+      fecha_pago: $('pg-fecha').value,
+      monto: parseFloat($('pg-monto').value),
+      metodo_pago: $('pg-metodo').value || null,
+      banco: $('pg-banco').value.trim() || null,
+      referencia: $('pg-referencia').value.trim() || null,
+      comprobante_url: $('pg-comprobante-url').value.trim() || null,
+      nota: $('pg-nota').value.trim() || null,
+      registrado_por: user?.id || null,
+    };
+
+    const {error} = await sb.from('pagos_gastos').insert(payload);
+    if (error) throw error;
+
+    cerrarModal('modal-pago-gasto');
+    cargarPagosGastos();
+    cargarGastos(); // refresh gastos list too — estado changed to Pagado
+  } catch(err) {
+    alert('Error al registrar pago: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Registrar Pago';
+  }
 }
 
 // ==================== UTILIDAD RESIDENTE ====================
@@ -1889,6 +2061,72 @@ async function guardarGasto(e) {
     btn.textContent = 'Registrar Gasto';
     btn.disabled = false;
   }
+}
+
+// ==================== RESIDENTE: GASTOS DEL CONDOMINIO ====================
+async function cargarGastosCondo() {
+  const {data, error} = await sb.from('gastos')
+    .select('*, proveedores(nombre)')
+    .eq('condominio_id', sesion.condominio_id)
+    .neq('estado', 'Eliminado')
+    .order('fecha', {ascending: false}).limit(50);
+
+  if (error) { $('gastos-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('gastos-condo-lista').innerHTML = '<div class="empty">Sin gastos registrados</div>'; return; }
+
+  const total = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
+  const badgeClass = e => e === 'Pagado' ? 'badge-success' : e === 'Registrado' ? 'badge-warning' : 'badge-danger';
+
+  $('gastos-condo-lista').innerHTML = `
+    <p style="margin-bottom:1rem;font-size:.9rem">Total gastos: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} registros</p>
+    <table>
+      <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+      <tbody>${data.map(r => `<tr>
+        <td>${r.fecha}</td>
+        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
+        <td>${r.proveedores?.nombre || '—'}</td>
+        <td>${r.categoria || '—'}</td>
+        <td>${(r.descripcion || '').substring(0, 40)}${(r.descripcion||'').length > 40 ? '…' : ''}</td>
+        <td class="text-right money">${fmt(r.monto)}</td>
+        <td class="text-center"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ==================== RESIDENTE: COMPROBANTES DE PAGO ====================
+async function cargarComprobantesCondo() {
+  const {data, error} = await sb.from('pagos_gastos')
+    .select('*, gastos(codigo, descripcion, categoria, proveedores(nombre))')
+    .eq('condominio_id', sesion.condominio_id)
+    .order('fecha_pago', {ascending: false}).limit(50);
+
+  if (error) { $('comprobantes-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('comprobantes-condo-lista').innerHTML = '<div class="empty">Sin comprobantes registrados</div>'; return; }
+
+  const total = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
+
+  $('comprobantes-condo-lista').innerHTML = `
+    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} comprobantes</p>
+    <table>
+      <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th></tr></thead>
+      <tbody>${data.map(r => {
+        const g = r.gastos || {};
+        const prov = g.proveedores || {};
+        return `<tr>
+          <td>${r.fecha_pago}</td>
+          <td style="font-family:monospace;font-size:.8rem">${g.codigo || '—'}</td>
+          <td>${prov.nombre || '—'}</td>
+          <td>${g.categoria || '—'}</td>
+          <td>${r.metodo_pago || '—'}</td>
+          <td>${r.banco || '—'}</td>
+          <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
+          <td class="text-right money">${fmt(r.monto)}</td>
+          <td class="text-center">${r.comprobante_url ? `<a href="${r.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ==================== CAPTURA: CONDOMINIO ====================
