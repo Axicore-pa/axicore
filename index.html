@@ -1081,6 +1081,43 @@ async function verComprobante(url) {
   if (error || !data?.signedUrl) { alert('No se pudo abrir el comprobante: ' + (error?.message || 'sin acceso')); return; }
   window.open(data.signedUrl, '_blank');
 }
+
+// Badge del estado de aprobación (matriz de status)
+function badgeAprob(ea) {
+  if (!ea || ea === 'Aprobado') return '';
+  const cls = {'Sometido':'badge-warning','En proceso':'badge-info','Rechazado':'badge-danger'}[ea] || 'badge-warning';
+  return ` <span class="badge ${cls}" title="Estado de aprobación">${ea}</span>`;
+}
+
+// Boton de anulacion segun rol: CEO anula directo; Asistente somete solicitud
+function accionAnular(tabla, id, estado, ea) {
+  const anulado = ['anulado','anulada','eliminado'].includes(String(estado||'').toLowerCase());
+  if (anulado || ea !== 'Aprobado') return '';
+  const esCEO = sesion.rol === 'CEO';
+  const label = esCEO ? 'Anular' : 'Solicitar anulación';
+  return `<button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="anularRegistro('${tabla}',${id})">${label}</button>`;
+}
+
+async function anularRegistro(tabla, id) {
+  const esCEO = sesion.rol === 'CEO';
+  const motivo = prompt((esCEO ? 'Motivo de la anulación' : 'Motivo (se enviará al CEO para aprobación)') + ':');
+  if (!motivo || !motivo.trim()) return;
+  let error;
+  if (esCEO) {
+    const rpc = {facturas:'fn_factura_anular', pagos:'fn_pago_anular', gastos:'axi_gasto_eliminar'}[tabla];
+    const args = tabla === 'facturas' ? {p_factura_id:id, p_motivo:motivo}
+               : tabla === 'pagos'    ? {p_pago_id:id, p_motivo:motivo}
+               : {p_gasto_id:id};
+    ({error} = await sb.rpc(rpc, args));
+  } else {
+    ({error} = await sb.rpc('fn_solicitar_anulacion', {p_tabla:tabla, p_id:id, p_motivo:motivo}));
+  }
+  if (error) { alert('⚠ ' + error.message); return; }
+  alert(esCEO ? '✅ Anulado.' : '✅ Solicitud de anulación enviada al CEO.');
+  const refrescar = {facturas:cargarCobros, pagos:cargarPagos, gastos:cargarGastos}[tabla];
+  if (refrescar) refrescar();
+  if (sesion.rol === 'CEO') actualizarBadgeAprobaciones();
+}
 const fmt = n => new Intl.NumberFormat('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n || 0);
 const fmtMoney = n => 'RD$ ' + fmt(n);
 
@@ -1565,8 +1602,8 @@ async function cargarPagos() {
     .order('fecha_pago', {ascending: false}).limit(20);
 
   if (!data?.length) { $('pagos-lista').innerHTML = '<div class="empty">Sin pagos</div>'; return; }
-  $('pagos-lista').innerHTML = `<table>
-    <thead><tr><th>Fecha</th><th>Código</th><th>Recibido de</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+  $('pagos-lista').innerHTML = `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Fecha</th><th>Código</th><th>Recibido de</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th><th></th></tr></thead>
     <tbody>${data.map(r => `
       <tr>
         <td>${r.fecha_pago}</td>
@@ -1574,10 +1611,11 @@ async function cargarPagos() {
         <td>${r.recibido_de || '—'}</td>
         <td>${r.metodo || '—'}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span></td>
+        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span>${badgeAprob(r.estado_aprobacion)}</td>
+        <td class="text-center" style="white-space:nowrap">${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`).join('')}
     </tbody>
-  </table>`;
+  </table></div>`;
 }
 
 // ==================== CEO: GASTOS ====================
@@ -1599,8 +1637,8 @@ async function cargarGastos() {
         <td>${r.categoria || '—'}</td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || '—'}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge ${estadoBadge}">${r.estado || '—'}</span></td>
-        <td class="text-center"><button class="btn btn-sm btn-outline" onclick="verDetalleGasto(${r.id})">🔍</button></td>
+        <td class="text-center"><span class="badge ${estadoBadge}">${r.estado || '—'}</span>${badgeAprob(r.estado_aprobacion)}</td>
+        <td class="text-center" style="white-space:nowrap"><button class="btn btn-sm btn-outline" onclick="verDetalleGasto(${r.id})">🔍</button> ${accionAnular('gastos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`;
     }).join('')}
     </tbody>
