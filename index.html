@@ -326,6 +326,7 @@
           <a href="#" onclick="navegar('cobros')" data-page="cobros">💰 Cobros Pendientes</a>
           <a href="#" onclick="navegar('pagos')" data-page="pagos">💳 Pagos</a>
           <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
+          <a href="#" onclick="navegar('pagos-gastos')" data-page="pagos-gastos">🧾 Pagos a Proveedores</a>
         </div>
       </div>
 
@@ -446,6 +447,19 @@
         </div>
         <div class="card">
           <div class="card-body" id="gastos-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGOS A PROVEEDORES ===== -->
+      <div id="page-pagos-gastos" class="page">
+        <h2 class="page-title">Pagos a Proveedores</h2>
+        <div class="card">
+          <div class="card-header">
+            Comprobantes de pago contra gastos registrados
+          </div>
+          <div class="card-body" id="pagos-gastos-lista">
             <div class="loading">Cargando...</div>
           </div>
         </div>
@@ -923,6 +937,19 @@
   </div>
 </div>
 
+<!-- MODAL: Detalle de Gasto -->
+<div class="modal-overlay" id="modal-detalle-gasto">
+  <div class="modal" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="margin-bottom:0">Detalle del Gasto</h3>
+      <button class="btn btn-sm btn-outline" onclick="cerrarModal('modal-detalle-gasto')">✕</button>
+    </div>
+    <div id="detalle-gasto-content">
+      <div class="loading">Cargando...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -1169,6 +1196,7 @@ function navegar(page) {
     'facturacion': cargarFacturacion,
     'pagos': cargarPagos,
     'gastos': cargarGastos,
+    'pagos-gastos': cargarPagosGastos,
     'mi-cuenta': cargarMiCuenta,
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
@@ -1374,25 +1402,127 @@ async function cargarPagos() {
 
 // ==================== CEO: GASTOS ====================
 async function cargarGastos() {
-  const {data} = await sb.from('gastos').select('*')
+  const {data} = await sb.from('gastos').select('*, proveedores(nombre, codigo)')
     .eq('condominio_id', sesion.condominio_id)
     .neq('estado', 'Eliminado')
-    .order('fecha', {ascending: false}).limit(20);
+    .order('fecha', {ascending: false}).limit(50);
 
   if (!data?.length) { $('gastos-lista').innerHTML = '<div class="empty">Sin gastos</div>'; return; }
   $('gastos-lista').innerHTML = `<table>
-    <thead><tr><th>Fecha</th><th>Código</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
-    <tbody>${data.map(r => `
-      <tr>
+    <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-center">Estado</th><th class="text-center">Detalle</th></tr></thead>
+    <tbody>${data.map(r => {
+      const estadoBadge = r.estado === 'Pagado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning';
+      return `<tr>
         <td>${r.fecha}</td>
         <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
+        <td>${r.proveedores?.nombre || '—'}</td>
         <td>${r.categoria || '—'}</td>
-        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || '—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || '—'}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge badge-info">${r.estado || '—'}</span></td>
-      </tr>`).join('')}
+        <td class="text-center"><span class="badge ${estadoBadge}">${r.estado || '—'}</span></td>
+        <td class="text-center"><button class="btn btn-sm btn-outline" onclick="verDetalleGasto(${r.id})">🔍</button></td>
+      </tr>`;
+    }).join('')}
     </tbody>
   </table>`;
+}
+
+// ==================== CEO: DETALLE GASTO ====================
+async function verDetalleGasto(gastoId) {
+  $('detalle-gasto-content').innerHTML = '<div class="loading">Cargando detalle...</div>';
+  $('modal-detalle-gasto').classList.add('show');
+
+  // Fetch gasto con proveedor + pagos_gastos asociados
+  const [{data: gasto}, {data: pagos}] = await Promise.all([
+    sb.from('gastos').select('*, proveedores(nombre, codigo, rnc_cedula, servicio)').eq('id', gastoId).single(),
+    sb.from('pagos_gastos').select('*').eq('gasto_id', gastoId).order('fecha_pago', {ascending: false}),
+  ]);
+
+  if (!gasto) { $('detalle-gasto-content').innerHTML = '<div class="empty">Gasto no encontrado</div>'; return; }
+
+  const prov = gasto.proveedores || {};
+  const estadoBadge = gasto.estado === 'Pagado' ? 'badge-success' : gasto.estado === 'Anulado' ? 'badge-danger' : 'badge-warning';
+
+  let pagosHtml = '';
+  if (pagos?.length) {
+    pagosHtml = `
+      <div style="margin-top:1.2rem;border-top:1px solid var(--ax-border);padding-top:1rem">
+        <h4 style="font-size:.9rem;margin-bottom:.6rem;color:var(--ax-primary)">💳 Comprobantes de Pago</h4>
+        <table>
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Banco</th><th>Referencia</th><th>Comprobante</th></tr></thead>
+          <tbody>${pagos.map(p => `<tr>
+            <td>${p.fecha_pago}</td>
+            <td class="text-right money">${fmt(p.monto)}</td>
+            <td>${p.metodo_pago || '—'}</td>
+            <td>${p.banco || '—'}</td>
+            <td style="font-family:monospace;font-size:.8rem">${p.referencia || '—'}</td>
+            <td class="text-center">${p.comprobante_url ? `<a href="${p.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  } else {
+    pagosHtml = `<div style="margin-top:1rem;padding:.8rem;background:#fef5e7;border-radius:6px;font-size:.85rem;color:#d68910">⏳ Sin comprobante de pago registrado</div>`;
+  }
+
+  $('detalle-gasto-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem 1.5rem;margin-bottom:1rem">
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Código</span><div style="font-weight:600;font-family:monospace">${gasto.codigo || '—'}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Estado</span><div><span class="badge ${estadoBadge}">${gasto.estado}</span></div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Fecha</span><div>${gasto.fecha}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Monto</span><div style="font-weight:700;font-size:1.1rem" class="money">${fmtMoney(gasto.monto)}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Categoría</span><div>${gasto.categoria || '—'}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Área</span><div>${gasto.area_aplicacion || '—'} ${gasto.area_aplicacion_otro ? '('+gasto.area_aplicacion_otro+')' : ''}</div></div>
+      <div style="grid-column:1/-1"><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Descripción</span><div>${gasto.descripcion || '—'}</div></div>
+    </div>
+    <div style="background:var(--ax-bg);border-radius:8px;padding:1rem;margin-bottom:.5rem">
+      <h4 style="font-size:.85rem;margin-bottom:.5rem;color:var(--ax-primary)">🛠️ Proveedor</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem 1rem;font-size:.9rem">
+        <div><strong>${prov.nombre || '—'}</strong></div>
+        <div style="font-family:monospace;font-size:.8rem">${prov.codigo || ''}</div>
+        <div>RNC: ${prov.rnc_cedula || '—'}</div>
+        <div>Servicio: ${prov.servicio || '—'}</div>
+      </div>
+    </div>
+    ${gasto.factura_proveedor ? `<div style="margin-bottom:.5rem;font-size:.9rem">📑 <strong>Factura proveedor:</strong> ${gasto.factura_proveedor}</div>` : ''}
+    ${gasto.foto_factura_url ? `<div style="margin-bottom:.5rem"><a href="${gasto.foto_factura_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver factura del proveedor</a></div>` : ''}
+    ${pagosHtml}
+  `;
+}
+
+// ==================== CEO: PAGOS A PROVEEDORES ====================
+async function cargarPagosGastos() {
+  const {data, error} = await sb.from('pagos_gastos')
+    .select('*, gastos(codigo, descripcion, categoria, proveedor_id, proveedores(nombre, codigo))')
+    .eq('condominio_id', sesion.condominio_id)
+    .order('fecha_pago', {ascending: false})
+    .limit(50);
+
+  if (error) { $('pagos-gastos-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { $('pagos-gastos-lista').innerHTML = '<div class="empty">Sin pagos a proveedores registrados</div>'; return; }
+
+  const totalPagado = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
+
+  $('pagos-gastos-lista').innerHTML = `
+    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(totalPagado)}</strong> — ${data.length} comprobantes</p>
+    <table>
+      <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th></tr></thead>
+      <tbody>${data.map(r => {
+        const g = r.gastos || {};
+        const prov = g.proveedores || {};
+        return `<tr>
+          <td>${r.fecha_pago}</td>
+          <td style="font-family:monospace;font-size:.8rem;cursor:pointer;color:var(--ax-accent)" onclick="verDetalleGasto(${r.gasto_id})">${g.codigo || '—'}</td>
+          <td>${prov.nombre || '—'}</td>
+          <td>${g.categoria || '—'}</td>
+          <td>${r.metodo_pago || '—'}</td>
+          <td>${r.banco || '—'}</td>
+          <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
+          <td class="text-right money">${fmt(r.monto)}</td>
+          <td class="text-center">${r.comprobante_url ? `<a href="${r.comprobante_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver</a>` : '—'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ==================== UTILIDAD RESIDENTE ====================
