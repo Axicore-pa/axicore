@@ -86,6 +86,20 @@
   .sidebar a:hover, .sidebar a.active { background:var(--ax-bg); color:var(--ax-accent); border-right:3px solid var(--ax-accent); }
   .sidebar .section-title { font-size:.7rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; padding:.8rem 1.2rem .3rem; font-weight:700; }
 
+  /* COLLAPSIBLE SIDEBAR MODULES */
+  .sidebar-module { border-bottom:1px solid var(--ax-border); }
+  .sidebar-module:last-child { border-bottom:none; }
+  .module-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1.2rem; cursor:pointer; user-select:none; transition:background .15s;
+  }
+  .module-header:hover { background:var(--ax-bg); }
+  .module-header .module-label { font-size:.8rem; font-weight:700; color:var(--ax-primary); text-transform:uppercase; letter-spacing:.5px; }
+  .module-header .module-arrow { font-size:.6rem; color:var(--ax-muted); transition:transform .2s; }
+  .sidebar-module.open .module-arrow { transform:rotate(180deg); }
+  .module-links { display:none; padding-bottom:.3rem; }
+  .sidebar-module.open .module-links { display:block; }
+
   /* MAIN CONTENT */
   .main-content { flex:1; padding:1.5rem; overflow-y:auto; }
   .page { display:none; }
@@ -281,23 +295,60 @@
   <div class="app-layout">
     <!-- Sidebar CEO -->
     <nav class="sidebar" id="sidebar-ceo">
-      <div class="section-title">Principal</div>
-      <a href="#" onclick="navegar('dashboard')" class="active" data-page="dashboard">📊 Dashboard</a>
-      <a href="#" onclick="navegar('cobros')" data-page="cobros">💰 Cobros Pendientes</a>
-      <div class="section-title">Operaciones</div>
-      <a href="#" onclick="navegar('facturacion')" data-page="facturacion">📄 Facturación</a>
-      <a href="#" onclick="navegar('pagos')" data-page="pagos">💳 Pagos</a>
-      <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
-      <div class="section-title">Reportes</div>
-      <a href="#" onclick="navegar('ecg')" data-page="ecg">📈 Estado de Cuenta</a>
-      <a href="#" onclick="navegar('unidades')" data-page="unidades">🏠 Unidades</a>
-      <div class="section-title">Captura</div>
-      <a href="#" onclick="navegar('cap-condominios')" data-page="cap-condominios">🏢 Condominio</a>
-      <a href="#" onclick="navegar('cap-unidades')" data-page="cap-unidades">📋 Unidades</a>
-      <a href="#" onclick="navegar('cap-propietarios')" data-page="cap-propietarios">👤 Propietarios</a>
-      <a href="#" onclick="navegar('cap-inquilinos')" data-page="cap-inquilinos">🔑 Inquilinos</a>
-      <a href="#" onclick="navegar('cap-proveedores')" data-page="cap-proveedores">🛠️ Proveedores</a>
-      <a href="#" onclick="navegar('cap-usuarios')" data-page="cap-usuarios">👥 Usuarios</a>
+      <!-- Dashboard siempre visible -->
+      <a href="#" onclick="navegar('dashboard')" class="active" data-page="dashboard" style="padding:.8rem 1.2rem;font-weight:600">📊 Dashboard</a>
+
+      <!-- Menú Principal: módulos colapsables -->
+      <div class="section-title">Menú Principal</div>
+
+      <div class="sidebar-module" id="mod-captura">
+        <div class="module-header" onclick="toggleModule('mod-captura')">
+          <span class="module-label">📋 Captura</span>
+          <span class="module-arrow">▼</span>
+        </div>
+        <div class="module-links">
+          <a href="#" onclick="navegar('cap-condominios')" data-page="cap-condominios">🏢 Condominios</a>
+          <a href="#" onclick="navegar('cap-unidades')" data-page="cap-unidades">🏠 Unidades</a>
+          <a href="#" onclick="navegar('cap-propietarios')" data-page="cap-propietarios">👤 Propietarios</a>
+          <a href="#" onclick="navegar('cap-inquilinos')" data-page="cap-inquilinos">🔑 Inquilinos</a>
+          <a href="#" onclick="navegar('cap-proveedores')" data-page="cap-proveedores">🛠️ Proveedores</a>
+          <a href="#" onclick="navegar('cap-usuarios')" data-page="cap-usuarios">👥 Usuarios</a>
+        </div>
+      </div>
+
+      <div class="sidebar-module" id="mod-operacion">
+        <div class="module-header" onclick="toggleModule('mod-operacion')">
+          <span class="module-label">⚙️ Operación</span>
+          <span class="module-arrow">▼</span>
+        </div>
+        <div class="module-links">
+          <a href="#" onclick="navegar('facturacion')" data-page="facturacion">📄 Facturación</a>
+          <a href="#" onclick="navegar('cobros')" data-page="cobros">💰 Cobros Pendientes</a>
+          <a href="#" onclick="navegar('pagos')" data-page="pagos">💳 Pagos</a>
+          <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
+        </div>
+      </div>
+
+      <div class="sidebar-module" id="mod-reportes">
+        <div class="module-header" onclick="toggleModule('mod-reportes')">
+          <span class="module-label">📈 Reportes</span>
+          <span class="module-arrow">▼</span>
+        </div>
+        <div class="module-links">
+          <a href="#" onclick="navegar('ecg')" data-page="ecg">📊 Estado de Cuenta General</a>
+          <a href="#" onclick="navegar('unidades')" data-page="unidades">🏠 Unidades</a>
+        </div>
+      </div>
+
+      <div class="sidebar-module" id="mod-automatizaciones">
+        <div class="module-header" onclick="toggleModule('mod-automatizaciones')">
+          <span class="module-label">🤖 Automatizaciones</span>
+          <span class="module-arrow">▼</span>
+        </div>
+        <div class="module-links">
+          <a href="#" class="empty" style="color:var(--ax-muted);font-style:italic;cursor:default">Próximamente</a>
+        </div>
+      </div>
     </nav>
 
     <!-- Sidebar Residente (propietario/inquilino) -->
@@ -1087,6 +1138,12 @@ document.addEventListener('click', (e) => {
   if (tc && !tc.contains(e.target)) cerrarCondoDropdown();
 });
 
+// ==================== SIDEBAR MODULES ====================
+function toggleModule(id) {
+  const mod = $(id);
+  if (mod) mod.classList.toggle('open');
+}
+
 // ==================== NAVEGACIÓN ====================
 function navegar(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1096,6 +1153,11 @@ function navegar(page) {
   // Sidebar active state
   document.querySelectorAll('.sidebar a').forEach(a => {
     a.classList.toggle('active', a.dataset.page === page);
+    // Auto-abrir módulo padre
+    if (a.dataset.page === page) {
+      const parentMod = a.closest('.sidebar-module');
+      if (parentMod && !parentMod.classList.contains('open')) parentMod.classList.add('open');
+    }
   });
 
   // Cargar datos de la página
