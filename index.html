@@ -1381,6 +1381,10 @@
           <option value="Otro">Otro</option>
         </select>
       </div>
+      <div class="form-group" id="gasto-unidad-grp" style="display:none">
+        <label>Unidad</label>
+        <select id="gasto-unidad"><option value="">— Seleccione unidad —</option></select>
+      </div>
       <div class="form-group">
         <label>Área de aplicación</label>
         <select id="gasto-area" required>
@@ -1480,8 +1484,8 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Factura proveedor (opcional)</label>
-        <input type="text" id="gasto-factura-prov" placeholder="No. factura del suplidor">
+        <label>Factura proveedor</label>
+        <input type="text" id="gasto-factura-prov" required placeholder="No. factura del suplidor (N/A si no tiene)">
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-gasto')">Cancelar</button>
@@ -4763,6 +4767,18 @@ async function abrirModalGasto() {
   };
   $('gasto-area-otro').required = false;
 
+  // Tipo "Unidad": pide la unidad a la que se aplica el gasto
+  $('gasto-unidad-grp').style.display = 'none'; $('gasto-unidad').required = false;
+  $('gasto-tipo-apl').onchange = async () => {
+    const esU = $('gasto-tipo-apl').value === 'Unidad';
+    $('gasto-unidad-grp').style.display = esU ? 'block' : 'none';
+    $('gasto-unidad').required = esU;
+    if (esU && $('gasto-unidad').options.length <= 1) {
+      const {data: us} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
+      $('gasto-unidad').innerHTML = '<option value="">— Seleccione unidad —</option>' + (us || []).map(u => `<option value="${u.id}">${u.codigo || ('Unidad ' + u.id)}</option>`).join('');
+    }
+  };
+
   // Cargar proveedores
   const sel = $('gasto-proveedor');
   sel.innerHTML = '<option value="">Cargando...</option>';
@@ -4798,8 +4814,10 @@ async function guardarGasto(e) {
       descripcion: $('gasto-desc').value,
       monto: parseFloat($('gasto-monto').value),
       metodo_pago: $('gasto-metodo').value,
-      factura_proveedor: $('gasto-factura-prov').value || null,
+      factura_proveedor: $('gasto-factura-prov').value.trim(),
+      unidad_id: $('gasto-tipo-apl').value === 'Unidad' ? (parseInt($('gasto-unidad').value) || null) : null,
     };
+    if (payload.tipo_aplicacion === 'Unidad' && !payload.unidad_id) throw new Error('Seleccione la unidad a la que se aplica el gasto.');
 
     const {data, error} = await sb.rpc('axi_gasto_registrar', {p: payload});
     if (error) throw error;
