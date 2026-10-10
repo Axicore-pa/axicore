@@ -444,7 +444,7 @@
       <div id="page-rep-morosidad" class="page">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
           <h2 class="page-title" style="margin-bottom:0">Morosidad — Cuentas por Cobrar</h2>
-          <button class="btn btn-sm btn-outline rep-export" onclick="exportarReporte('morosidad')">⬇️ Exportar CSV</button>
+          <span id="rmor-export"></span>
         </div>
         <p style="font-size:.85rem;color:#4d4742;margin-bottom:1rem">Saldos pendientes por unidad con antigüedad al día de hoy.</p>
         <div class="cards-row" id="rmor-stats"></div>
@@ -1775,27 +1775,179 @@ function repRango(pfx) {
   const h = ($(pfx + '-hasta') || {}).value || null;
   return { desde: d, hasta: h };
 }
+function repSubtitulo(desde, hasta) {
+  if (!desde && !hasta) return 'Todos los períodos · corte ' + new Date().toLocaleDateString('es-DO');
+  return 'Período: ' + (desde || 'inicio') + ' a ' + (hasta || 'hoy');
+}
 function repFiltrosHTML(pfx, loader, tipo) {
-  const exp = sesion.rol === 'CEO'
-    ? `<button class="btn btn-sm btn-outline" onclick="exportarReporte('${tipo}')">⬇️ Exportar CSV</button>` : '';
   return `<div class="fld"><label>Desde</label><input type="date" id="${pfx}-desde"></div>
     <div class="fld"><label>Hasta</label><input type="date" id="${pfx}-hasta"></div>
-    <button class="btn btn-sm btn-success" onclick="${loader}()">Aplicar</button>${exp}`;
+    <button class="btn btn-sm btn-success" onclick="${loader}()">Aplicar</button>${exportGrupoHTML(tipo)}`;
 }
-function csvDescargar(nombre, headers, rows) {
-  const esc = v => { v = (v == null ? '' : String(v)); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  const sep = ';';
-  const lineas = [headers.map(esc).join(sep)].concat(rows.map(r => r.map(esc).join(sep)));
-  const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); URL.revokeObjectURL(a.href);
+// ---- Branding AXICORE (idéntico a Access) ----
+const BRAND = { navy: [27, 42, 73], gold: [192, 136, 56], off: [247, 245, 239], gry: [110, 110, 110] };
+const EMPRESA = 'Axicore Property Administration';
+const EMPRESA_FOOTER = 'Axicore Property Administration   |   Tel. (809) 282-7776   |   axispard@gmail.com';
+const LOGO_AXICORE = 'data:image/png;base64,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';
+const hoyStr = () => new Date().toISOString().slice(0, 10);
+const fmtCell = (c, money) => { if (c === null || c === undefined || c === '') return money ? '' : ''; if (money && !isNaN(parseFloat(c))) return 'RD$ ' + fmt(Number(c)); return String(c); };
+
+// Carga perezosa de librerías de exportación (jsPDF + autotable + ExcelJS)
+let _libsExportP;
+function cargarLibsExport() {
+  if (_libsExportP) return _libsExportP;
+  const add = src => new Promise((ok, err) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => err(new Error('No se pudo cargar ' + src)); document.head.appendChild(s); });
+  _libsExportP = (async () => {
+    if (!window.jspdf) {
+      await add('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+      await add('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+    }
+    if (!window.ExcelJS) await add('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');
+  })();
+  return _libsExportP;
 }
-function exportarReporte(tipo) {
+
+function exportGrupoHTML(tipo) {
+  if (sesion.rol !== 'CEO') return '';
+  return `<span class="rep-export" style="display:inline-flex;gap:.4rem;flex-wrap:wrap">
+    <button class="btn btn-sm btn-outline" onclick="exportarPDF('${tipo}')">⬇️ PDF</button>
+    <button class="btn btn-sm btn-outline" onclick="exportarExcel('${tipo}')">⬇️ Excel</button>
+    <button class="btn btn-sm btn-outline" onclick="emailReporte('${tipo}')">📧 Email</button></span>`;
+}
+
+// ---- Generador de PDF branded (jsPDF + autotable) ----
+function construirPDF(m) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: m.orientacion === 'p' ? 'portrait' : 'landscape', unit: 'pt', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth(), Hp = doc.internal.pageSize.getHeight();
+  const header = () => {
+    doc.setFillColor(...BRAND.navy); doc.rect(0, 0, W, 76, 'F');
+    doc.setFillColor(228, 230, 234); doc.rect(0, 0, W, 6, 'F');
+    doc.setFillColor(255, 255, 255); doc.roundedRect(36, 17, 170, 46, 4, 4, 'F');
+    try { doc.addImage(LOGO_AXICORE, 'PNG', 46, 26, 150, 28); } catch (e) {}
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.text(m.titulo, W - 36, 40, { align: 'right' });
+    if (m.subtitulo) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.gold); doc.text(m.subtitulo, W - 36, 58, { align: 'right' }); }
+    doc.setFillColor(...BRAND.gold); doc.rect(0, 76, W, 3, 'F');
+  };
+  const footer = () => {
+    doc.setDrawColor(...BRAND.gold); doc.setLineWidth(0.5); doc.line(36, Hp - 32, W - 36, Hp - 32);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...BRAND.gry);
+    doc.text(EMPRESA_FOOTER, W / 2, Hp - 20, { align: 'center' });
+    doc.text('Página ' + doc.internal.getNumberOfPages(), W - 36, Hp - 20, { align: 'right' });
+  };
+  let startY = 96;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...BRAND.navy);
+  doc.text(EMPRESA, 36, startY);
+  if (m.kpis && m.kpis.length) {
+    const n = m.kpis.length, gap = 10, bw = (W - 72 - gap * (n - 1)) / n, by = startY + 8, bh = 40;
+    m.kpis.forEach((k, i) => {
+      const bx = 36 + i * (bw + gap);
+      doc.setDrawColor(...BRAND.gold); doc.setLineWidth(1); doc.setFillColor(255, 255, 255);
+      doc.roundedRect(bx, by, bw, bh, 3, 3, 'FD');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...BRAND.gry);
+      doc.text(String(k.label).toUpperCase(), bx + 8, by + 15);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...BRAND.navy);
+      doc.text(String(k.value), bx + 8, by + 31);
+    });
+    startY = by + bh + 14;
+  } else startY += 10;
+  const money = new Set(m.moneyCols || []);
+  doc.autoTable({
+    head: [m.headers], body: m.rows.map(r => r.map((c, i) => fmtCell(c, money.has(i)))),
+    startY: startY, margin: { top: 90, left: 36, right: 36, bottom: 42 },
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 4, textColor: [40, 40, 40], lineColor: [228, 228, 228], lineWidth: 0.3, overflow: 'linebreak' },
+    headStyles: { fillColor: BRAND.navy, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: BRAND.off },
+    columnStyles: Object.fromEntries([...money].map(i => [i, { halign: 'right' }])),
+    didDrawPage: () => { header(); footer(); }
+  });
+  if (m.resumen && m.resumen.length) {
+    let y = doc.lastAutoTable.finalY + 14;
+    if (y > Hp - 80) { doc.addPage(); header(); footer(); y = 100; }
+    doc.setDrawColor(...BRAND.gold); doc.setLineWidth(1.2); doc.setFillColor(...BRAND.off);
+    doc.roundedRect(36, y, W - 72, 48, 3, 3, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...BRAND.navy);
+    doc.text('RESUMEN FINAL', 48, y + 19);
+    const perRow = Math.min(m.resumen.length, 4), colW = (W - 96) / perRow;
+    m.resumen.forEach((it, i) => {
+      const rx = 48 + (i % perRow) * colW, ry = y + 38;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...BRAND.gry);
+      doc.text(it.label + ':', rx, ry);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...BRAND.navy);
+      doc.text(String(it.value), rx + doc.getTextWidth(it.label + ': ') + 4, ry);
+    });
+  }
+  return doc;
+}
+
+// ---- Generador de Excel branded (ExcelJS) ----
+async function construirExcelBlob(m) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Reporte', { views: [{ showGridLines: false }] });
+  const nc = m.headers.length;
+  const hx = a => ({ argb: 'FF' + a.map(v => v.toString(16).padStart(2, '0')).join('') });
+  try { const id = wb.addImage({ base64: LOGO_AXICORE, extension: 'png' }); ws.addImage(id, { tl: { col: 0.1, row: 0.1 }, ext: { width: 150, height: 28 } }); } catch (e) {}
+  ws.mergeCells(1, 1, 2, nc); ws.getRow(1).height = 22; ws.getRow(2).height = 16;
+  const tc = ws.getCell(1, 1);
+  tc.value = m.titulo + (m.subtitulo ? '\n' + m.subtitulo : '');
+  tc.alignment = { vertical: 'middle', horizontal: 'right', wrapText: true };
+  tc.font = { bold: true, size: 14, color: hx([255, 255, 255]) };
+  for (let c = 1; c <= nc; c++) ws.getCell(1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: hx(BRAND.navy) };
+  let row = 4;
+  ws.getCell(row, 1).value = EMPRESA; ws.getCell(row, 1).font = { bold: true, size: 10, color: hx(BRAND.navy) };
+  row++;
+  if (m.kpis && m.kpis.length) {
+    row++;
+    m.kpis.forEach((k, i) => {
+      const cc = 1 + i * 2;
+      const lc = ws.getCell(row, cc); lc.value = k.label; lc.font = { size: 8, color: hx(BRAND.gry) };
+      const vc = ws.getCell(row + 1, cc); vc.value = k.value; vc.font = { bold: true, size: 11, color: hx(BRAND.navy) };
+    });
+    row += 3;
+  }
+  const headRow = row;
+  const hr = ws.getRow(headRow);
+  m.headers.forEach((h, i) => { const c = hr.getCell(i + 1); c.value = h; c.font = { bold: true, color: hx([255, 255, 255]) }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: hx(BRAND.navy) }; c.alignment = { horizontal: 'left' }; });
+  const money = new Set(m.moneyCols || []);
+  m.rows.forEach((r, ri) => {
+    const rr = ws.getRow(headRow + 1 + ri);
+    r.forEach((v, i) => {
+      const c = rr.getCell(i + 1);
+      if (money.has(i) && !isNaN(parseFloat(v)) && v !== '' && v !== null) { c.value = Number(v); c.numFmt = '"RD$" #,##0.00'; c.alignment = { horizontal: 'right' }; }
+      else c.value = (v === null || v === undefined) ? '' : v;
+    });
+    if (ri % 2 === 1) for (let i = 1; i <= nc; i++) rr.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: hx(BRAND.off) };
+  });
+  m.headers.forEach((h, i) => { let w = String(h).length + 2; m.rows.forEach(r => { const v = r[i]; if (v != null) w = Math.max(w, String(v).length + 2); }); ws.getColumn(i + 1).width = Math.min(Math.max(w, 10), 40); });
+  const fr = headRow + 1 + m.rows.length + 1;
+  ws.getCell(fr, 1).value = EMPRESA_FOOTER.replace(/\s{2,}/g, ' '); ws.getCell(fr, 1).font = { size: 8, color: hx(BRAND.gry) };
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+function descargarBlob(blob, nombre) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+
+async function exportarPDF(tipo) {
   if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
-  const d = repData[tipo];
-  if (!d || !d.rows.length) { alert('No hay datos para exportar.'); return; }
-  const hoy = new Date().toISOString().slice(0, 10);
-  csvDescargar(`AXICORE_${tipo}_${hoy}.csv`, d.headers, d.rows);
+  const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para exportar.'); return; }
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
+  construirPDF(m).save(`AXICORE_${tipo}_${hoyStr()}.pdf`);
+}
+async function exportarExcel(tipo) {
+  if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
+  const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para exportar.'); return; }
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
+  descargarBlob(await construirExcelBlob(m), `AXICORE_${tipo}_${hoyStr()}.xlsx`);
+}
+async function emailReporte(tipo) {
+  if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
+  const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para enviar.'); return; }
+  // Interino: genera el PDF (se descarga) y abre el cliente de correo para adjuntarlo.
+  await exportarPDF(tipo);
+  const asunto = encodeURIComponent('AXICORE — ' + m.titulo);
+  const cuerpo = encodeURIComponent('Estimados,\n\nAdjunto el reporte "' + m.titulo + '" generado desde AXICORE' + (m.subtitulo ? ' (' + m.subtitulo + ')' : '') + '.\n\nNota: el archivo PDF acaba de descargarse; por favor adjúntelo a este correo antes de enviarlo.\n\nSaludos,\n' + EMPRESA);
+  setTimeout(() => { window.location.href = 'mailto:?subject=' + asunto + '&body=' + cuerpo; }, 600);
 }
 
 async function cargarRepMorosidad() {
@@ -1822,9 +1974,14 @@ async function cargarRepMorosidad() {
       <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.d90_mas)}</td>
     </tr>`).join('')}</tbody></table>`;
   repData.morosidad = {
+    titulo: 'Reporte General de Cobros Pendientes', subtitulo: 'Fecha de corte: ' + new Date().toLocaleDateString('es-DO'), orientacion: 'l',
+    kpis: [{ label: 'Unidades en mora', value: rows.length }, { label: 'Balance total', value: fmtMoney(tot) }, { label: 'Vencido +90 días', value: fmtMoney(t90) }],
+    resumen: [{ label: 'Unidades en mora', value: rows.length }, { label: 'Balance total', value: fmtMoney(tot) }, { label: 'Vencido +90', value: fmtMoney(t90) }],
+    moneyCols: [2, 3, 4, 5, 6, 7, 8, 9],
     headers: ['Unidad', 'Propietario', 'Facturado', 'Pagado', 'Balance', 'Corriente', '1-30', '31-60', '61-90', '+90'],
     rows: rows.map(r => [r.unidad_codigo, r.propietario_nombre, r.total_facturado, r.total_pagado, r.balance, r.corriente, r.d1_30, r.d31_60, r.d61_90, r.d90_mas])
   };
+  $('rmor-export').innerHTML = exportGrupoHTML('morosidad');
 }
 
 async function cargarRepFlujo() {
@@ -1853,7 +2010,12 @@ async function cargarRepFlujo() {
       <tr style="font-weight:700;border-top:2px solid var(--ax-border)"><td>Total</td>
       <td class="text-right money">${fmt(ti)}</td><td class="text-right money">${fmt(te)}</td><td class="text-right money">${fmt(ti - te)}</td></tr>
     </tbody></table>`;
-  repData.ingresos_egresos = { headers: ['Mes', 'Ingresos', 'Egresos', 'Neto'], rows: rows.map(r => [r.mes, r.ingresos, r.egresos, r.neto]) };
+  repData.ingresos_egresos = {
+    titulo: 'Reporte de Ingresos vs Egresos', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
+    kpis: [{ label: 'Ingresos', value: fmtMoney(ti) }, { label: 'Egresos', value: fmtMoney(te) }, { label: 'Neto', value: fmtMoney(ti - te) }],
+    resumen: [{ label: 'Total ingresos', value: fmtMoney(ti) }, { label: 'Total egresos', value: fmtMoney(te) }, { label: 'Neto', value: fmtMoney(ti - te) }],
+    moneyCols: [1, 2, 3],
+    headers: ['Mes', 'Ingresos', 'Egresos', 'Neto'], rows: rows.map(r => [r.mes, r.ingresos, r.egresos, r.neto]) };
 }
 
 async function cargarRepFacturacion() {
@@ -1873,7 +2035,12 @@ async function cargarRepFacturacion() {
       <td>${r.unidad_codigo || ''}</td><td>${r.propietario_nombre || ''}</td><td>${r.tipo_factura || ''}</td>
       <td class="text-right money">${fmt(r.monto)}</td><td class="text-right money">${fmt(r.monto_pagado)}</td>
       <td class="text-right money">${fmt(r.balance_pendiente)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
-  repData.facturacion = { headers: ['No. Factura', 'Fecha', 'Vence', 'Unidad', 'Propietario', 'Tipo', 'Monto', 'Pagado', 'Balance', 'Estado'],
+  repData.facturacion = {
+    titulo: 'Reporte de Facturación del Período', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
+    kpis: [{ label: 'Facturas', value: rows.length }, { label: 'Total facturado', value: fmtMoney(tm) }, { label: 'Balance pendiente', value: fmtMoney(tb) }],
+    resumen: [{ label: 'Facturas', value: rows.length }, { label: 'Total facturado', value: fmtMoney(tm) }, { label: 'Balance pendiente', value: fmtMoney(tb) }],
+    moneyCols: [6, 7, 8],
+    headers: ['No. Factura', 'Fecha', 'Vence', 'Unidad', 'Propietario', 'Tipo', 'Monto', 'Pagado', 'Balance', 'Estado'],
     rows: rows.map(r => [r.no_factura, r.fecha_factura, r.fecha_vencimiento, r.unidad_codigo, r.propietario_nombre, r.tipo_factura, r.monto, r.monto_pagado, r.balance_pendiente, r.estado]) };
 }
 
@@ -1893,7 +2060,12 @@ async function cargarRepCobros() {
       <td>${r.recibido_de || ''}</td><td>${r.metodo || ''}</td><td>${r.banco || ''}</td>
       <td>${r.referencia || ''}</td><td>${r.tipo_movimiento || ''}</td>
       <td class="text-right money" style="color:var(--ax-success)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
-  repData.cobros = { headers: ['Código', 'Fecha', 'Unidad', 'Recibido de', 'Método', 'Banco', 'Referencia', 'Tipo mov.', 'Monto'],
+  repData.cobros = {
+    titulo: 'Reporte de Cobros del Período', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
+    kpis: [{ label: 'Pagos', value: rows.length }, { label: 'Total cobrado', value: fmtMoney(tm) }],
+    resumen: [{ label: 'Pagos', value: rows.length }, { label: 'Total cobrado', value: fmtMoney(tm) }],
+    moneyCols: [8],
+    headers: ['Código', 'Fecha', 'Unidad', 'Recibido de', 'Método', 'Banco', 'Referencia', 'Tipo mov.', 'Monto'],
     rows: rows.map(r => [r.codigo, r.fecha_pago, r.unidad_codigo, r.recibido_de, r.metodo, r.banco, r.referencia, r.tipo_movimiento, r.monto]) };
 }
 
@@ -1915,7 +2087,12 @@ async function cargarRepGastos() {
       <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || ''}</td>
       <td>${r.estado || ''}</td><td class="text-center">${r.afecta_fondo_comun ? 'Sí' : 'No'}</td>
       <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
-  repData.gastos = { headers: ['Código', 'Fecha', 'Proveedor', 'Categoría', 'Descripción', 'Estado', 'Fondo común', 'Monto'],
+  repData.gastos = {
+    titulo: 'Reporte de Gastos', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
+    kpis: [{ label: 'Gastos', value: rows.length }, { label: 'Total gastos', value: fmtMoney(tm) }, { label: 'Afectan fondo común', value: fmtMoney(tfc) }],
+    resumen: [{ label: 'Gastos', value: rows.length }, { label: 'Total gastos', value: fmtMoney(tm) }, { label: 'Afectan fondo común', value: fmtMoney(tfc) }],
+    moneyCols: [7],
+    headers: ['Código', 'Fecha', 'Proveedor', 'Categoría', 'Descripción', 'Estado', 'Fondo común', 'Monto'],
     rows: rows.map(r => [r.codigo, r.fecha, r.proveedor_nombre, r.categoria, r.descripcion, r.estado, r.afecta_fondo_comun ? 'Sí' : 'No', r.monto]) };
 }
 
@@ -1936,7 +2113,12 @@ async function cargarRepGlp() {
       <td class="text-right money">${fmt(r.lectura_anterior)}</td><td class="text-right money">${fmt(r.lectura_actual)}</td>
       <td class="text-right money">${fmt(r.consumo)}</td><td class="text-right money">${fmt(r.precio_unitario)}</td>
       <td class="text-right money">${fmt(r.monto_consumo)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
-  repData.glp = { headers: ['Período', 'Unidad', 'Medidor', 'Fecha', 'Lect. ant.', 'Lect. act.', 'Consumo', 'Precio', 'Monto', 'Estado'],
+  repData.glp = {
+    titulo: 'Reporte de GLP — Consumo', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
+    kpis: [{ label: 'Lecturas', value: rows.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
+    resumen: [{ label: 'Lecturas', value: rows.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
+    moneyCols: [8],
+    headers: ['Período', 'Unidad', 'Medidor', 'Fecha', 'Lect. ant.', 'Lect. act.', 'Consumo', 'Precio', 'Monto', 'Estado'],
     rows: rows.map(r => [r.periodo, r.unidad_codigo, r.medidor, r.fecha_lectura, r.lectura_anterior, r.lectura_actual, r.consumo, r.precio_unitario, r.monto_consumo, r.estado]) };
 }
 
