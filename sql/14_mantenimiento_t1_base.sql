@@ -1,0 +1,19 @@
+-- AXICORE | Modulo Mantenimiento - T1 Base (APLICADA 10/10/2026, aprobada por Misael)
+-- Columnas nuevas en mantenimientos: bloque, condominio_texto, unidad_texto, origen, evidencia(jsonb),
+--   fecha_evaluacion, fecha_en_proceso, fecha_resuelto, fecha_cancelado, solucion, comunicacion_emitida_at, es_historico.
+-- mantenimiento_historial: estado_anterior, usuario_auth, usuario_nombre, comentario.
+-- Configuracion editable (solo CEO): mant_estados (Recibido 0, En evaluación 20, En proceso 50, Resuelto 90, Cerrado 100,
+--   Cancelado fuera del indice), mant_prioridades (Crítica 1h x4, Alta 24h x3, Media 72h x2, Baja 168h x1),
+--   mant_parametros (peso_avance 40, peso_plazo 40, peso_atrasos 20, verde_desde 80, amarillo_desde 60, fecha_arranque 2026-10-10).
+-- mant_asignaciones: proveedor + tecnico (nombre, apellido, cedula completa, telefono) + fecha estimada.
+--   RLS: solo CEO/staff Mantenimientos.ver lo leen; nadie escribe directo (solo via fn_mant_cambiar_estado).
+-- Triggers: trg_mant_estado_fechas (valida estado y sella fecha de cada etapa) y trg_mant_estado_historial
+--   (cada cambio de estado -> historial con usuario, fecha y comentario; aplica aunque se edite la tabla directo).
+-- Funciones: fn_mant_cambiar_estado(id, estado, comentario, asignacion jsonb) [solo avanza; Resuelto->En proceso permitido;
+--   En proceso exige tecnico + cedula de 11 digitos + fecha estimada; Resuelto exige solucion; Cancelado exige motivo;
+--   Cerrado/Cancelado son finales], fn_mant_bandeja(condo, incluir_cerrados), fn_mant_detalle(id) [cedula_mascara],
+--   private.mant_recibir_externo(jsonb) [para la Edge Function; idempotente por AXI-RPT; ubica condominio/unidad por texto],
+--   private.mask_cedula (001-•••••••-4), private.nombre_actor, private.norm_txt.
+-- Historicos de Access: Abierto -> Recibido, es_historico=true (fuera del indice); portal_reportar_averia nace 'Recibido'.
+-- Probado con rollback: recepcion + duplicado, transiciones invalidas bloqueadas, cedula enmascarada,
+--   propietario no lee asignaciones ni cambia estados.
