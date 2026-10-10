@@ -1639,13 +1639,14 @@ function navegar(page) {
     'cap-proveedores': cargarCapProveedores,
     'cap-usuarios': cargarCapUsuarios,
   };
-  if (loaders[page]) loaders[page]();
+  if (loaders[page]) loaders[page]().catch?.(err => console.error('Loader error ['+page+']:', err));
   return false;
 }
 
 // ==================== CEO: DASHBOARD ====================
 async function cargarDashboard() {
   const cid = sesion.condominio_id;
+  try {
 
   // Paralelo: ECG totales + cobros + conteos + gastos + flujo mensual + morosidad
   const [ecg, cobrosCount, facturas, pagosCount, gastosRes, flujoRes, moraRes] = await Promise.all([
@@ -1654,9 +1655,13 @@ async function cargarDashboard() {
     sb.from('facturas').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('pagos').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('gastos').select('id, monto, estado').eq('condominio_id', cid).neq('estado', 'Eliminado'),
-    sb.rpc('axi_flujo_mensual', {p_condominio_id: cid}).catch(() => ({data:[]})),
-    sb.rpc('axi_mora_resumen', {p_condominio_id: cid}).catch(() => ({data:[]})),
+    sb.rpc('axi_flujo_mensual', {p_condominio_id: cid}).then(r => r.error ? {data:[]} : r).catch(() => ({data:[]})),
+    sb.rpc('axi_mora_resumen', {p_condominio_id: cid}).then(r => r.error ? {data:[]} : r).catch(() => ({data:[]})),
   ]);
+
+  // Log any Supabase-level errors (non-throwing)
+  if (ecg.error) console.warn('Dashboard ecg error:', ecg.error.message);
+  if (gastosRes.error) console.warn('Dashboard gastos error:', gastosRes.error.message);
 
   // Stats — compact KPI cards
   const e = ecg.data?.[0] || {};
@@ -1772,6 +1777,18 @@ async function cargarDashboard() {
       <p>Sin datos de morosidad</p>
       <p style="font-size:.75rem;margin-top:.4rem">Los datos se calculan desde el reporte de Morosidad</p>
     </div>`;
+  }
+
+  } catch (err) {
+    console.error('Dashboard error:', err);
+    const el = $('dash-stats');
+    if (el && el.querySelector('.loading')) {
+      el.innerHTML = `<div class="alert alert-error" style="display:block">Error cargando dashboard: ${err.message || 'Error desconocido'}. <a href="#" onclick="cargarDashboard();return false">Reintentar</a></div>`;
+    }
+    const cf = $('dash-chart-flujo');
+    if (cf && cf.querySelector('.loading')) cf.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--ax-muted)">No se pudo cargar</div>';
+    const cm = $('dash-chart-mora');
+    if (cm && cm.querySelector('.loading')) cm.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--ax-muted)">No se pudo cargar</div>';
   }
 }
 
