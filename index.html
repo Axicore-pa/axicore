@@ -2714,17 +2714,20 @@ async function cargarCapProveedores() {
     <tbody>${data.map(r => `<tr>
       <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
       <td>${r.rnc_cedula||'—'}</td><td>${r.servicio||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
-      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Activo':'Inactivo'}</span></td>
+      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Activo':'Inactivo'}</span>${badgeAprob(r.estado_aprobacion)}</td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapProveedor(${r.id})">✏️</button></td>
     </tr>`).join('')}</tbody></table>`;
 }
 
+let provEdit = null; // proveedor original en edicion (para diff)
 async function abrirModalCapProveedor(id) {
   $('cap-prov-alert').style.display='none'; $('form-cap-proveedor').reset();
+  provEdit = null;
   if (id) {
     $('cap-prov-titulo').textContent = 'Editar Proveedor';
     const {data} = await sb.from('proveedores').select('*').eq('id', id).single();
     if (!data) return;
+    provEdit = data;
     $('cap-prov-id').value = data.id;
     $('cap-prov-nombre').value = data.nombre||'';
     $('cap-prov-comercial').value = data.nombre_comercial||'';
@@ -2768,6 +2771,23 @@ async function guardarCapProveedor(e) {
       activo: $('cap-prov-activo').value === 'true',
     };
     const id = $('cap-prov-id').value;
+    const esCEO = sesion.rol === 'CEO';
+
+    // EDICION por Asistente -> solicitud de cambio (Sometido). CEO edita directo.
+    if (id && !esCEO) {
+      const cambios = {};
+      for (const k in payload) {
+        const anterior = provEdit ? provEdit[k] : undefined;
+        if (String(anterior ?? '') !== String(payload[k] ?? '')) cambios[k] = payload[k];
+      }
+      if (!Object.keys(cambios).length) { $('cap-prov-alert').textContent='No hay cambios.'; $('cap-prov-alert').style.display='block'; btn.textContent='Guardar'; btn.disabled=false; return; }
+      const {data, error} = await sb.rpc('fn_proveedor_solicitar_cambio', {p_proveedor_id: parseInt(id), p_cambios: cambios});
+      if (error) throw error;
+      cerrarModal('modal-cap-proveedor'); cargarCapProveedores();
+      alert(`✅ ${data?.cambios || 0} cambio(s) enviados al CEO para aprobación.`);
+      return;
+    }
+
     if (!id) {
       const {data: codData} = await sb.rpc('axi_codigo_proveedor', {p_condominio_id: sesion.condominio_id});
       payload.codigo = codData;
@@ -2777,7 +2797,8 @@ async function guardarCapProveedor(e) {
       : await sb.from('proveedores').insert(payload);
     if (error) throw error;
     cerrarModal('modal-cap-proveedor'); cargarCapProveedores();
-    alert(id ? '✅ Proveedor actualizado' : '✅ Proveedor creado');
+    if (!id && !esCEO) alert('✅ Proveedor creado — queda PENDIENTE de aprobación del CEO.');
+    else alert(id ? '✅ Proveedor actualizado' : '✅ Proveedor creado');
   } catch(err) { $('cap-prov-alert').textContent=err.message; $('cap-prov-alert').style.display='block';
   } finally { btn.textContent='Guardar'; btn.disabled=false; }
 }
