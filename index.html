@@ -407,7 +407,7 @@
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
-      <div class="section-title">Condominio</div>
+      <div class="section-title" id="nav-res-condo-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Gastos del Condominio</a>
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Pago</a>
       <a href="#" onclick="navegar('fondo-comun')" data-page="fondo-comun"><svg class="sb-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Fondo Común</a>
@@ -715,7 +715,7 @@
         <h2 class="page-title">Fondo Común del Condominio</h2>
         <div class="cards-row" id="fc-stats"></div>
         <div class="card">
-          <div class="card-header">Movimientos</div>
+          <div class="card-header">Resumen mensual</div>
           <div class="card-body" id="fc-movimientos">
             <div class="loading">Cargando...</div>
           </div>
@@ -1464,8 +1464,29 @@ function entrarAlApp() {
 // Morosidad global es solo para Propietario (indicador anónimo); Inquilino no la ve.
 function aplicarRestriccionesResidente() {
   const esProp = sesion.rol === 'Propietario';
-  const nm = $('nav-morosidad');
-  if (nm) nm.style.display = esProp ? '' : 'none';
+  // Inquilino: no ve fondo comun, gastos, comprobantes del condominio ni morosidad (decision Misael, opcion B)
+  ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
+    const a = document.querySelector('#sidebar-residente a[data-page="' + p + '"]');
+    if (a) a.style.display = esProp ? '' : 'none';
+  });
+  const t = $('nav-res-condo-title'); if (t) t.style.display = esProp ? '' : 'none';
+}
+
+// Paginas permitidas por rol (capa visual; el backend tambien bloquea)
+const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_SOLO_PROPIETARIO = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones'];
+function paginaPermitida(page) {
+  if (!sesion) return 'dashboard';
+  const rol = sesion.rol;
+  if (rol === 'Propietario' || rol === 'Inquilino') {
+    if (!PAG_RESIDENTE.includes(page)) return 'mi-cuenta';
+    if (rol === 'Inquilino' && PAG_SOLO_PROPIETARIO.includes(page)) return 'mi-cuenta';
+    return page;
+  }
+  if (PAG_RESIDENTE.includes(page)) return 'dashboard';
+  if (rol !== 'CEO' && PAG_SOLO_CEO.includes(page)) return 'dashboard';
+  return page;
 }
 
 // Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
@@ -1536,7 +1557,9 @@ function cambiarCondominio(id, nombre, rol) {
   if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
     $('sidebar-ceo').style.display = 'block';
     $('sidebar-residente').style.display = 'none';
+    aplicarRestriccionesRol();
     navegar('dashboard');
+    actualizarBadgeAprobaciones();
   } else {
     $('sidebar-ceo').style.display = 'none';
     $('sidebar-residente').style.display = 'block';
@@ -1591,6 +1614,7 @@ function toggleModule(id) {
 
 // ==================== NAVEGACIÓN ====================
 function navegar(page) {
+  page = paginaPermitida(page);
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = $('page-' + page);
   if (el) el.classList.add('active');
@@ -1651,7 +1675,7 @@ async function cargarDashboard() {
   // Paralelo: ECG totales + cobros + conteos + gastos + flujo mensual + morosidad
   const [ecg, cobrosCount, facturas, pagosCount, gastosRes, flujoRes, moraRes] = await Promise.all([
     sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
-    sb.from('v_cobros_pendientes').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
+    sb.from('v_cobros_pendientes').select('factura_id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('facturas').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('pagos').select('id', {count:'exact', head:true}).eq('condominio_id', cid),
     sb.from('gastos').select('id, monto, estado').eq('condominio_id', cid).neq('estado', 'Eliminado'),
@@ -1660,7 +1684,8 @@ async function cargarDashboard() {
   ]);
 
   // Log any Supabase-level errors (non-throwing)
-  if (ecg.error) console.warn('Dashboard ecg error:', ecg.error.message);
+  const esCEOdash = sesion.rol === 'CEO';
+  if (ecg.error && esCEOdash) console.warn('Dashboard ecg error:', ecg.error.message);
   if (gastosRes.error) console.warn('Dashboard gastos error:', gastosRes.error.message);
 
   // Stats — compact KPI cards
@@ -1670,6 +1695,14 @@ async function cargarDashboard() {
   const gastosPend = allGastos.filter(g => g.estado === 'Registrado').length;
   const pendientes = cobrosCount.count || 0;
 
+  // Asistente: sin fondo comun ni ingresos/egresos (no accede al ECG)
+  if (!esCEOdash) {
+    $('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Facturas</div><div class="value">${facturas.count || 0}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Pagos</div><div class="value">${pagosCount.count || 0}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Gastos por pagar</div><div class="value">${gastosPend}</div></div>
+    <div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Cobros pendientes</div><div class="value" style="color:${pendientes > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${pendientes}</div></div>`;
+  } else
   $('dash-stats').innerHTML = `
     <div class="stat-card">
       <div class="accent-bar green"></div>
@@ -1688,7 +1721,7 @@ async function cargarDashboard() {
     </div>
     <div class="stat-card">
       <div class="accent-bar yellow"></div>
-      <div class="label">Cobros vencidos</div>
+      <div class="label">Cobros pendientes</div>
       <div class="value" style="color:${pendientes > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${pendientes}</div>
     </div>
   `;
@@ -1696,6 +1729,8 @@ async function cargarDashboard() {
   // ── Ingresos vs Egresos CSS bar chart ──
   const flujoData = flujoRes.data || [];
   const chartEl = $('dash-chart-flujo');
+  const flujoCard = chartEl ? chartEl.closest('.card') : null;
+  if (flujoCard) flujoCard.style.display = esCEOdash ? '' : 'none';
   if (flujoData.length) {
     const maxVal = Math.max(...flujoData.map(r => Math.max(parseFloat(r.ingresos||0), parseFloat(r.egresos||0))), 1);
     chartEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:.5rem">
@@ -2732,6 +2767,11 @@ async function cargarMisSolicitudes() {
 
 // ==================== UTILIDAD RESIDENTE ====================
 async function obtenerMiUnidad() {
+  try {
+    const {data: perfil} = await sb.rpc('mi_perfil');
+    const ids = sesion.rol === 'Inquilino' ? (perfil?.unidades_inquilino || []) : (perfil?.unidades_propias || []);
+    if (ids.length) return ids[0];
+  } catch (_) {}
   const {data: {user}} = await sb.auth.getUser();
   if (!user) return null;
 
@@ -2853,32 +2893,28 @@ async function cargarMisPagos() {
 // ==================== RESIDENTE: FONDO COMÚN ====================
 async function cargarFondoComun() {
   const cid = sesion.condominio_id;
-  const [totales, movs] = await Promise.all([
-    sb.rpc('axi_ecg_totales', {p_condominio_id: cid}),
-    sb.rpc('axi_ecg_movimientos', {p_condominio_id: cid}),
-  ]);
-
-  const t = totales.data?.[0] || {};
+  $('fc-movimientos').innerHTML = '<div class="loading">Cargando...</div>';
+  const {data, error} = await sb.rpc('portal_fondo_comun', {p_condominio_id: cid});
+  if (error) { $('fc-stats').innerHTML = ''; $('fc-movimientos').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  const rows = data || [];
+  const ing = rows.reduce((a, r) => a + parseFloat(r.ingresos || 0), 0);
+  const egr = rows.reduce((a, r) => a + parseFloat(r.egresos || 0), 0);
+  const bal = rows.length ? parseFloat(rows[rows.length - 1].balance_acumulado || 0) : 0;
   $('fc-stats').innerHTML = `
-    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Ingresos</div><div class="value green money">${fmtMoney(t.total_ingresos)}</div></div>
-    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Egresos</div><div class="value red money">${fmtMoney(t.total_egresos)}</div></div>
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Balance</div><div class="value blue money">${fmtMoney(t.balance)}</div></div>
-  `;
-
-  // Solo gastos del fondo común (operativos con afecta_fondo_comun)
-  const rows = (movs.data || []);
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Ingresos</div><div class="value green money">${fmtMoney(ing)}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Egresos</div><div class="value red money">${fmtMoney(egr)}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Balance del fondo</div><div class="value money" style="color:var(--ax-gold)">${fmtMoney(bal)}</div></div>`;
   if (!rows.length) { $('fc-movimientos').innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
-  $('fc-movimientos').innerHTML = `<table>
-    <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-right">Entrada</th><th class="text-right">Salida</th></tr></thead>
-    <tbody>${rows.slice(0, 50).map(r => `
-      <tr>
-        <td>${r.fecha}</td>
-        <td><span class="badge ${r.tipo_movimiento.includes('Ingreso') ? 'badge-success' : 'badge-danger'}">${r.tipo_movimiento}</span></td>
-        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
-        <td class="text-right money" style="color:var(--ax-success)">${r.entrada > 0 ? fmt(r.entrada) : ''}</td>
-        <td class="text-right money" style="color:var(--ax-danger)">${r.salida > 0 ? fmt(r.salida) : ''}</td>
-      </tr>`).join('')}
-    </tbody>
+  $('fc-movimientos').innerHTML = `<p style="font-size:.85rem;margin-bottom:.8rem;color:var(--ax-text-muted,#666)">Resumen por mes. El detalle de los gastos con su soporte está en <a href="#" onclick="return navegar('gastos-condo')">Gastos del Condominio</a>.</p>
+  <table>
+    <thead><tr><th>Mes</th><th class="text-right">Ingresos</th><th class="text-right">Egresos</th><th class="text-right">Balance del mes</th><th class="text-right">Balance acumulado</th></tr></thead>
+    <tbody>${rows.slice().reverse().map(r => `<tr>
+      <td>${r.periodo}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.ingresos)}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.egresos)}</td>
+      <td class="text-right money">${fmt(r.balance_periodo)}</td>
+      <td class="text-right money"><strong>${fmt(r.balance_acumulado)}</strong></td>
+    </tr>`).join('')}</tbody>
   </table>`;
 }
 
@@ -3269,29 +3305,30 @@ async function guardarGasto(e) {
 
 // ==================== RESIDENTE: GASTOS DEL CONDOMINIO ====================
 async function cargarGastosCondo() {
-  const {data, error} = await sb.from('gastos')
-    .select('*, proveedores(nombre)')
-    .eq('condominio_id', sesion.condominio_id)
-    .neq('estado', 'Eliminado')
-    .order('fecha', {ascending: false}).limit(50);
-
-  if (error) { $('gastos-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  const {data, error} = await sb.rpc('portal_gastos_fondo_comun', {p_condominio_id: sesion.condominio_id});
+  if (error) { $('gastos-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
   if (!data?.length) { $('gastos-condo-lista').innerHTML = '<div class="empty">Sin gastos registrados</div>'; return; }
-
-  const total = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
+  const total = data.reduce((a, r) => a + parseFloat(r.monto || 0), 0);
   const badgeClass = e => e === 'Pagado' ? 'badge-success' : e === 'Registrado' ? 'badge-warning' : 'badge-danger';
-
+  const soporte = r => {
+    const links = [];
+    if (r.foto_factura_url && /^https?:\/\//.test(r.foto_factura_url)) links.push(`<a href="${r.foto_factura_url}" target="_blank" rel="noopener">📄 Factura</a>`);
+    const fs = Array.isArray(r.facturas_soporte) ? r.facturas_soporte : [];
+    if (fs.length) links.push(fs.map(f => `<span title="${(f.concepto || '').replace(/"/g, '')}">${f.no_factura || ''}</span>`).join(', '));
+    return links.join(' · ') || (r.factura_proveedor || '—');
+  };
   $('gastos-condo-lista').innerHTML = `
-    <p style="margin-bottom:1rem;font-size:.9rem">Total gastos: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} registros</p>
+    <p style="margin-bottom:1rem;font-size:.9rem">Total gastos del fondo común: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} registros</p>
     <table>
-      <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th>Soporte</th><th class="text-center">Estado</th></tr></thead>
       <tbody>${data.map(r => `<tr>
         <td>${r.fecha}</td>
         <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
-        <td>${r.proveedores?.nombre || '—'}</td>
+        <td>${r.proveedor || '—'}</td>
         <td>${r.categoria || '—'}</td>
-        <td>${(r.descripcion || '').substring(0, 40)}${(r.descripcion||'').length > 40 ? '…' : ''}</td>
+        <td>${(r.descripcion || '').substring(0, 40)}${(r.descripcion || '').length > 40 ? '…' : ''}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
+        <td style="font-size:.8rem">${soporte(r)}</td>
         <td class="text-center"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></td>
       </tr>`).join('')}
       </tbody>

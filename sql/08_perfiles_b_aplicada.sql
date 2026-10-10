@@ -1,0 +1,6 @@
+-- AXICORE | Tarea B (APLICADA 10/10/2026): estado de cuenta del inquilino
+-- axi_ec_unidad_resumen / axi_ec_unidad_movimientos: ademas de CEO/staff/propietario,
+-- el inquilino de la unidad (private.unidades_inquilino) puede consultarla, pero SOLO ve
+-- facturas emitidas a su nombre (f.inquilino_id = ANY(private.mis_inquilinos())) y sus pagos.
+-- Verificado: inquilino 11 (u8) ve 831.65 de 12,331.65 de la unidad; inquilino 10 no ve u18.
+-- Para revertir: volver a los cuerpos de sql/07_roles_aprobaciones.sql seccion 10.
