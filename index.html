@@ -237,6 +237,19 @@
   .condo-dropdown a:hover { background:var(--ax-bg); }
   .condo-dropdown a.active-condo { background:#eaf4fd; font-weight:600; color:var(--ax-accent); }
   .condo-dropdown .dd-rol { font-size:.7rem; color:var(--ax-muted); text-transform:uppercase; }
+  /* Reportes */
+  .rep-filtros { display:flex; gap:.6rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1rem; }
+  .rep-filtros .fld { display:flex; flex-direction:column; gap:.2rem; }
+  .rep-filtros label { font-size:.7rem; color:var(--ax-muted); text-transform:uppercase; letter-spacing:.5px; }
+  .rep-filtros input[type=date] { padding:.45rem .6rem; border:1px solid var(--ax-border); border-radius:6px; font-size:.85rem; background:#fff; color:var(--ax-text); }
+  .rep-export { display:none; }
+  .bars { display:flex; flex-direction:column; gap:.5rem; margin:.5rem 0 1rem; }
+  .bars .row { display:grid; grid-template-columns:72px 1fr; gap:.6rem; align-items:center; font-size:.8rem; }
+  .bars .track { position:relative; height:22px; background:var(--ax-bg); border-radius:4px; display:flex; }
+  .bars .seg { height:100%; border-radius:4px; }
+  .bars .seg.ing { background:var(--ax-success); }
+  .bars .seg.egr { background:var(--ax-danger); }
+  .bars .lbl { font-size:.72rem; color:var(--ax-muted); white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -339,7 +352,13 @@
         </div>
         <div class="module-links">
           <a href="#" onclick="navegar('ecg')" data-page="ecg">📊 Estado de Cuenta General</a>
-          <a href="#" onclick="navegar('unidades')" data-page="unidades">🏠 Unidades</a>
+          <a href="#" onclick="navegar('unidades')" data-page="unidades">🏠 Estado por Unidad</a>
+          <a href="#" onclick="navegar('rep-morosidad')" data-page="rep-morosidad">📉 Morosidad (cuentas por cobrar)</a>
+          <a href="#" onclick="navegar('rep-flujo')" data-page="rep-flujo">📈 Ingresos vs Egresos</a>
+          <a href="#" onclick="navegar('rep-facturacion')" data-page="rep-facturacion">🧾 Facturación del período</a>
+          <a href="#" onclick="navegar('rep-cobros')" data-page="rep-cobros">💵 Cobros del período</a>
+          <a href="#" onclick="navegar('rep-gastos')" data-page="rep-gastos">📤 Gastos</a>
+          <a href="#" onclick="navegar('rep-glp')" data-page="rep-glp">🔥 GLP (consumo)</a>
         </div>
       </div>
 
@@ -416,6 +435,57 @@
             <div class="loading">Cargando...</div>
           </div>
         </div>
+      </div>
+
+      <!-- ===== REPORTE: MOROSIDAD ===== -->
+      <div id="page-rep-morosidad" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+          <h2 class="page-title" style="margin-bottom:0">Morosidad — Cuentas por Cobrar</h2>
+          <button class="btn btn-sm btn-outline rep-export" onclick="exportarReporte('morosidad')">⬇️ Exportar CSV</button>
+        </div>
+        <p style="font-size:.85rem;color:#4d4742;margin-bottom:1rem">Saldos pendientes por unidad con antigüedad al día de hoy.</p>
+        <div class="cards-row" id="rmor-stats"></div>
+        <div class="card"><div class="card-body" id="rmor-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== REPORTE: INGRESOS VS EGRESOS ===== -->
+      <div id="page-rep-flujo" class="page">
+        <h2 class="page-title">Ingresos vs Egresos</h2>
+        <div class="rep-filtros" id="rflujo-filtros"></div>
+        <div class="cards-row" id="rflujo-stats"></div>
+        <div class="card"><div class="card-header">Por mes</div><div class="card-body"><div id="rflujo-chart"></div><div id="rflujo-tabla"></div></div></div>
+      </div>
+
+      <!-- ===== REPORTE: FACTURACIÓN DEL PERÍODO ===== -->
+      <div id="page-rep-facturacion" class="page">
+        <h2 class="page-title">Facturación del Período</h2>
+        <div class="rep-filtros" id="rfac-filtros"></div>
+        <div class="cards-row" id="rfac-stats"></div>
+        <div class="card"><div class="card-body" id="rfac-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== REPORTE: COBROS DEL PERÍODO ===== -->
+      <div id="page-rep-cobros" class="page">
+        <h2 class="page-title">Cobros del Período</h2>
+        <div class="rep-filtros" id="rcob-filtros"></div>
+        <div class="cards-row" id="rcob-stats"></div>
+        <div class="card"><div class="card-body" id="rcob-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== REPORTE: GASTOS ===== -->
+      <div id="page-rep-gastos" class="page">
+        <h2 class="page-title">Gastos</h2>
+        <div class="rep-filtros" id="rgas-filtros"></div>
+        <div class="cards-row" id="rgas-stats"></div>
+        <div class="card"><div class="card-body" id="rgas-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== REPORTE: GLP ===== -->
+      <div id="page-rep-glp" class="page">
+        <h2 class="page-title">GLP — Consumo y Facturación</h2>
+        <div class="rep-filtros" id="rglp-filtros"></div>
+        <div class="cards-row" id="rglp-stats"></div>
+        <div class="card"><div class="card-body" id="rglp-lista"><div class="loading">Cargando...</div></div></div>
       </div>
 
       <!-- ===== FACTURACIÓN ===== -->
@@ -1318,6 +1388,8 @@ function aplicarRestriccionesRol() {
     const a = document.querySelector('.sidebar a[data-page="' + p + '"]');
     if (a) a.style.display = esCEO ? '' : 'none';
   });
+  // Exportar reportes: solo CEO (Asistente no exporta)
+  document.querySelectorAll('.rep-export').forEach(b => { b.style.display = esCEO ? 'inline-block' : 'none'; });
 }
 
 async function actualizarBadgeAprobaciones() {
@@ -1440,6 +1512,12 @@ function navegar(page) {
     'cobros': cargarCobros,
     'ecg': cargarECG,
     'unidades': cargarUnidades,
+    'rep-morosidad': cargarRepMorosidad,
+    'rep-flujo': cargarRepFlujo,
+    'rep-facturacion': cargarRepFacturacion,
+    'rep-cobros': cargarRepCobros,
+    'rep-gastos': cargarRepGastos,
+    'rep-glp': cargarRepGlp,
     'facturacion': cargarFacturacion,
     'pagos': cargarPagos,
     'gastos': cargarGastos,
@@ -1636,6 +1714,182 @@ async function cargarUnidades() {
     }).join('')}
     </tbody>
   </table>`;
+}
+
+// ==================== REPORTES ====================
+const repData = {};  // guarda {headers, rows} del último render para exportar
+
+function repCard(label, value, cls) {
+  return `<div class="stat-card"><div class="accent-bar ${cls||'blue'}"></div><div class="label">${label}</div><div class="value ${cls||'blue'}">${value}</div></div>`;
+}
+function repRango(pfx) {
+  const d = ($(pfx + '-desde') || {}).value || null;
+  const h = ($(pfx + '-hasta') || {}).value || null;
+  return { desde: d, hasta: h };
+}
+function repFiltrosHTML(pfx, loader, tipo) {
+  const exp = sesion.rol === 'CEO'
+    ? `<button class="btn btn-sm btn-outline" onclick="exportarReporte('${tipo}')">⬇️ Exportar CSV</button>` : '';
+  return `<div class="fld"><label>Desde</label><input type="date" id="${pfx}-desde"></div>
+    <div class="fld"><label>Hasta</label><input type="date" id="${pfx}-hasta"></div>
+    <button class="btn btn-sm btn-success" onclick="${loader}()">Aplicar</button>${exp}`;
+}
+function csvDescargar(nombre, headers, rows) {
+  const esc = v => { v = (v == null ? '' : String(v)); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const sep = ';';
+  const lineas = [headers.map(esc).join(sep)].concat(rows.map(r => r.map(esc).join(sep)));
+  const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); URL.revokeObjectURL(a.href);
+}
+function exportarReporte(tipo) {
+  if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
+  const d = repData[tipo];
+  if (!d || !d.rows.length) { alert('No hay datos para exportar.'); return; }
+  const hoy = new Date().toISOString().slice(0, 10);
+  csvDescargar(`AXICORE_${tipo}_${hoy}.csv`, d.headers, d.rows);
+}
+
+async function cargarRepMorosidad() {
+  const { data, error } = await sb.rpc('fn_reporte_morosidad', { p_condominio_id: sesion.condominio_id });
+  if (error) { $('rmor-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const tot = rows.reduce((a, r) => a + Number(r.balance || 0), 0);
+  const t90 = rows.reduce((a, r) => a + Number(r.d90_mas || 0), 0);
+  $('rmor-stats').innerHTML = repCard('Balance total', fmtMoney(tot), 'red')
+    + repCard('Unidades en mora', rows.length, 'blue')
+    + repCard('Vencido +90 días', fmtMoney(t90), 'red');
+  if (!rows.length) { $('rmor-lista').innerHTML = '<div class="empty">Sin cuentas por cobrar 🎉</div>'; repData.morosidad = { headers: [], rows: [] }; return; }
+  $('rmor-lista').innerHTML = `<table>
+    <thead><tr><th>Unidad</th><th>Propietario</th><th class="text-right">Facturado</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th class="text-right">Corriente</th><th class="text-right">1-30</th><th class="text-right">31-60</th><th class="text-right">61-90</th><th class="text-right">+90</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.unidad_codigo || ''}</td><td>${r.propietario_nombre || ''}</td>
+      <td class="text-right money">${fmt(r.total_facturado)}</td>
+      <td class="text-right money">${fmt(r.total_pagado)}</td>
+      <td class="text-right money" style="color:var(--ax-danger);font-weight:600">${fmt(r.balance)}</td>
+      <td class="text-right money">${fmt(r.corriente)}</td>
+      <td class="text-right money">${fmt(r.d1_30)}</td>
+      <td class="text-right money">${fmt(r.d31_60)}</td>
+      <td class="text-right money">${fmt(r.d61_90)}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.d90_mas)}</td>
+    </tr>`).join('')}</tbody></table>`;
+  repData.morosidad = {
+    headers: ['Unidad', 'Propietario', 'Facturado', 'Pagado', 'Balance', 'Corriente', '1-30', '31-60', '61-90', '+90'],
+    rows: rows.map(r => [r.unidad_codigo, r.propietario_nombre, r.total_facturado, r.total_pagado, r.balance, r.corriente, r.d1_30, r.d31_60, r.d61_90, r.d90_mas])
+  };
+}
+
+async function cargarRepFlujo() {
+  const f = $('rflujo-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rflujo', 'cargarRepFlujo', 'ingresos_egresos');
+  const { desde, hasta } = repRango('rflujo');
+  const { data, error } = await sb.rpc('fn_reporte_flujo_mensual', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
+  if (error) { $('rflujo-tabla').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const ti = rows.reduce((a, r) => a + Number(r.ingresos || 0), 0);
+  const te = rows.reduce((a, r) => a + Number(r.egresos || 0), 0);
+  $('rflujo-stats').innerHTML = repCard('Ingresos', fmtMoney(ti), 'green') + repCard('Egresos', fmtMoney(te), 'red') + repCard('Neto', fmtMoney(ti - te), 'blue');
+  if (!rows.length) { $('rflujo-chart').innerHTML = ''; $('rflujo-tabla').innerHTML = '<div class="empty">Sin movimientos en el período</div>'; repData.ingresos_egresos = { headers: [], rows: [] }; return; }
+  const max = Math.max(...rows.map(r => Math.max(Number(r.ingresos), Number(r.egresos))), 1);
+  $('rflujo-chart').innerHTML = `<div style="font-size:.72rem;color:var(--ax-muted);margin-bottom:.5rem">
+      <span style="color:var(--ax-success)">■</span> Ingresos &nbsp; <span style="color:var(--ax-danger)">■</span> Egresos</div>
+    <div class="bars">${rows.map(r => `<div class="row"><span class="lbl">${r.mes}</span><div>
+      <div class="track" style="margin-bottom:3px"><div class="seg ing" style="width:${Number(r.ingresos) / max * 100}%"></div></div>
+      <div class="track"><div class="seg egr" style="width:${Number(r.egresos) / max * 100}%"></div></div>
+    </div></div>`).join('')}</div>`;
+  $('rflujo-tabla').innerHTML = `<table>
+    <thead><tr><th>Mes</th><th class="text-right">Ingresos</th><th class="text-right">Egresos</th><th class="text-right">Neto</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${r.mes}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.ingresos)}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.egresos)}</td>
+      <td class="text-right money">${fmt(r.neto)}</td></tr>`).join('')}
+      <tr style="font-weight:700;border-top:2px solid var(--ax-border)"><td>Total</td>
+      <td class="text-right money">${fmt(ti)}</td><td class="text-right money">${fmt(te)}</td><td class="text-right money">${fmt(ti - te)}</td></tr>
+    </tbody></table>`;
+  repData.ingresos_egresos = { headers: ['Mes', 'Ingresos', 'Egresos', 'Neto'], rows: rows.map(r => [r.mes, r.ingresos, r.egresos, r.neto]) };
+}
+
+async function cargarRepFacturacion() {
+  const f = $('rfac-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rfac', 'cargarRepFacturacion', 'facturacion');
+  const { desde, hasta } = repRango('rfac');
+  const { data, error } = await sb.rpc('fn_reporte_facturacion', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
+  if (error) { $('rfac-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
+  const tb = rows.reduce((a, r) => a + Number(r.balance_pendiente || 0), 0);
+  $('rfac-stats').innerHTML = repCard('Facturas', rows.length, 'blue') + repCard('Total facturado', fmtMoney(tm), 'green') + repCard('Balance pendiente', fmtMoney(tb), 'red');
+  if (!rows.length) { $('rfac-lista').innerHTML = '<div class="empty">Sin facturas en el período</div>'; repData.facturacion = { headers: [], rows: [] }; return; }
+  $('rfac-lista').innerHTML = `<table>
+    <thead><tr><th>No. Factura</th><th>Fecha</th><th>Vence</th><th>Unidad</th><th>Propietario</th><th>Tipo</th><th class="text-right">Monto</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th>Estado</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.no_factura || ''}</td><td>${r.fecha_factura || ''}</td><td>${r.fecha_vencimiento || ''}</td>
+      <td>${r.unidad_codigo || ''}</td><td>${r.propietario_nombre || ''}</td><td>${r.tipo_factura || ''}</td>
+      <td class="text-right money">${fmt(r.monto)}</td><td class="text-right money">${fmt(r.monto_pagado)}</td>
+      <td class="text-right money">${fmt(r.balance_pendiente)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
+  repData.facturacion = { headers: ['No. Factura', 'Fecha', 'Vence', 'Unidad', 'Propietario', 'Tipo', 'Monto', 'Pagado', 'Balance', 'Estado'],
+    rows: rows.map(r => [r.no_factura, r.fecha_factura, r.fecha_vencimiento, r.unidad_codigo, r.propietario_nombre, r.tipo_factura, r.monto, r.monto_pagado, r.balance_pendiente, r.estado]) };
+}
+
+async function cargarRepCobros() {
+  const f = $('rcob-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rcob', 'cargarRepCobros', 'cobros');
+  const { desde, hasta } = repRango('rcob');
+  const { data, error } = await sb.rpc('fn_reporte_cobros', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
+  if (error) { $('rcob-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
+  $('rcob-stats').innerHTML = repCard('Pagos', rows.length, 'blue') + repCard('Total cobrado', fmtMoney(tm), 'green');
+  if (!rows.length) { $('rcob-lista').innerHTML = '<div class="empty">Sin cobros en el período</div>'; repData.cobros = { headers: [], rows: [] }; return; }
+  $('rcob-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Fecha</th><th>Unidad</th><th>Recibido de</th><th>Método</th><th>Banco</th><th>Referencia</th><th>Tipo mov.</th><th class="text-right">Monto</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.codigo || ''}</td><td>${r.fecha_pago || ''}</td><td>${r.unidad_codigo || ''}</td>
+      <td>${r.recibido_de || ''}</td><td>${r.metodo || ''}</td><td>${r.banco || ''}</td>
+      <td>${r.referencia || ''}</td><td>${r.tipo_movimiento || ''}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
+  repData.cobros = { headers: ['Código', 'Fecha', 'Unidad', 'Recibido de', 'Método', 'Banco', 'Referencia', 'Tipo mov.', 'Monto'],
+    rows: rows.map(r => [r.codigo, r.fecha_pago, r.unidad_codigo, r.recibido_de, r.metodo, r.banco, r.referencia, r.tipo_movimiento, r.monto]) };
+}
+
+async function cargarRepGastos() {
+  const f = $('rgas-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rgas', 'cargarRepGastos', 'gastos');
+  const { desde, hasta } = repRango('rgas');
+  const { data, error } = await sb.rpc('fn_reporte_gastos', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
+  if (error) { $('rgas-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
+  const tfc = rows.filter(r => r.afecta_fondo_comun).reduce((a, r) => a + Number(r.monto || 0), 0);
+  $('rgas-stats').innerHTML = repCard('Gastos', rows.length, 'blue') + repCard('Total gastos', fmtMoney(tm), 'red') + repCard('Afectan fondo común', fmtMoney(tfc), 'red');
+  if (!rows.length) { $('rgas-lista').innerHTML = '<div class="empty">Sin gastos en el período</div>'; repData.gastos = { headers: [], rows: [] }; return; }
+  $('rgas-lista').innerHTML = `<table>
+    <thead><tr><th>Código</th><th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th class="text-center">Fondo común</th><th class="text-right">Monto</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.codigo || ''}</td><td>${r.fecha || ''}</td><td>${r.proveedor_nombre || ''}</td>
+      <td>${r.categoria || ''}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || ''}</td>
+      <td>${r.estado || ''}</td><td class="text-center">${r.afecta_fondo_comun ? 'Sí' : 'No'}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
+  repData.gastos = { headers: ['Código', 'Fecha', 'Proveedor', 'Categoría', 'Descripción', 'Estado', 'Fondo común', 'Monto'],
+    rows: rows.map(r => [r.codigo, r.fecha, r.proveedor_nombre, r.categoria, r.descripcion, r.estado, r.afecta_fondo_comun ? 'Sí' : 'No', r.monto]) };
+}
+
+async function cargarRepGlp() {
+  const f = $('rglp-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rglp', 'cargarRepGlp', 'glp');
+  const { desde, hasta } = repRango('rglp');
+  const { data, error } = await sb.rpc('fn_reporte_glp', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
+  if (error) { $('rglp-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const tc = rows.reduce((a, r) => a + Number(r.consumo || 0), 0);
+  const tm = rows.reduce((a, r) => a + Number(r.monto_consumo || 0), 0);
+  $('rglp-stats').innerHTML = repCard('Lecturas', rows.length, 'blue') + repCard('Consumo total', fmt(tc), 'blue') + repCard('Monto consumo', fmtMoney(tm), 'green');
+  if (!rows.length) { $('rglp-lista').innerHTML = '<div class="empty">Sin lecturas en el período</div>'; repData.glp = { headers: [], rows: [] }; return; }
+  $('rglp-lista').innerHTML = `<table>
+    <thead><tr><th>Período</th><th>Unidad</th><th>Medidor</th><th>Fecha</th><th class="text-right">Lect. ant.</th><th class="text-right">Lect. act.</th><th class="text-right">Consumo</th><th class="text-right">Precio</th><th class="text-right">Monto</th><th>Estado</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.periodo || ''}</td><td>${r.unidad_codigo || ''}</td><td>${r.medidor || ''}</td><td>${r.fecha_lectura || ''}</td>
+      <td class="text-right money">${fmt(r.lectura_anterior)}</td><td class="text-right money">${fmt(r.lectura_actual)}</td>
+      <td class="text-right money">${fmt(r.consumo)}</td><td class="text-right money">${fmt(r.precio_unitario)}</td>
+      <td class="text-right money">${fmt(r.monto_consumo)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
+  repData.glp = { headers: ['Período', 'Unidad', 'Medidor', 'Fecha', 'Lect. ant.', 'Lect. act.', 'Consumo', 'Precio', 'Monto', 'Estado'],
+    rows: rows.map(r => [r.periodo, r.unidad_codigo, r.medidor, r.fecha_lectura, r.lectura_anterior, r.lectura_actual, r.consumo, r.precio_unitario, r.monto_consumo, r.estado]) };
 }
 
 // ==================== CEO: FACTURACIÓN ====================
