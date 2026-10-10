@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>AXICORE Property Administration</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" onerror="document.body.innerHTML='<div style=padding:2rem;color:red;font-size:1.2rem>Error: No se pudo cargar el SDK de Supabase. Verifica tu conexión a internet y recarga.</div>'"></script>
 <style>
@@ -1313,7 +1316,11 @@ $('login-form').addEventListener('submit', async e => {
   }
 });
 
+let iniciando = false;
 async function iniciarApp() {
+  if (iniciando || sesion) return;   // evita arranque doble (submit + evento de sesión)
+  iniciando = true;
+  try {
   // Obtener sesión del sistema AXICORE
   const {data, error} = await sb.rpc('axi_sesion_iniciar');
   if (error) {
@@ -1334,6 +1341,9 @@ async function iniciarApp() {
   } else {
     // Un solo condominio — entrar directamente
     entrarAlApp();
+  }
+  } finally {
+    iniciando = false;
   }
 }
 
@@ -1497,12 +1507,23 @@ async function cerrarSesion() {
   cerrarCondoDropdown();
 }
 
-// Auto-login si ya hay sesión
+// Auto-login si ya hay sesión (incluye recarga de página: INITIAL_SESSION)
 sb.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session && !sesion) {
+  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
+      && session && !sesion) {
     await iniciarApp();
+  } else if (event === 'SIGNED_OUT') {
+    sesion = null;
   }
 });
+
+// Restaurar sesión guardada al abrir/recargar la página (evita que el refresh saque al usuario)
+(async () => {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session && !sesion) await iniciarApp();
+  } catch (_) { /* sin sesión previa: se muestra el login normal */ }
+})();
 
 // Cerrar dropdown al hacer clic fuera
 document.addEventListener('click', (e) => {
