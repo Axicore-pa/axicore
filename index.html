@@ -2326,11 +2326,13 @@ async function exportarExcel(tipo) {
 async function emailReporte(tipo) {
   if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
   const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para enviar.'); return; }
-  // Interino: genera el PDF (se descarga) y abre el cliente de correo para adjuntarlo.
-  await exportarPDF(tipo);
-  const asunto = encodeURIComponent('AXICORE — ' + m.titulo);
-  const cuerpo = encodeURIComponent('Estimados,\n\nAdjunto el reporte "' + m.titulo + '" generado desde AXICORE' + (m.subtitulo ? ' (' + m.subtitulo + ')' : '') + '.\n\nNota: el archivo PDF acaba de descargarse; por favor adjúntelo a este correo antes de enviarlo.\n\nSaludos,\n' + EMPRESA);
-  setTimeout(() => { window.location.href = 'mailto:?subject=' + asunto + '&body=' + cuerpo; }, 600);
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
+  const nombre = `AXICORE_${tipo}_${hoyStr()}.pdf`;
+  descargarEml({
+    subject: 'AXICORE — ' + m.titulo,
+    texto: 'Estimados,\n\nAdjunto el reporte "' + m.titulo + '"' + (m.subtitulo ? ' (' + m.subtitulo + ')' : '') + ' generado desde AXICORE.\n\nAtentamente,\nAPA | Axicore Property Administration\nTel. (809) 282-7776 | axispard@gmail.com',
+    adjuntos: [{ nombre, mime: 'application/pdf', base64: construirPDF(m).output('datauristring').split(',')[1] }]
+  }, `AXICORE_Correo_${tipo}_${hoyStr()}.eml`);
 }
 
 async function cargarRepMorosidad() {
@@ -3441,6 +3443,44 @@ async function confirmarEstado(estado) {
   else if (data?.emitir_comunicacion) { al.className = 'alert alert-success'; al.textContent = 'Estado actualizado. La comunicación formal se habilita en el siguiente paso.'; al.style.display = 'block'; }
 }
 
+// ==================== CORREO .EML (Outlook classic: abre como borrador) ====================
+function b64utf8(str) {
+  const bytes = new TextEncoder().encode(str); let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+const lineas76 = b64 => b64.replace(/.{1,76}/g, '$&\r\n');
+const encHeader = t => /^[\x20-\x7e]*$/.test(t) ? t : '=?UTF-8?B?' + b64utf8(t) + '?=';
+function construirEml({to = [], cc = [], bcc = [], subject = '', texto = '', html = null, adjuntos = []}) {
+  const b = 'AXI_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const ba = b + '_alt';
+  const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const cuerpoHtml = html || `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1b2a49;line-height:1.5">${esc(texto).replace(/\n/g, '<br>')}</div>`;
+  const h = ['MIME-Version: 1.0', 'X-Unsent: 1', 'Date: ' + new Date().toUTCString(), 'Subject: ' + encHeader(subject)];
+  if (to.length) h.push('To: ' + to.join(', '));
+  if (cc.length) h.push('Cc: ' + cc.join(', '));
+  if (bcc.length) h.push('Bcc: ' + bcc.join(', '));
+  h.push(`Content-Type: multipart/mixed; boundary="${b}"`);
+  let m = h.join('\r\n') + '\r\n\r\n';
+  m += `--${b}\r\nContent-Type: multipart/alternative; boundary="${ba}"\r\n\r\n`;
+  m += `--${ba}\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${lineas76(b64utf8(texto))}\r\n`;
+  m += `--${ba}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${lineas76(b64utf8(cuerpoHtml))}\r\n`;
+  m += `--${ba}--\r\n`;
+  adjuntos.forEach(a => {
+    const n = encHeader(a.nombre);
+    m += `--${b}\r\nContent-Type: ${a.mime}; name="${n}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${n}"\r\n\r\n${lineas76(a.base64)}\r\n`;
+  });
+  m += `--${b}--\r\n`;
+  return new Blob([m], { type: 'message/rfc822' });
+}
+function descargarEml(datos, archivo) {
+  const url = URL.createObjectURL(construirEml(datos));
+  const a = document.createElement('a'); a.href = url; a.download = archivo;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setTimeout(() => alert('Se descargó el correo listo para enviar.\nÁbralo (doble clic): Outlook lo mostrará como borrador con el adjunto para revisar y enviar.'), 300);
+}
+
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
 async function cargarSaludResidencial() {
   const el = $('dash-salud'); if (!el) return;
@@ -3503,9 +3543,7 @@ async function comMarcar(canal, n) {
   if (!mtCom) return;
   try { await sb.rpc('fn_mant_marcar_comunicacion', {p_id: mtCom.id, p_canal: canal, p_alcance: mtCom.alcance, p_cantidad: n}); } catch (_) {}
 }
-async function comPDF() {
-  const c = mtCom; if (!c) return;
-  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF. Revisa tu conexión.'); return; }
+function comConstruirPDF(c) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const W = doc.internal.pageSize.getWidth(), Hp = doc.internal.pageSize.getHeight();
@@ -3544,7 +3582,12 @@ async function comPDF() {
   doc.setFont('helvetica', 'normal'); doc.text(EMPRESA, 36, y + 14);
   doc.setDrawColor(...BRAND.gold); doc.setLineWidth(0.5); doc.line(36, Hp - 32, W - 36, Hp - 32);
   doc.setFontSize(8); doc.setTextColor(...BRAND.gry); doc.text(EMPRESA_FOOTER, W / 2, Hp - 20, { align: 'center' });
-  doc.save(`AXICORE_Comunicacion_${c.referencia}.pdf`);
+  return doc;
+}
+async function comPDF() {
+  const c = mtCom; if (!c) return;
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF. Revisa tu conexión.'); return; }
+  comConstruirPDF(c).save(`AXICORE_Comunicacion_${c.referencia}.pdf`);
   comMarcar('PDF', (c.destinatarios || []).length);
 }
 function comWhatsApp() {
@@ -3556,14 +3599,20 @@ function comWhatsApp() {
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(comTexto(c))}`, '_blank', 'noopener');
   comMarcar('WhatsApp', d.length);
 }
-function comCorreo() {
+async function comCorreo() {
   const c = mtCom; if (!c) return;
   const emails = [...new Set((c.destinatarios || []).map(x => x.email).filter(Boolean))];
   if (!emails.length) { alert('Ningún destinatario tiene correo registrado.'); return; }
-  const asunto = encodeURIComponent('AXICORE — Comunicación de mantenimiento ' + c.referencia);
-  const cuerpo = encodeURIComponent(comTexto(c).replace(/\*/g, '') + '\n\n(Se adjunta la comunicación formal en PDF.)');
-  const campo = emails.length === 1 ? emails[0] : '?bcc=' + emails.join(',');
-  window.location.href = 'mailto:' + (emails.length === 1 ? campo + '?' : campo + '&') + 'subject=' + asunto + '&body=' + cuerpo;
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF. Revisa tu conexión.'); return; }
+  const doc = comConstruirPDF(c);
+  const nombre = `AXICORE_Comunicacion_${c.referencia}.pdf`;
+  // Un solo destinatario va en "Para"; varios van en copia oculta (no se exponen los correos entre vecinos)
+  descargarEml({
+    to: emails.length === 1 ? emails : [], bcc: emails.length > 1 ? emails : [],
+    subject: 'AXICORE — Comunicación de mantenimiento ' + c.referencia,
+    texto: comTexto(c).replace(/\*/g, '') + '\n\nSe adjunta la comunicación formal en PDF.',
+    adjuntos: [{ nombre, mime: 'application/pdf', base64: doc.output('datauristring').split(',')[1] }]
+  }, `AXICORE_Correo_${c.referencia}.eml`);
   comMarcar('Correo', emails.length);
 }
 
