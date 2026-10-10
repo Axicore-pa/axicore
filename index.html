@@ -407,6 +407,7 @@
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
       <a href="#" onclick="navegar('mi-gas')" data-page="mi-gas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Mi Gas (GLP)</a>
+      <a href="#" onclick="navegar('mis-averias')" data-page="mis-averias"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Reportar Avería</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
       <div class="section-title" id="nav-res-condo-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Gastos del Condominio</a>
@@ -739,6 +740,35 @@
         <div class="card">
           <div class="card-header">Lecturas del medidor</div>
           <div class="card-body" id="glp-lecturas"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTAR AVERIA (Residente) ===== -->
+      <div id="page-mis-averias" class="page">
+        <h2 class="page-title">Reportar Avería</h2>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">Nuevo reporte</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem">
+              <div><label>Tipo</label><select id="av-tipo">
+                <option>Plomería</option><option>Electricidad</option><option>Energía</option><option>Estructura</option>
+                <option>Seguridad</option><option>Limpieza</option><option>Mantenimiento</option><option selected>Otro</option></select></div>
+              <div><label>Área</label><select id="av-area"><option value="">Mi unidad</option></select></div>
+              <div><label>Prioridad</label><select id="av-prioridad"><option>Baja</option><option selected>Media</option><option>Alta</option></select></div>
+            </div>
+            <div style="margin-top:.8rem"><label>Descripción (mínimo 5 caracteres)</label>
+              <textarea id="av-descripcion" rows="3" maxlength="2000" style="width:100%" placeholder="Describa qué ocurre, dónde y desde cuándo"></textarea></div>
+            <div id="av-alert" class="alert" style="display:none;margin-top:.6rem"></div>
+            <button class="btn btn-primary" id="av-btn" style="margin-top:.8rem" onclick="enviarAveria()">Enviar reporte</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">Mis reportes</div>
+          <div class="card-body" id="av-mis"><div class="loading">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Mantenimientos del condominio</div>
+          <div class="card-body" id="av-condo"><div class="loading">Cargando...</div></div>
         </div>
       </div>
 
@@ -1493,7 +1523,7 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-gas','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_PROPIETARIO = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones'];
 function paginaPermitida(page) {
@@ -1674,6 +1704,7 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'mi-gas': cargarMiGas,
+    'mis-averias': cargarMisAverias,
     'fondo-comun': cargarFondoComun,
     'gastos-condo': cargarGastosCondo,
     'comprobantes-condo': cargarComprobantesCondo,
@@ -2899,6 +2930,57 @@ async function cargarMiGas() {
       <td class="text-right money">${l.precio != null ? fmt(l.precio) : ''}</td>
       <td class="text-right money">${fmt(l.monto)}</td>
     </tr>`).join('')}</tbody></table>`;
+}
+
+// ==================== RESIDENTE: REPORTAR AVERIA ====================
+const badgeEstatusAv = e => ({'Abierto':'badge-warning','En proceso':'badge-info','Cerrado':'badge-success'}[e] || 'badge-warning');
+const fechaCorta = d => d ? String(d).substring(0, 10) : '';
+async function cargarMisAverias() {
+  const sel = $('av-area');
+  if (sel.options.length <= 1) {
+    const {data: areas} = await sb.from('areas_aplicacion').select('area_aplicacion').eq('activo', true).order('area_aplicacion');
+    (areas || []).forEach(a => { const o = document.createElement('option'); o.textContent = a.area_aplicacion; sel.appendChild(o); });
+  }
+  const [mis, condo] = await Promise.all([
+    sb.rpc('portal_mis_reportes'),
+    sb.rpc('portal_mantenimientos_condominio', {p_condominio_id: sesion.condominio_id}),
+  ]);
+  const rowsMis = mis.data || [];
+  $('av-mis').innerHTML = mis.error ? '<div class="alert alert-error" style="display:block">' + mis.error.message + '</div>'
+    : !rowsMis.length ? '<div class="empty">No ha enviado reportes</div>' : `<table>
+    <thead><tr><th>Código</th><th>Fecha</th><th>Tipo</th><th>Área</th><th>Prioridad</th><th>Descripción</th><th class="text-center">Estado</th><th>Respuesta</th></tr></thead>
+    <tbody>${rowsMis.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td><td>${fechaCorta(r.fecha_solicitud)}</td>
+      <td>${r.tipo || ''}</td><td>${r.area_aplicacion || 'Mi unidad'}</td><td>${r.prioridad || ''}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.descripcion || '').replace(/"/g, '')}">${r.descripcion || ''}</td>
+      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${r.estatus || ''}</span></td>
+      <td style="font-size:.8rem">${r.observaciones_admin || ''}</td></tr>`).join('')}</tbody></table>`;
+  const rowsC = condo.data || [];
+  $('av-condo').innerHTML = condo.error ? '<div class="alert alert-error" style="display:block">' + condo.error.message + '</div>'
+    : !rowsC.length ? '<div class="empty">Sin mantenimientos registrados</div>' : `<table>
+    <thead><tr><th>Código</th><th>Fecha</th><th>Tipo</th><th>Área</th><th class="text-center">Estado</th><th>Cierre</th></tr></thead>
+    <tbody>${rowsC.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td><td>${fechaCorta(r.fecha_solicitud)}</td>
+      <td>${r.tipo || ''}</td><td>${r.area_aplicacion || ''}</td>
+      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${r.estatus || ''}</span></td>
+      <td>${fechaCorta(r.fecha_cierre)}</td></tr>`).join('')}</tbody></table>`;
+}
+async function enviarAveria() {
+  const al = $('av-alert'), btn = $('av-btn');
+  const desc = $('av-descripcion').value.trim();
+  const aviso = (msg, ok) => { al.className = 'alert ' + (ok ? 'alert-success' : 'alert-error'); al.textContent = msg; al.style.display = 'block'; };
+  if (desc.length < 5) { aviso('Describa la avería (mínimo 5 caracteres).'); return; }
+  btn.disabled = true;
+  try {
+    const unidadId = await obtenerMiUnidad();
+    const {data, error} = await sb.rpc('portal_reportar_averia', {
+      p_descripcion: desc, p_tipo: $('av-tipo').value, p_area_aplicacion: $('av-area').value || null,
+      p_prioridad: $('av-prioridad').value, p_unidad_id: unidadId });
+    if (error) { aviso(error.message); return; }
+    aviso('Reporte enviado: ' + data + '. La administración le dará seguimiento.', true);
+    $('av-descripcion').value = '';
+    cargarMisAverias();
+  } finally { btn.disabled = false; }
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================
