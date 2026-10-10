@@ -413,6 +413,7 @@
       <a href="#" onclick="navegar('mis-averias')" data-page="mis-averias"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Reportar Avería</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
       <a href="#" onclick="navegar('mis-documentos')" data-page="mis-documentos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Mis Documentos</a>
+      <a href="#" onclick="navegar('mi-inquilino')" data-page="mi-inquilino"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Mi Inquilino</a>
       <div class="section-title" id="nav-res-condo-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Gastos del Condominio</a>
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Pago</a>
@@ -834,6 +835,13 @@
           <div id="du-alert" class="alert" style="display:none;margin-top:.6rem"></div>
         </div></div>
         <div class="card"><div class="card-body" id="du-lista"><div class="empty">Seleccione una unidad</div></div></div>
+      </div>
+
+      <!-- ===== MI INQUILINO (Propietario) ===== -->
+      <div id="page-mi-inquilino" class="page">
+        <h2 class="page-title">Mi Inquilino</h2>
+        <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">Datos de contacto de quien alquila su unidad. Para cambios, comuníquese con la administración.</p>
+        <div id="mi-inq-lista"><div class="loading">Cargando...</div></div>
       </div>
 
       <!-- ===== MI CONTACTO (Residente) ===== -->
@@ -1579,7 +1587,7 @@ function entrarAlApp() {
 function aplicarRestriccionesResidente() {
   const esProp = sesion.rol === 'Propietario';
   // Inquilino: no ve fondo comun, gastos, comprobantes del condominio ni morosidad (decision Misael, opcion B)
-  ['mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
+  ['mi-inquilino','mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
     const a = document.querySelector('#sidebar-residente a[data-page="' + p + '"]');
     if (a) a.style.display = esProp ? '' : 'none';
   });
@@ -1587,8 +1595,8 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
-const PAG_SOLO_PROPIETARIO = ['mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['mi-inquilino','mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_SOLO_PROPIETARIO = ['mi-inquilino','mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones','comprobantes-recibidos'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
@@ -1774,6 +1782,7 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'mi-gas': cargarMiGas,
+    'mi-inquilino': cargarMiInquilino,
     'mis-documentos': cargarMisDocumentos,
     'docs-unidades': cargarDocsUnidades,
     'enviar-comprobante': cargarEnviarComprobante,
@@ -3237,6 +3246,25 @@ async function borrarDocUnidad(ruta) {
   const {error} = await sb.storage.from('documentos').remove([ruta]);
   if (error) { alert(error.message); return; }
   listarDocsUnidad();
+}
+
+// ==================== PROPIETARIO: MI INQUILINO ====================
+async function cargarMiInquilino() {
+  const el = $('mi-inq-lista');
+  const {data, error} = await sb.rpc('portal_mis_inquilinos');
+  if (error) { el.innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (!data?.length) { el.innerHTML = '<div class="card"><div class="card-body"><div class="empty">Su unidad no tiene inquilino registrado</div></div></div>'; return; }
+  const dato = (k, v) => `<div><strong>${k}</strong><br>${v || '—'}</div>`;
+  const tel = t => t ? `<a href="tel:${t.replace(/[^0-9+]/g, '')}">${t}</a>` : '';
+  const wa = t => t ? `<a href="https://wa.me/${t.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener">${t}</a>` : '';
+  el.innerHTML = data.map(i => `<div class="card" style="margin-bottom:1rem">
+    <div class="card-header">${i.nombre || 'Inquilino'} — ${i.unidad || ''}
+      <span class="badge ${String(i.estado).toLowerCase() === 'activo' ? 'badge-success' : 'badge-warning'}" style="margin-left:.5rem">${i.estado || ''}</span></div>
+    <div class="card-body"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.7rem;font-size:.9rem">
+      ${dato('Teléfono', tel(i.telefono))}${dato('WhatsApp', wa(i.whatsapp))}
+      ${dato('Correo', i.email ? `<a href="mailto:${i.email}">${i.email}</a>` : '')}${dato('Desde', i.desde)}
+      ${dato('Contacto de emergencia', [i.emergencia_nombre, i.emergencia_relacion].filter(Boolean).join(' · '))}${dato('Tel. emergencia', tel(i.emergencia_telefono))}
+    </div></div></div>`).join('');
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================

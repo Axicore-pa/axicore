@@ -1,0 +1,4 @@
+-- AXICORE | P5 Propietario ve a su inquilino (10/10/2026)
+-- public.portal_mis_inquilinos(): inquilinos de private.unidades_propias(); contacto y emergencia;
+-- NO expone documento de identidad. Inquilino/visitante bloqueados. Probado con rollback (prop 6 -> 1 inquilino).
+-- (cuerpo aplicado en Supabase; ver pg_get_functiondef('public.portal_mis_inquilinos()'::regprocedure))
