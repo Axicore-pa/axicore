@@ -201,6 +201,69 @@
   }
 
   /* Responsive */
+  /* ===== Control de GLP: replica visual de frm_GLP (Access) ===== */
+  .gx { background:#f7f5f0; border:1px solid #c9c4b8; max-width:1180px; margin:0 auto; padding:0 0 .6rem; font-size:.8rem; color:#161513; }
+  .gx-top { background:#1b2a4a; border-bottom:3px solid #c08a3e; display:flex; justify-content:space-between; align-items:center; padding:.45rem .9rem; gap:1rem; }
+  .gx-logo img { height:30px; background:#fff; padding:3px 6px; border-radius:3px; display:block; }
+  .gx-tit { color:#fff; font-weight:700; font-size:1.15rem; text-align:right; line-height:1.15; }
+  .gx-tit small { display:block; color:#c08a3e; font-weight:400; font-size:.72rem; }
+  .gx-band { color:#fff; font-weight:700; font-size:.8rem; padding:.18rem .6rem; margin:.9rem .5rem .45rem; border-top:2px solid rgba(0,0,0,.25); display:flex; justify-content:space-between; align-items:center; }
+  .gx-band.navy { background:#1b2a4a; } .gx-band.green { background:#4a8a2c; } .gx-band.red { background:#c0392b; } .gx-band.gold { background:#c08a3e; }
+  .gx-band-btns { padding-top:0; padding-bottom:0; }
+  .gx-bb { background:#2c4170; color:#fff; border:1px solid #0e1830; font-size:.74rem; font-weight:600; padding:.12rem 1.4rem; margin-left:.25rem; cursor:pointer; }
+  .gx-bb:disabled { opacity:.45; cursor:default; }
+  .gx-grid { display:grid; gap:.35rem .6rem; align-items:center; padding:0 .8rem; }
+  .gx-s1 { grid-template-columns:auto 1.3fr auto 1.6fr auto 2.3fr; }
+  .gx-s1 .gx-span2 { grid-column:4 / 6; }
+  .gx-s2 { grid-template-columns:auto 1.6fr auto 1.6fr auto 2fr; }
+  .gx-s3 { grid-template-columns:auto 1fr auto 1fr; }
+  .gx-s4 { grid-template-columns:auto 1fr auto 1fr; }
+  .gx label { margin:0; font-weight:600; font-size:.78rem; color:#161513; white-space:nowrap; text-transform:none; letter-spacing:0; }
+  .gx label.gx-lv { color:#4a8a2c; } .gx label.gx-lr { color:#c0392b; }
+  .gx input, .gx select { height:24px; width:100%; min-width:0; padding:1px 5px; font-size:.8rem; border:1px solid #a7a7a7; border-radius:0; background:#fff; color:#161513; margin:0; box-sizing:border-box; }
+  .gx input[readonly] { background:#fff; }
+  .gx input:disabled, .gx select:disabled { background:#efede8; color:#444; }
+  #gx-s2 input:disabled, #gx-s2 select:disabled { background:#fff; color:#161513; opacity:1; }
+  .gx input:focus, .gx select:focus { outline:1px solid #c08a3e; }
+  .gx-row34 { display:grid; grid-template-columns:1fr 1.15fr; gap:.4rem; }
+  .gx-foto { display:flex; gap:.6rem; align-items:center; padding:.35rem .8rem 0; }
+  .gx-foto input { flex:1; }
+  .gx-act { padding:.5rem .8rem 0; }
+  .gx-btn { background:#f2f2f2; color:#161513; border:1px solid #8f8f8f; font-weight:700; font-size:.78rem; padding:.28rem 1rem; cursor:pointer; white-space:nowrap; }
+  .gx-btn:hover:not(:disabled) { background:#e3e3e3; }
+  .gx-btn:disabled { opacity:.5; cursor:default; }
+  .gx-btn.gx-wide { min-width:160px; }
+  .gx-btn.navy { background:#2c4170; color:#fff; border-color:#0e1830; }
+  .gx-btn.dred { background:#9e2a22; color:#fff; border-color:#5c1611; font-weight:600; }
+  .gx-btn.red { background:#b8402f; color:#fff; border-color:#6e2016; font-weight:600; }
+  .gx-hist { margin:0 .5rem; height:165px; overflow:auto; background:#fff; border:1px solid #a7a7a7; }
+  .gx-hist table { font-size:.76rem; border-collapse:collapse; width:100%; }
+  .gx-hist th { position:sticky; top:0; background:#fff; color:#161513; text-transform:none; letter-spacing:0; font-weight:400; font-size:.76rem; padding:.1rem .35rem; border-bottom:1px solid #ddd; border-right:1px solid #bbb; }
+  .gx-hist td { padding:.05rem .35rem; border-bottom:none; border-right:1px solid #bbb; white-space:nowrap; cursor:pointer; }
+  .gx-hist td:nth-child(3) { white-space:normal; }
+  .gx-hist .r { text-align:right; }
+  .gx-hist tr.sel td { background:#1b2a4a; color:#fff; }
+  .gx-hist tr.anu td { color:#999; text-decoration:line-through; }
+  .gx-tot { margin:0 .5rem; border:1px solid #a7a7a7; border-top:none; background:#f7f5f0; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; padding:.75rem 1rem 1.3rem; font-weight:700; font-size:.82rem; }
+  .gx-tdep { color:#4a8a2c; } .gx-tcon { color:#c0392b; } .gx-tbal { color:#1b2a4a; font-size:.95rem; }
+  .gx-btns { display:flex; gap:.5rem; flex-wrap:wrap; padding:.9rem .5rem 0; }
+  .gx-btns .gx-btn { flex:1 1 0; min-width:0; padding:.4rem .3rem; overflow:hidden; text-overflow:ellipsis; }
+  .gx.gx-historico #gx-s3, .gx.gx-historico #gx-s4 { opacity:.9; }
+
+  @media (max-width:1300px) {
+    .gx-row34 { grid-template-columns:1fr; }
+  }
+  @media (max-width:760px) {
+    .gx-s1, .gx-s2, .gx-s3, .gx-s4 { grid-template-columns:auto 1fr; }
+    .gx-s1 .gx-span2 { grid-column:auto; }
+    .gx-tit { font-size:1rem; }
+    .gx-band { font-size:.72rem; }
+    .gx-hist { height:220px; }
+    .gx-hist table { min-width:560px; }
+    .gx-hist td:nth-child(3) { white-space:nowrap; }
+    .gx-btns .gx-btn { flex:1 1 45%; }
+    .gx-tot { flex-direction:column; }
+  }
   @media (max-width:768px) {
     .hamburger { display:inline-block; }
     .sidebar { display:none; position:fixed; left:0; top:52px; bottom:0; z-index:95; width:240px; box-shadow:4px 0 30px rgba(0,0,0,.35); }
@@ -662,20 +725,85 @@
       </div>
 
       <!-- ===== SOLICITUDES DE CONTACTO ===== -->
-      <!-- ===== CONTROL DE GLP (Staff) ===== -->
+      <!-- ===== CONTROL DE GLP (Staff) — replica de frm_GLP de Access ===== -->
       <div id="page-glp" class="page">
-        <h2 class="page-title">Control de GLP por Unidad</h2>
-        <div class="cards-row" id="glp-st"></div>
-        <div class="card" style="margin-bottom:1rem"><div class="card-body" style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap">
-          <div><div style="font-size:.75rem;color:var(--ax-muted)">PRECIO VIGENTE DEL GALÓN</div><div id="glp-precio" style="font-size:1.4rem;font-weight:700;color:var(--ax-navy)">—</div></div>
-          <div id="glp-precio-form" style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap">
-            <div><label>Nuevo precio (RD$/gal)</label><input type="number" id="glp-np" step="0.01" min="0.01" style="max-width:140px"></div>
-            <div><label>Vigente desde</label><input type="date" id="glp-nf"></div>
-            <div><label>Ref. factura suplidor</label><input id="glp-nr" maxlength="60" style="max-width:160px"></div>
-            <button class="btn btn-primary btn-sm" onclick="glpGuardarPrecio()">Registrar precio</button>
+        <div class="gx">
+          <div class="gx-top">
+            <div class="gx-logo"><img id="gx-logo" alt="AXICORE"></div>
+            <div class="gx-tit">Control de GLP por Unidad<small>Registro y estado de cuenta</small></div>
           </div>
-        </div></div>
-        <div class="card"><div class="card-body" id="glp-lista"><div class="loading">Cargando...</div></div></div>
+          <div id="gx-alert" class="alert alert-error" style="margin:.5rem 0 0"></div>
+
+          <div class="gx-band navy">1 - UNIDAD Y PROPIETARIO</div>
+          <div class="gx-grid gx-s1">
+            <label for="gx-unidad">Unidad:</label><select id="gx-unidad" onchange="glpUnidadCambio()"></select>
+            <label>Propietario:</label><input id="gx-prop" readonly tabindex="-1">
+            <label for="gx-record">Record/Factura:</label><select id="gx-record" onchange="glpRecordCambio()"></select>
+            <label>Telefono:</label><input id="gx-tel" readonly tabindex="-1">
+            <label>Correo:</label><input id="gx-mail" class="gx-span2" readonly tabindex="-1">
+          </div>
+
+          <div class="gx-band navy gx-band-btns">2 - DATOS DEL MEDIDOR
+            <span><button class="gx-bb" id="gx-medit" onclick="glpEditarMedidor()">Editar Medidor</button><button class="gx-bb" id="gx-mguardar" onclick="glpGuardarMedidor()">Guardar</button></span>
+          </div>
+          <div class="gx-grid gx-s2" id="gx-s2">
+            <label>Marca/modelo:</label><input id="gm-marca" data-med>
+            <label>No. serie:</label><input id="gm-serie" data-med>
+            <label>Ubicacion:</label><input id="gm-ubic" data-med>
+            <label>Unidad medida:</label><select id="gm-med" data-med><option value=""></option><option>Galones</option><option>m3</option></select>
+            <label>Estado sello:</label><select id="gm-sello" data-med><option value=""></option><option>Integro</option><option>No integro</option><option>No aplica</option></select>
+            <label>Estado equipo:</label><select id="gm-equipo" data-med><option value=""></option><option>Bueno</option><option>Regular</option><option>Requiere atencion</option></select>
+          </div>
+
+          <div class="gx-row34">
+            <div>
+              <div class="gx-band green">3 - DEPOSITO (inicial o extraordinario) - SUMA saldo</div>
+              <div class="gx-grid gx-s3" id="gx-s3">
+                <label>Fecha:</label><input type="date" id="gd-fecha" data-trab>
+                <label>Concepto:</label><select id="gd-conc" data-trab><option>Deposito inicial</option><option>Deposito extraordinario</option></select>
+                <label class="gx-lv">Monto RD$:</label><input type="number" id="gd-monto" step="0.01" min="0.01" data-trab>
+              </div>
+              <div class="gx-foto"><label>Foto:</label><input id="gd-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gd')">Examinar...</button><input type="file" id="gd-file" accept="image/*" hidden onchange="glpFotoElegida('gd')"></div>
+              <div class="gx-act"><button class="gx-btn gx-wide" id="gd-btn" onclick="glpDeposito()">Registrar deposito</button></div>
+            </div>
+            <div>
+              <div class="gx-band red">4 - CONSUMO MENSUAL - RESTA saldo</div>
+              <div class="gx-grid gx-s4" id="gx-s4">
+                <label>Periodo:</label><input type="month" id="gc-per" data-trab>
+                <label>Fecha lectura:</label><input type="date" id="gc-fecha" data-trab>
+                <label>Lectura anterior:</label><input id="gc-ant" readonly tabindex="-1">
+                <label>Lectura actual:</label><input type="number" id="gc-act" step="0.0001" min="0" data-trab oninput="glpCalcular()">
+                <label>Consumo medido (m3):</label><input id="gc-m3" readonly tabindex="-1">
+                <label>Consumo facturable (gal):</label><input id="gc-gal" readonly tabindex="-1">
+                <label class="gx-lr">Precio galon RD$:</label><input type="number" id="gc-precio" step="0.01" min="0.01" data-trab oninput="glpCalcular()">
+                <label class="gx-lr">Monto consumo RD$:</label><input id="gc-monto" readonly tabindex="-1">
+              </div>
+              <div class="gx-foto"><label>Foto:</label><input id="gc-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gc')">Examinar...</button><input type="file" id="gc-file" accept="image/*" hidden onchange="glpFotoElegida('gc')"></div>
+              <div class="gx-act" style="text-align:center"><button class="gx-btn gx-wide" id="gc-btn" onclick="glpConsumo()">Registrar consumo</button></div>
+            </div>
+          </div>
+
+          <div class="gx-band gold">ANEXO B - HISTORIAL Y SALDO A FAVOR</div>
+          <div class="gx-hist"><table>
+            <thead><tr><th>Periodo</th><th>Fecha</th><th>Concepto</th><th class="r">Deposito</th><th class="r">Consumo</th><th class="r">SaldoFavor</th></tr></thead>
+            <tbody id="gx-hist"></tbody></table></div>
+          <div class="gx-tot">
+            <span class="gx-tdep">Total depositos: <b id="gx-tdep">RD$ 0.00</b></span>
+            <span class="gx-tcon">Total consumos: <b id="gx-tcon">RD$ 0.00</b></span>
+            <span class="gx-tbal"><span id="gx-tbal-l">BALANCE</span>: <b id="gx-tbal">RD$ 0.00</b></span>
+          </div>
+
+          <div class="gx-btns">
+            <button class="gx-btn" onclick="glpNuevo()">Nuevo</button>
+            <button class="gx-btn" onclick="glpGenerarFactura()">Generar Factura</button>
+            <button class="gx-btn navy" onclick="glpEnviarEmail()">Enviar Email</button>
+            <button class="gx-btn navy" onclick="glpEnviarWhatsApp()">Enviar WhatsApp</button>
+            <button class="gx-btn" onclick="glpGenerarReporte()">Generar Reporte</button>
+            <button class="gx-btn dred" id="gx-anular" onclick="glpAnularTrans()">Anular Trans.</button>
+            <button class="gx-btn red" onclick="glpCancelar()">Cancelar</button>
+            <button class="gx-btn" onclick="glpCerrar()">Cerrar</button>
+          </div>
+        </div>
       </div>
 
       <!-- ===== MANTENIMIENTO (Staff) ===== -->
@@ -985,59 +1113,6 @@
 </div>
 
 <!-- MODAL: Registrar Pago -->
-<div class="modal-overlay" id="modal-glp">
-  <div class="modal" style="max-width:980px;width:97%">
-    <h3 id="gu-titulo">GLP</h3>
-    <div id="gu-alert" class="alert alert-error"></div>
-    <div id="gu-head" style="font-size:.88rem"></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.8rem;margin-top:.8rem">
-      <div style="border:1px solid #cfe9d9;border-top:4px solid var(--ax-success);border-radius:8px;padding:.7rem" id="gu-dep-box">
-        <strong style="color:var(--ax-success)">Registrar depósito</strong>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem">
-          <div><label>Fecha</label><input type="date" id="gu-dfecha"></div>
-          <div><label>Monto (RD$)</label><input type="number" id="gu-dmonto" step="0.01" min="0.01"></div>
-          <div style="grid-column:1/-1"><label>Concepto</label><select id="gu-dconc"><option>Depósito extraordinario</option><option>Depósito inicial</option></select></div>
-          <div style="grid-column:1/-1"><label>Foto / comprobante (opcional)</label><input type="file" id="gu-dfoto" accept="image/*"></div>
-        </div>
-        <button class="btn btn-success btn-sm" style="margin-top:.5rem" id="gu-dbtn" onclick="glpDeposito()">Registrar depósito</button>
-      </div>
-      <div style="border:1px solid #f1d0cc;border-top:4px solid var(--ax-danger);border-radius:8px;padding:.7rem">
-        <strong style="color:var(--ax-danger)">Registrar consumo mensual</strong>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem">
-          <div><label>Período</label><input type="month" id="gu-cper"></div>
-          <div><label>Fecha de lectura</label><input type="date" id="gu-cfecha"></div>
-          <div><label>Lectura anterior</label><input id="gu-cant" readonly style="background:#f3f3f3"></div>
-          <div><label>Lectura actual</label><input type="number" id="gu-cact" step="0.0001" min="0" oninput="glpCalcular()"></div>
-          <div style="grid-column:1/-1"><label>Foto del medidor</label><input type="file" id="gu-cfoto" accept="image/*"></div>
-        </div>
-        <div id="gu-calc" style="background:#fbf3f2;border-radius:6px;padding:.4rem .6rem;margin-top:.5rem;font-size:.85rem">—</div>
-        <button class="btn btn-danger btn-sm" style="margin-top:.5rem" id="gu-cbtn" onclick="glpConsumo()">Registrar consumo</button>
-      </div>
-    </div>
-    <details style="margin-top:.8rem"><summary style="cursor:pointer;font-weight:600;font-size:.88rem">Datos del medidor</summary>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.5rem;margin-top:.5rem">
-        <div><label>No. de serie</label><input id="gm-serie"></div><div><label>Marca / modelo</label><input id="gm-marca"></div>
-        <div><label>Ubicación</label><input id="gm-ubic"></div>
-        <div><label>Unidad de medida</label><select id="gm-med"><option>m3</option><option>Galones</option></select></div>
-        <div><label>Estado del sello</label><select id="gm-sello"><option value=""></option><option>Integro</option><option>No integro</option><option>No aplica</option></select></div>
-        <div><label>Estado del equipo</label><select id="gm-equipo"><option value=""></option><option>Bueno</option><option>Regular</option><option>Requiere atencion</option></select></div>
-        <div><label>Lectura inicial</label><input type="number" id="gm-ini" step="0.0001"></div>
-        <div style="grid-column:1/-1"><label>Observaciones</label><input id="gm-obs"></div>
-      </div>
-      <button class="btn btn-sm" style="margin-top:.5rem" onclick="glpGuardarMedidor()">Guardar medidor</button>
-    </details>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;flex-wrap:wrap;gap:.5rem">
-      <strong>Historial (Anexo B)</strong>
-      <button class="btn btn-sm btn-primary" onclick="glpEstadoCuentaPDF()">⬇️ Estado de cuenta PDF</button>
-    </div>
-    <div id="gu-hist" style="max-height:320px;overflow:auto"></div>
-    <div id="gu-sum" style="margin-top:.6rem"></div>
-    <div class="modal-actions" style="display:flex;justify-content:flex-end;margin-top:1rem">
-      <button type="button" class="btn" onclick="cerrarModal('modal-glp')">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modal-com">
   <div class="modal" style="max-width:760px;width:96%">
     <h3>Comunicación formal a residentes</h3>
@@ -3603,99 +3678,150 @@ function descargarEml(datos, archivo) {
   setTimeout(() => alert('Se descargó el correo listo para enviar.\nÁbralo (doble clic): Outlook lo mostrará como borrador con el adjunto para revisar y enviar.'), 300);
 }
 
-// ==================== STAFF: CONTROL DE GLP ====================
-let glpU = null;
-const saldoHTML = v => { const n = Number(v || 0); return `<span style="color:${n >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'};font-weight:600">${fmtMoney(Math.abs(n))}</span><br><small>${n >= 0 ? 'a favor' : 'pendiente'}</small>`; };
+// ==================== STAFF: CONTROL DE GLP (replica de frm_GLP de Access) ====================
+// Flujo igual a Access: elegir Unidad -> se cargan propietario, telefono, correo, medidor,
+// Record/Factura, lectura anterior, precio vigente, historial (Anexo B) y totales.
+// Elegir un Record/Factura (o una fila del historial) pone la pantalla en modo historico.
+let glpU = null, glpSel = null, glpUnidades = [];
 const mesActual = () => new Date().toISOString().slice(0, 7);
+const glpEsCEO = () => sesion.rol === 'CEO';
+const rd = v => 'RD$ ' + fmt(Number(v || 0));
+const glpAct = x => (x.estado || 'ACTIVO').toUpperCase() !== 'ANULADO';
+const glpEsDep = x => (x.tipo || '').toUpperCase() === 'DEPOSITO';
+function glpMsg(t) { const a = $('gx-alert'); a.textContent = t || ''; a.style.display = t ? 'block' : 'none'; }
+function glpSet(id, v) { const e = $(id); if (e) e.value = v ?? ''; }
+
 async function cargarGLP() {
-  const esCEO = sesion.rol === 'CEO';
-  $('glp-precio-form').style.display = esCEO ? 'flex' : 'none';
-  if (!$('glp-nf').value) $('glp-nf').value = hoyStr();
-  const [panel, precio] = await Promise.all([
-    sb.rpc('fn_glp_panel', {p_condominio_id: sesion.condominio_id}),
-    sb.from('glp_precios').select('precio_galon, fecha_vigencia').eq('condominio_id', sesion.condominio_id).order('fecha_vigencia', {ascending: false}).limit(1),
-  ]);
-  const pr = precio.data?.[0];
-  $('glp-precio').innerHTML = pr ? `${fmtMoney(pr.precio_galon)} <small style="font-size:.75rem;font-weight:400;color:var(--ax-muted)">desde ${fechaCorta(pr.fecha_vigencia)}</small>` : 'Sin precio registrado';
-  if (panel.error) { $('glp-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + panel.error.message + '</div>'; return; }
-  const rows = panel.data || [];
-  const conMed = rows.filter(r => r.medidor);
-  const tot = conMed.reduce((a, r) => a + Number(r.saldo || 0), 0);
-  const pend = conMed.filter(r => r.ultimo_periodo !== mesActual()).length;
-  $('glp-st').innerHTML = `
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidades con medidor</div><div class="value">${conMed.length}</div></div>
-    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Saldo total a favor</div><div class="value green money">${fmtMoney(tot)}</div></div>
-    <div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Sin lectura este mes</div><div class="value">${pend}</div></div>`;
-  $('glp-lista').innerHTML = `<table>
-    <thead><tr><th>Unidad</th><th>Propietario / Inquilino</th><th>Medidor</th><th class="text-right">Última lectura</th><th>Último período</th><th class="text-right">Depositado</th><th class="text-right">Saldo</th><th></th></tr></thead>
-    <tbody>${rows.map(r => `<tr style="${r.medidor ? '' : 'opacity:.55'}">
-      <td><strong>${r.unidad}</strong></td><td>${r.propietario || ''}${r.inquilino ? '<br><small>Inq.: ' + r.inquilino + '</small>' : ''}</td>
-      <td style="font-family:monospace;font-size:.8rem">${r.medidor || '<em>sin medidor</em>'}</td>
-      <td class="text-right">${r.medidor ? Number(r.ultima_lectura || 0).toFixed(4) : ''}</td>
-      <td>${r.ultimo_periodo || '—'}${r.medidor && r.ultimo_periodo !== mesActual() ? ' <span class="badge badge-warning">pendiente</span>' : ''}</td>
-      <td class="text-right money">${r.depositos > 0 ? fmt(r.depositos) : ''}</td>
-      <td class="text-right">${r.medidor || Number(r.saldo) ? saldoHTML(r.saldo) : ''}</td>
-      <td><button class="btn btn-sm" onclick="abrirGLP(${r.unidad_id})">Abrir</button></td></tr>`).join('')}</tbody></table>`;
+  if (!$('gx-logo').src) $('gx-logo').src = LOGO_AXICORE;
+  glpMsg('');
+  const {data, error} = await sb.rpc('fn_glp_panel', {p_condominio_id: sesion.condominio_id});
+  if (error) { glpMsg(error.message); return; }
+  glpUnidades = data || [];
+  const sel = $('gx-unidad'), actual = glpU ? String(glpU.unidad_id) : sel.value;
+  sel.innerHTML = '<option value=""></option>' + glpUnidades.map(r => `<option value="${r.unidad_id}">${r.unidad}</option>`).join('');
+  sel.value = actual || '';
+  $('gd-btn').disabled = !glpEsCEO(); $('gd-btn').title = glpEsCEO() ? '' : 'Solo el CEO registra depósitos';
+  $('gx-anular').disabled = !glpEsCEO(); $('gx-anular').title = glpEsCEO() ? '' : 'Solo el CEO anula transacciones';
+  if (sel.value) await glpCargarUnidad(sel.value); else glpLimpiarTodo();
 }
-async function glpGuardarPrecio() {
-  const precio = parseFloat($('glp-np').value), fecha = $('glp-nf').value;
-  if (!(precio > 0) || !fecha) { alert('Indique precio y fecha de vigencia.'); return; }
-  if (!confirm(`Registrar precio RD$ ${fmt(precio)} por galón desde ${fecha}?`)) return;
-  const {error} = await sb.rpc('fn_glp_precio_registrar', {p_condominio_id: sesion.condominio_id, p_precio: precio, p_vigencia: fecha, p_ref: $('glp-nr').value || null});
-  if (error) { alert(error.message); return; }
-  $('glp-np').value = ''; $('glp-nr').value = ''; cargarGLP();
+
+function glpLimpiarTodo() {
+  glpU = null; glpSel = null;
+  ['gx-prop', 'gx-tel', 'gx-mail'].forEach(i => glpSet(i, ''));
+  $('gx-record').innerHTML = '<option value=""></option>';
+  document.querySelectorAll('#gx-s2 [data-med]').forEach(e => { e.value = ''; e.disabled = true; });
+  $('gx-medit').disabled = true; $('gx-mguardar').disabled = true;
+  $('gx-hist').innerHTML = '';
+  $('gx-tdep').textContent = rd(0); $('gx-tcon').textContent = rd(0); $('gx-tbal').textContent = rd(0); $('gx-tbal-l').textContent = 'BALANCE';
+  $('gx-tbal').style.color = '';
+  glpLimpiarTrabajo();
 }
-async function abrirGLP(unidadId) {
-  $('gu-alert').style.display = 'none';
-  $('modal-glp').classList.add('show');
-  const {data: g, error} = await sb.rpc('fn_glp_unidad', {p_unidad_id: unidadId});
-  if (error) { $('gu-alert').textContent = error.message; $('gu-alert').style.display = 'block'; return; }
+
+function glpLimpiarTrabajo() {
+  glpSel = null;
+  document.querySelectorAll('.gx [data-trab]').forEach(e => { e.disabled = false; });
+  ['gd-monto', 'gd-fnom', 'gc-act', 'gc-m3', 'gc-gal', 'gc-monto', 'gc-fnom'].forEach(i => glpSet(i, ''));
+  $('gd-file').value = ''; $('gc-file').value = '';
+  glpSet('gd-fecha', hoyStr()); glpSet('gc-fecha', hoyStr()); glpSet('gc-per', mesActual());
+  const g = glpU, movs = g ? (g.movimientos || []) : [];
+  glpSet('gd-conc', movs.some(x => glpEsDep(x) && glpAct(x)) ? 'Deposito extraordinario' : 'Deposito inicial');
+  glpSet('gc-ant', g ? Number(g.lectura_anterior || 0).toFixed(4) : '');
+  glpSet('gc-precio', g && g.precio_vigente ? Number(g.precio_vigente).toFixed(2) : '');
+  $('gd-btn').disabled = !glpEsCEO() || !g; $('gc-btn').disabled = !g;
+  $('gx-record').value = '';
+  document.querySelectorAll('#gx-hist tr').forEach(t => t.classList.remove('sel'));
+  document.querySelector('.gx').classList.remove('gx-historico');
+}
+
+async function glpUnidadCambio() {
+  glpMsg('');
+  const id = $('gx-unidad').value;
+  if (!id) { glpLimpiarTodo(); return; }
+  await glpCargarUnidad(id);
+}
+
+async function glpCargarUnidad(id) {
+  const {data: g, error} = await sb.rpc('fn_glp_unidad', {p_unidad_id: Number(id)});
+  if (error) { glpMsg(error.message); return; }
   glpU = g;
-  const esCEO = sesion.rol === 'CEO', m = g.medidor || {};
-  $('gu-titulo').textContent = 'Control de GLP — ' + g.unidad;
-  const pro = g.propietario || {}, inq = g.inquilino;
-  $('gu-head').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.5rem">
-    <div><strong>Propietario</strong><br>${pro.nombre || '—'}<br><small>${pro.telefono || ''} ${pro.email || ''}</small></div>
-    ${inq ? `<div><strong>Inquilino</strong><br>${inq.nombre}<br><small>${inq.telefono || ''}</small></div>` : ''}
-    <div><strong>Medidor</strong><br>${m.numero_serie || '<em>sin registrar</em>'}<br><small>${m.ubicacion_fisica || ''}</small></div>
-    <div><strong>Precio vigente</strong><br>${g.precio_vigente ? fmtMoney(g.precio_vigente) + '/gal' : '<span style="color:var(--ax-danger)">sin precio</span>'}<br><small>Factor m³→gal: ${g.factor}</small></div>
-    <div><strong>Saldo</strong><br>${saldoHTML(g.saldo)}</div></div>`;
-  $('gu-dep-box').style.display = esCEO ? '' : 'none';
-  $('gu-dfecha').value = hoyStr(); $('gu-dmonto').value = ''; $('gu-dfoto').value = '';
-  $('gu-cper').value = mesActual(); $('gu-cfecha').value = hoyStr();
-  $('gu-cant').value = Number(g.lectura_anterior || 0).toFixed(4); $('gu-cact').value = ''; $('gu-cfoto').value = '';
-  glpCalcular();
-  $('gm-serie').value = m.numero_serie || ''; $('gm-marca').value = m.marca_modelo || ''; $('gm-ubic').value = m.ubicacion_fisica || '';
-  $('gm-med').value = m.unidad_medida || 'm3'; $('gm-sello').value = m.estado_sello || ''; $('gm-equipo').value = m.estado_equipo || '';
-  $('gm-ini').value = m.lectura_inicial ?? ''; $('gm-obs').value = m.observaciones || '';
+  const pro = g.propietario || {}, m = g.medidor || {};
+  glpSet('gx-prop', pro.nombre); glpSet('gx-tel', pro.telefono); glpSet('gx-mail', pro.email);
+  // Bloque 2: medidor en modo lectura
+  glpSet('gm-marca', m.marca_modelo); glpSet('gm-serie', m.numero_serie); glpSet('gm-ubic', m.ubicacion_fisica);
+  glpSet('gm-med', m.unidad_medida); glpSet('gm-sello', m.estado_sello); glpSet('gm-equipo', m.estado_equipo);
+  document.querySelectorAll('#gx-s2 [data-med]').forEach(e => { e.disabled = true; });
+  $('gx-medit').disabled = false; $('gx-mguardar').disabled = true;
+  // Record/Factura
   const movs = g.movimientos || [];
-  $('gu-hist').innerHTML = !movs.length ? '<div class="empty">Sin movimientos</div>' : `<table style="font-size:.83rem">
-    <thead><tr><th>Fecha</th><th>Período</th><th>Concepto</th><th class="text-right">Depósito</th><th class="text-right">Consumo</th><th class="text-right">Saldo</th><th>Factura / foto</th><th></th></tr></thead>
-    <tbody>${movs.map(x => { const dep = (x.tipo || '').toUpperCase() === 'DEPOSITO', an = (x.estado || '').toUpperCase() === 'ANULADO'; return `<tr style="${an ? 'opacity:.45;text-decoration:line-through' : ''}">
-      <td>${x.fecha || ''}</td><td>${x.periodo || ''}</td><td>${x.concepto || ''}${an ? '<br><small style="text-decoration:none">Anulado: ' + (x.motivo_anulacion || '') + '</small>' : ''}</td>
-      <td class="text-right money" style="color:var(--ax-success)">${dep ? fmt(x.monto) : ''}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${dep ? '' : fmt(x.monto)}</td>
-      <td class="text-right money">${an ? '' : fmt(x.saldo)}</td>
-      <td style="white-space:nowrap">${x.factura ? `<a href="#" onclick="return glpFacturaPDF(${x.id})">${x.factura}</a>${x.factura_aprobacion && x.factura_aprobacion !== 'Aprobado' ? ' <span class="badge badge-warning">' + x.factura_aprobacion + '</span>' : ''}` : ''}
-        ${x.foto ? ` <a href="#" onclick="return glpVerFoto('${String(x.foto).replace(/\\/g, '/').replace(/'/g, '')}')">📷</a>` : ''}</td>
-      <td>${esCEO && !an ? `<button class="btn btn-sm btn-danger" onclick="glpAnular(${x.id})">Anular</button>` : ''}</td></tr>`; }).join('')}</tbody></table>`;
+  $('gx-record').innerHTML = '<option value=""></option>' + movs.filter(x => x.factura).slice().reverse()
+    .map(x => `<option value="${x.id}">${x.factura} | ${x.periodo || ''} | ${fmt(x.monto)} | ${glpAct(x) ? (x.factura_aprobacion && x.factura_aprobacion !== 'Aprobado' ? x.factura_aprobacion : 'ACTIVO') : 'ANULADO'}</option>`).join('');
+  // Anexo B
+  $('gx-hist').innerHTML = movs.map(x => {
+    const dep = glpEsDep(x), an = !glpAct(x);
+    return `<tr data-id="${x.id}" class="${an ? 'anu' : ''}" onclick="glpSeleccionar(${x.id})" title="${an ? 'Anulado: ' + (x.motivo_anulacion || '').replace(/"/g, '') : ''}">
+      <td>${x.periodo || ''}</td><td>${x.fecha ? fechaCorta(x.fecha) : ''}</td><td>${x.concepto || ''}${x.factura ? ' · ' + x.factura : ''}</td>
+      <td class="r">${dep ? fmt(x.monto) : ''}</td><td class="r">${dep ? '' : fmt(x.monto)}</td><td class="r">${an ? '' : fmt(x.saldo)}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" style="color:#888;cursor:default">Sin movimientos</td></tr>';
+  const h = $('gx-hist').parentElement.parentElement; h.scrollTop = h.scrollHeight;
+  // Sumario
+  const act = movs.filter(glpAct);
+  const dep = act.filter(glpEsDep).reduce((a, x) => a + Number(x.monto), 0);
+  const con = act.filter(x => !glpEsDep(x)).reduce((a, x) => a + Number(x.monto), 0);
   const s = Number(g.saldo || 0);
-  const totDep = movs.filter(x => (x.estado || '').toUpperCase() === 'ACTIVO' && (x.tipo || '').toUpperCase() === 'DEPOSITO').reduce((a, x) => a + Number(x.monto), 0);
-  const totCon = movs.filter(x => (x.estado || '').toUpperCase() === 'ACTIVO' && (x.tipo || '').toUpperCase() === 'CONSUMO').reduce((a, x) => a + Number(x.monto), 0);
-  $('gu-sum').innerHTML = `<div style="background:#f7f5ef;border:1px solid var(--ax-gold);border-radius:8px;padding:.6rem .9rem;display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.9rem">
-    <span>Total depositado: <strong style="color:var(--ax-success)">${fmtMoney(totDep)}</strong></span>
-    <span>Total consumido: <strong style="color:var(--ax-danger)">${fmtMoney(totCon)}</strong></span>
-    <span>${s >= 0 ? 'Saldo a favor' : 'Balance pendiente'}: <strong style="color:${s >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'}">${fmtMoney(Math.abs(s))}</strong></span></div>`;
+  $('gx-tdep').textContent = rd(dep); $('gx-tcon').textContent = rd(con);
+  $('gx-tbal-l').textContent = 'BALANCE (' + (s >= 0 ? 'Saldo a favor' : 'Balance pendiente') + ')';
+  $('gx-tbal').textContent = rd(Math.abs(s)); $('gx-tbal').style.color = s >= 0 ? '#4a8a2c' : '#c0392b';
+  glpLimpiarTrabajo();
+  if (!g.medidor) glpMsg('Esta unidad no tiene medidor registrado. Use "Editar Medidor" para registrarlo antes del primer consumo.');
+  else if (!g.precio_vigente) glpMsg('No hay precio del galón vigente. Escriba el precio en "Precio galon RD$" al registrar el consumo.');
 }
-function glpCalcular() {
+
+function glpRecordCambio() {
+  const id = Number($('gx-record').value);
+  if (!id) { glpLimpiarTrabajo(); return; }
+  glpSeleccionar(id);
+}
+
+// Modo historico: carga la transaccion elegida en las secciones 3/4 (solo lectura)
+function glpSeleccionar(movId) {
   const g = glpU; if (!g) return;
-  const ant = Number($('gu-cant').value || 0), act = parseFloat($('gu-cact').value);
-  if (isNaN(act)) { $('gu-calc').textContent = 'Escriba la lectura actual para calcular.'; return; }
-  if (act < ant) { $('gu-calc').innerHTML = '<span style="color:var(--ax-danger)">La lectura actual no puede ser menor que la anterior.</span>'; return; }
-  const m3 = act - ant, gal = m3 * Number(g.factor || 1.22), monto = gal * Number(g.precio_vigente || 0);
-  const nuevo = Number(g.saldo || 0) - Math.round(monto * 100) / 100;
-  $('gu-calc').innerHTML = `Consumo: <strong>${m3.toFixed(4)} m³</strong> = <strong>${gal.toFixed(3)} gal</strong> × ${fmtMoney(g.precio_vigente)} = <strong style="color:var(--ax-danger)">${fmtMoney(monto)}</strong><br>Saldo después: <strong style="color:${nuevo >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'}">${fmtMoney(Math.abs(nuevo))} ${nuevo >= 0 ? 'a favor' : 'pendiente'}</strong>`;
+  const x = (g.movimientos || []).find(m => m.id === movId); if (!x) return;
+  glpLimpiarTrabajo();
+  glpSel = x;
+  document.querySelector('.gx').classList.add('gx-historico');
+  document.querySelectorAll('.gx [data-trab]').forEach(e => { e.disabled = true; });
+  $('gd-btn').disabled = true; $('gc-btn').disabled = true;
+  document.querySelectorAll('#gx-hist tr').forEach(t => t.classList.toggle('sel', Number(t.dataset.id) === movId));
+  $('gx-record').value = x.factura ? String(x.id) : '';
+  const nomFoto = f => f ? String(f).split(/[\\/]/).pop() : '';
+  if (glpEsDep(x)) {
+    glpSet('gd-fecha', x.fecha); glpSet('gd-monto', Number(x.monto).toFixed(2)); glpSet('gd-fnom', nomFoto(x.foto));
+    glpSet('gd-conc', /extra/i.test(x.concepto || '') ? 'Deposito extraordinario' : 'Deposito inicial');
+  } else {
+    const l = (g.lecturas || []).find(k => k.id === x.lectura_id) || {};
+    glpSet('gc-per', x.periodo); glpSet('gc-fecha', l.fecha || x.fecha);
+    glpSet('gc-ant', l.anterior != null ? Number(l.anterior).toFixed(4) : '');
+    glpSet('gc-act', l.actual != null ? Number(l.actual).toFixed(4) : '');
+    glpSet('gc-m3', l.m3 != null ? Number(l.m3).toFixed(4) : '');
+    glpSet('gc-gal', l.galones != null ? Number(l.galones).toFixed(3) : '');
+    glpSet('gc-precio', l.precio != null ? Number(l.precio).toFixed(2) : '');
+    glpSet('gc-monto', fmt(x.monto)); glpSet('gc-fnom', nomFoto(l.foto || x.foto));
+  }
+  glpMsg(glpAct(x) ? '' : 'Transacción ANULADA: ' + (x.motivo_anulacion || ''));
 }
+
+function glpCalcular() {
+  const g = glpU; if (!g || glpSel) return;
+  const ant = Number($('gc-ant').value || 0), act = parseFloat($('gc-act').value), precio = parseFloat($('gc-precio').value);
+  if (isNaN(act) || act < ant) { ['gc-m3', 'gc-gal', 'gc-monto'].forEach(i => glpSet(i, '')); if (act < ant) glpMsg('La lectura actual no puede ser menor que la anterior.'); return; }
+  glpMsg('');
+  const m3 = act - ant, f = Number(g.factor || 1.22);
+  glpSet('gc-m3', m3.toFixed(4)); glpSet('gc-gal', (m3 * f).toFixed(3));
+  glpSet('gc-monto', precio > 0 ? fmt(Math.round(m3 * f * precio * 100) / 100) : '');
+}
+
+function glpExaminar(p) { if (!glpSel) $(p + '-file').click(); }
+function glpFotoElegida(p) { const f = $(p + '-file').files[0]; glpSet(p + '-fnom', f ? f.name : ''); }
 async function glpSubirFoto(input) {
   const f = input.files[0]; if (!f) return null;
   if (f.size > 10 * 1024 * 1024) throw new Error('La foto excede 10 MB.');
@@ -3705,50 +3831,87 @@ async function glpSubirFoto(input) {
   if (error) throw new Error('No se pudo subir la foto: ' + error.message);
   return ruta;
 }
+
 async function glpDeposito() {
-  const monto = parseFloat($('gu-dmonto').value), fecha = $('gu-dfecha').value, al = $('gu-alert');
-  if (!(monto > 0) || !fecha) { al.textContent = 'Indique fecha y monto del depósito.'; al.style.display = 'block'; return; }
-  if (!confirm(`Registrar ${$('gu-dconc').value} de ${fmtMoney(monto)} para ${glpU.unidad}?`)) return;
-  $('gu-dbtn').disabled = true;
+  if (!glpU) { glpMsg('Elija la unidad.'); return; }
+  const monto = parseFloat($('gd-monto').value), fecha = $('gd-fecha').value, conc = $('gd-conc').value;
+  if (!fecha) { glpMsg('Indique la fecha del depósito.'); return; }
+  if (!conc) { glpMsg('Indique el concepto.'); return; }
+  if (!(monto > 0)) { glpMsg('Indique el monto del depósito.'); return; }
+  if (!confirm(`Registrar ${conc} de RD$ ${fmt(monto)} para ${glpU.unidad}?`)) return;
+  $('gd-btn').disabled = true;
   try {
-    const foto = await glpSubirFoto($('gu-dfoto'));
-    const {error} = await sb.rpc('fn_glp_registrar_deposito', {p_unidad_id: glpU.unidad_id, p_monto: monto, p_fecha: fecha, p_concepto: $('gu-dconc').value, p_foto: foto});
+    const foto = await glpSubirFoto($('gd-file'));
+    const {error} = await sb.rpc('fn_glp_registrar_deposito', {p_unidad_id: glpU.unidad_id, p_monto: monto, p_fecha: fecha, p_concepto: conc, p_foto: foto});
     if (error) throw error;
-    await abrirGLP(glpU.unidad_id); cargarGLP();
-  } catch (e) { al.textContent = e.message; al.style.display = 'block'; }
-  finally { $('gu-dbtn').disabled = false; }
+    await glpCargarUnidad(glpU.unidad_id);
+    alert('Depósito registrado.');
+  } catch (e) { glpMsg(e.message); $('gd-btn').disabled = false; }
 }
+
 async function glpConsumo() {
-  const act = parseFloat($('gu-cact').value), per = $('gu-cper').value, fecha = $('gu-cfecha').value, al = $('gu-alert');
-  if (isNaN(act) || !per || !fecha) { al.textContent = 'Indique período, fecha y lectura actual.'; al.style.display = 'block'; return; }
-  if (!$('gu-cfoto').files[0] && !confirm('No adjuntó foto del medidor. ¿Registrar de todos modos?')) return;
-  $('gu-cbtn').disabled = true;
+  if (!glpU) { glpMsg('Elija la unidad.'); return; }
+  const g = glpU, act = parseFloat($('gc-act').value), per = $('gc-per').value, fecha = $('gc-fecha').value, precio = parseFloat($('gc-precio').value);
+  if (!g.medidor) { glpMsg('La unidad no tiene medidor registrado.'); return; }
+  if (!per) { glpMsg('Indique el período.'); return; }
+  if (!fecha) { glpMsg('Indique la fecha de lectura.'); return; }
+  if (isNaN(act)) { glpMsg('Indique la lectura actual.'); return; }
+  if (!(precio > 0)) { glpMsg('Indique el precio del galón.'); return; }
+  if (!$('gc-file').files[0] && !confirm('No adjuntó la foto del medidor. ¿Registrar de todos modos?')) return;
+  if (!confirm(`Registrar consumo ${per} de ${g.unidad}:\n${$('gc-m3').value} m³ = ${$('gc-gal').value} gal × RD$ ${fmt(precio)} = RD$ ${$('gc-monto').value}?`)) return;
+  const vig = Number(g.precio_vigente || 0), cambioPrecio = Math.abs(precio - vig) > 0.004;
+  $('gc-btn').disabled = true;
   try {
-    const foto = await glpSubirFoto($('gu-cfoto'));
-    const {data, error} = await sb.rpc('fn_glp_registrar_consumo', {p_unidad_id: glpU.unidad_id, p_periodo: per, p_fecha: fecha, p_lectura_actual: act, p_foto: foto});
+    if (cambioPrecio && glpEsCEO() && confirm(`El precio RD$ ${fmt(precio)} es distinto al vigente (${vig ? 'RD$ ' + fmt(vig) : 'ninguno'}).\n¿Guardarlo también como nuevo precio vigente desde ${fecha}?`)) {
+      const {error: e1} = await sb.rpc('fn_glp_precio_registrar', {p_condominio_id: sesion.condominio_id, p_precio: precio, p_vigencia: fecha, p_ref: null});
+      if (e1) throw e1;
+    }
+    const foto = await glpSubirFoto($('gc-file'));
+    const {data, error} = await sb.rpc('fn_glp_registrar_consumo', {p_unidad_id: g.unidad_id, p_periodo: per, p_fecha: fecha, p_lectura_actual: act, p_foto: foto, p_precio: precio});
     if (error) throw error;
-    await abrirGLP(glpU.unidad_id); cargarGLP();
-    if (confirm(`Consumo registrado: ${data.factura} por ${fmtMoney(data.monto)}.\n¿Generar la factura en PDF ahora?`)) glpFacturaPDF(data.movimiento_id);
-  } catch (e) { al.textContent = e.message; al.style.display = 'block'; }
-  finally { $('gu-cbtn').disabled = false; }
+    await glpCargarUnidad(g.unidad_id);
+    glpSeleccionar(data.movimiento_id);
+    if (confirm(`Consumo registrado. Record: ${data.factura} por RD$ ${fmt(data.monto)}${glpEsCEO() ? '' : ' (pendiente de aprobación del CEO)'}.\n¿Generar la factura ahora?`)) glpGenerarFactura();
+  } catch (e) { glpMsg(e.message); $('gc-btn').disabled = false; }
 }
-async function glpAnular(movId) {
-  const motivo = prompt('Motivo de la anulación (queda en el historial):');
-  if (!motivo || !motivo.trim()) return;
-  const {error} = await sb.rpc('fn_glp_anular', {p_movimiento_id: movId, p_motivo: motivo.trim()});
-  if (error) { alert(error.message); return; }
-  await abrirGLP(glpU.unidad_id); cargarGLP();
+
+function glpEditarMedidor() {
+  if (!glpU) return;
+  if (glpU.medidor && !glpEsCEO()) { glpMsg('Solo el CEO modifica un medidor existente.'); return; }
+  document.querySelectorAll('#gx-s2 [data-med]').forEach(e => { e.disabled = false; });
+  $('gx-mguardar').disabled = false; $('gm-marca').focus();
 }
 async function glpGuardarMedidor() {
+  if (!glpU) return;
   const p = {numero_serie: $('gm-serie').value.trim(), marca_modelo: $('gm-marca').value.trim(), ubicacion_fisica: $('gm-ubic').value.trim(),
-    unidad_medida: $('gm-med').value, estado_sello: $('gm-sello').value, estado_equipo: $('gm-equipo').value,
-    lectura_inicial: $('gm-ini').value, observaciones: $('gm-obs').value.trim()};
+    unidad_medida: $('gm-med').value, estado_sello: $('gm-sello').value, estado_equipo: $('gm-equipo').value};
+  if (!glpU.medidor) {
+    const ini = prompt('Medidor nuevo: escriba la LECTURA INICIAL del medidor (m³):', '0');
+    if (ini === null) return;
+    if (isNaN(parseFloat(ini)) || parseFloat(ini) < 0) { glpMsg('Lectura inicial no válida.'); return; }
+    p.lectura_inicial = String(parseFloat(ini)); p.fecha_lectura_inicial = hoyStr();
+  }
   const {error} = await sb.rpc('fn_glp_medidor_guardar', {p_unidad_id: glpU.unidad_id, p: p});
-  if (error) { alert(error.message); return; }
-  await abrirGLP(glpU.unidad_id); cargarGLP();
+  if (error) { glpMsg(error.message); return; }
+  await glpCargarUnidad(glpU.unidad_id);
+  alert('Medidor guardado.');
+}
+
+function glpNuevo() { glpMsg(''); $('gx-unidad').value = ''; glpLimpiarTodo(); $('gx-unidad').focus(); }
+function glpCancelar() { glpMsg(''); glpLimpiarTrabajo(); }
+function glpCerrar() { glpNuevo(); navegar('dashboard'); }
+
+// Factura: la del Record/Factura elegido; si no hay seleccion, la del ultimo consumo activo
+function glpMovFactura() {
+  const g = glpU; if (!g) { glpMsg('Elija la unidad.'); return null; }
+  let x = glpSel && glpSel.factura ? glpSel : null;
+  if (!x) x = (g.movimientos || []).filter(m => m.factura && glpAct(m)).pop();
+  if (!x) { glpMsg('Esta unidad no tiene facturas de consumo. Elija un Record/Factura o registre un consumo.'); return null; }
+  if (!glpAct(x)) { glpMsg('El record ' + x.factura + ' está ANULADO.'); return null; }
+  return x;
 }
 async function glpVerFoto(ruta) {
-  if (/^[a-z]:\//i.test(ruta)) { alert('Esta foto se guardó en la PC desde Access:\n' + ruta.replace(/\//g, '\\')); return false; }
+  if (/^[a-z]:[\\/]/i.test(ruta)) { alert('Esta foto se guardó en la PC desde Access:\n' + ruta.replace(/\//g, '\\')); return false; }
   const {data, error} = await sb.storage.from('glp-fotos').createSignedUrl(ruta, 120);
   if (error) { alert(error.message); return false; }
   window.open(data.signedUrl, '_blank', 'noopener'); return false;
@@ -3761,20 +3924,27 @@ async function glpFotoDataUrl(ruta) {
     return await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(blob); });
   } catch (_) { return null; }
 }
-async function glpFacturaPDF(movId) {
-  const g = glpU, x = (g.movimientos || []).find(m => m.id === movId); if (!x) return false;
-  const l = (g.lecturas || []).find(k => k.id === x.lectura_id) || {};
-  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF.'); return false; }
+async function glpFacturaDoc(x) {
+  const g = glpU, l = (g.lecturas || []).find(k => k.id === x.lectura_id) || {};
+  await cargarLibsExport();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const W = doc.internal.pageSize.getWidth(), Hp = doc.internal.pageSize.getHeight();
-  doc.setFillColor(...BRAND.navy); doc.rect(0, 0, W, 76, 'F');
-  doc.setFillColor(255, 255, 255); doc.roundedRect(36, 17, 170, 46, 4, 4, 'F');
-  try { doc.addImage(LOGO_AXICORE, 'PNG', 46, 26, 150, 28); } catch (e) {}
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Factura de Consumo GLP', W - 36, 40, { align: 'right' });
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.gold);
-  doc.text((x.factura || '') + '   ·   Período ' + (x.periodo || ''), W - 36, 58, { align: 'right' });
-  doc.setFillColor(...BRAND.gold); doc.rect(0, 76, W, 3, 'F');
+  const cab = (titulo, sub) => {
+    doc.setFillColor(...BRAND.navy); doc.rect(0, 0, W, 76, 'F');
+    doc.setFillColor(255, 255, 255); doc.roundedRect(36, 17, 170, 46, 4, 4, 'F');
+    try { doc.addImage(LOGO_AXICORE, 'PNG', 46, 26, 150, 28); } catch (e) {}
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text(titulo, W - 36, 40, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.gold); doc.text(sub, W - 36, 58, { align: 'right' });
+    doc.setFillColor(...BRAND.gold); doc.rect(0, 76, W, 3, 'F');
+  };
+  const pie = () => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...BRAND.gry);
+    doc.text('El consumo de GLP es responsabilidad de cada unidad y no afecta el fondo común.', 36, Hp - 44);
+    doc.setDrawColor(...BRAND.gold); doc.setLineWidth(0.5); doc.line(36, Hp - 32, W - 36, Hp - 32);
+    doc.text(EMPRESA_FOOTER, W / 2, Hp - 20, { align: 'center' });
+  };
+  cab('Factura de Consumo GLP', (x.factura || '') + '   ·   Período ' + (x.periodo || ''));
   const pro = g.propietario || {};
   doc.autoTable({ startY: 98, margin: { left: 36, right: 36 }, theme: 'grid',
     styles: { font: 'helvetica', fontSize: 10, cellPadding: 5, lineColor: [228, 228, 228], lineWidth: 0.4 },
@@ -3785,33 +3955,80 @@ async function glpFacturaPDF(movId) {
       ['Consumo', (l.m3 != null ? Number(l.m3).toFixed(4) + ' m³ = ' : '') + (l.galones != null ? Number(l.galones).toFixed(3) + ' galones' : '')],
       ['Precio por galón', l.precio != null ? fmtMoney(l.precio) : ''], ['MONTO DEL CONSUMO', fmtMoney(x.monto)],
       ['Saldo de GLP tras este consumo', (Number(x.saldo) >= 0 ? 'Saldo a favor ' : 'Balance pendiente ') + fmtMoney(Math.abs(Number(x.saldo)))]],
-    didParseCell: d => { if (d.row.index >= 10) { d.cell.styles.fontStyle = 'bold'; } } });
-  let y = doc.lastAutoTable.finalY + 16;
+    didParseCell: d => { if (d.row.raw && /^(MONTO|Saldo de GLP)/.test(d.row.raw[0])) d.cell.styles.fontStyle = 'bold'; } });
+  pie();
+  // Evidencia fotografica en hoja aparte, con marca (igual que Access 06F)
   const foto = await glpFotoDataUrl(l.foto || x.foto);
   if (foto) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...BRAND.navy); doc.text('Evidencia fotográfica del medidor', 36, y); y += 8;
-    try { const pr = doc.getImageProperties(foto); const w = Math.min(260, pr.width), h = w * pr.height / pr.width; doc.addImage(foto, 36, y, w, Math.min(h, Hp - y - 70)); } catch (_) {}
+    doc.addPage(); cab('Evidencia de lectura', (x.factura || '') + '   ·   ' + g.unidad);
+    try {
+      const pr = doc.getImageProperties(foto), maxW = W - 72, maxH = Hp - 190;
+      let w = maxW, h = w * pr.height / pr.width; if (h > maxH) { h = maxH; w = h * pr.width / pr.height; }
+      doc.addImage(foto, (W - w) / 2, 104, w, h);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.navy);
+      doc.text(`Foto del medidor — lectura ${l.actual != null ? Number(l.actual).toFixed(4) + ' m³' : ''} del ${l.fecha || x.fecha || ''}`, W / 2, 104 + h + 16, { align: 'center' });
+    } catch (_) {}
+    pie();
   }
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...BRAND.gry);
-  doc.text('El consumo de GLP es responsabilidad de cada unidad y no afecta el fondo común.', 36, Hp - 44);
-  doc.setDrawColor(...BRAND.gold); doc.setLineWidth(0.5); doc.line(36, Hp - 32, W - 36, Hp - 32);
-  doc.text(EMPRESA_FOOTER, W / 2, Hp - 20, { align: 'center' });
-  doc.save(`${x.factura || 'GLP'}_${g.unidad.replace(/\s+/g, '_')}.pdf`);
-  return false;
+  return { doc, nombre: `${x.factura || 'GLP'}_${g.unidad.replace(/\s+/g, '_')}.pdf` };
 }
-async function glpEstadoCuentaPDF() {
-  const g = glpU; if (!g) return;
-  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF.'); return; }
-  const act = (g.movimientos || []).filter(x => (x.estado || '').toUpperCase() === 'ACTIVO');
-  const dep = act.filter(x => x.tipo.toUpperCase() === 'DEPOSITO').reduce((a, x) => a + Number(x.monto), 0);
-  const con = act.filter(x => x.tipo.toUpperCase() === 'CONSUMO').reduce((a, x) => a + Number(x.monto), 0);
-  const s = Number(g.saldo || 0), lbl = s >= 0 ? 'Saldo a favor' : 'Balance pendiente';
+async function glpGenerarFactura() {
+  const x = glpMovFactura(); if (!x) return;
+  try { const f = await glpFacturaDoc(x); f.doc.save(f.nombre); } catch (e) { glpMsg('No se pudo generar la factura: ' + e.message); }
+}
+async function glpEnviarEmail() {
+  const x = glpMovFactura(); if (!x) return;
+  const g = glpU, pro = g.propietario || {};
+  const to = [pro.email, g.inquilino && g.inquilino.email].filter(Boolean);
+  if (!to.length) { glpMsg('El propietario no tiene correo registrado.'); return; }
+  try {
+    const f = await glpFacturaDoc(x);
+    const b64 = f.doc.output('datauristring').split(',')[1];
+    const texto = `Saludos ${pro.nombre || ''},\n\nAdjunto la factura de consumo de GLP ${x.factura} de la unidad ${g.unidad}, período ${x.periodo}, por RD$ ${fmt(x.monto)}.\n` +
+      `Saldo de GLP tras este consumo: ${Number(x.saldo) >= 0 ? 'saldo a favor' : 'balance pendiente'} de RD$ ${fmt(Math.abs(Number(x.saldo)))}.\n\nGracias,\nAXICORE Property Administration\nTel. (809) 282-7776`;
+    descargarEml({ to, subject: `Factura de Consumo GLP ${x.factura} - ${g.unidad}`, texto, adjuntos: [{ nombre: f.nombre, mime: 'application/pdf', base64: b64 }] },
+      `Correo_${x.factura}.eml`);
+  } catch (e) { glpMsg('No se pudo preparar el correo: ' + e.message); }
+}
+async function glpEnviarWhatsApp() {
+  const x = glpMovFactura(); if (!x) return;
+  const g = glpU, pro = g.propietario || {};
+  let num = String(pro.telefono || '').replace(/[^0-9]/g, '');
+  if (!num) { glpMsg('El propietario no tiene teléfono registrado.'); return; }
+  if (num.length === 10) num = '1' + num;
+  const txt = `Saludos ${pro.nombre || ''},\n\nLe compartimos su factura de consumo de GLP *${x.factura}* de la unidad ${g.unidad}, período ${x.periodo}: *RD$ ${fmt(x.monto)}*.\n` +
+    `Saldo de GLP: ${Number(x.saldo) >= 0 ? 'saldo a favor' : 'balance pendiente'} de RD$ ${fmt(Math.abs(Number(x.saldo)))}.\n\nGracias,\n*AXICORE Property Administration*`;
+  const w = window.open(`https://wa.me/${num}?text=${encodeURIComponent(txt)}`, '_blank', 'noopener');
+  try { const f = await glpFacturaDoc(x); f.doc.save(f.nombre); } catch (_) {}
+  if (w !== null) setTimeout(() => alert('WhatsApp se abrió con el mensaje. La factura PDF se descargó: adjúntela en el chat antes de enviar.'), 400);
+}
+async function glpGenerarReporte() {
+  const g = glpU; if (!g) { glpMsg('Elija la unidad.'); return; }
+  try { await cargarLibsExport(); } catch (e) { glpMsg('No se pudieron cargar las librerías de PDF.'); return; }
+  const act = (g.movimientos || []).filter(glpAct);
+  const dep = act.filter(glpEsDep).reduce((a, x) => a + Number(x.monto), 0);
+  const con = act.filter(x => !glpEsDep(x)).reduce((a, x) => a + Number(x.monto), 0);
+  const s = Number(g.saldo || 0), lbl = s >= 0 ? 'Crédito al ' + new Date().toLocaleDateString('es-DO') : 'Balance pendiente';
   construirPDF({ titulo: 'Estado de Cuenta GLP', subtitulo: `${g.unidad} · ${(g.propietario || {}).nombre || ''} · al ${new Date().toLocaleDateString('es-DO')}`, orientacion: 'p',
-    kpis: [{label: 'Total depositado', value: fmtMoney(dep)}, {label: 'Total consumido', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
-    resumen: [{label: 'Total depositado', value: fmtMoney(dep)}, {label: 'Total consumido', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
-    moneyCols: [3, 4, 5], headers: ['Fecha', 'Período', 'Concepto', 'Depósito', 'Consumo', 'Saldo'],
-    rows: act.map(x => [x.fecha, x.periodo, x.concepto, x.tipo.toUpperCase() === 'DEPOSITO' ? x.monto : '', x.tipo.toUpperCase() === 'CONSUMO' ? x.monto : '', x.saldo]) })
+    kpis: [{label: 'Total depósitos', value: fmtMoney(dep)}, {label: 'Total consumos', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
+    resumen: [{label: 'Total depósitos', value: fmtMoney(dep)}, {label: 'Total consumos', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
+    moneyCols: [3, 4, 5], headers: ['Período', 'Fecha', 'Concepto', 'Depósito', 'Consumo', 'Saldo a favor'],
+    rows: act.map(x => [x.periodo, x.fecha, x.concepto, glpEsDep(x) ? x.monto : '', glpEsDep(x) ? '' : x.monto, x.saldo]) })
     .save(`AXICORE_EstadoCuenta_GLP_${g.unidad.replace(/\s+/g, '_')}_${hoyStr()}.pdf`);
+}
+async function glpAnularTrans() {
+  if (!glpU) { glpMsg('Elija la unidad.'); return; }
+  if (!glpEsCEO()) { glpMsg('Solo el CEO anula transacciones.'); return; }
+  const x = glpSel;
+  if (!x) { glpMsg('Elija la transacción a anular en Record/Factura o en el historial.'); return; }
+  if (!glpAct(x)) { glpMsg('La transacción ya está anulada.'); return; }
+  const desc = `${glpEsDep(x) ? 'DEPÓSITO' : 'CONSUMO'} ${x.periodo || ''} RD$ ${fmt(x.monto)}${x.factura ? ' (' + x.factura + ')' : ''}`;
+  const motivo = prompt(`Anular ${desc}\n\nMotivo de la anulación (queda en el historial):`);
+  if (!motivo || !motivo.trim()) return;
+  const {error} = await sb.rpc('fn_glp_anular', {p_movimiento_id: x.id, p_motivo: motivo.trim()});
+  if (error) { glpMsg(error.message); return; }
+  await glpCargarUnidad(glpU.unidad_id);
+  alert('Transacción anulada.');
 }
 
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
