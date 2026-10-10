@@ -1,0 +1,12 @@
+-- AXICORE | Modulo GLP del personal - backend (APLICADO 10/10/2026)
+-- Replica frm_GLP de Access:
+--   m3 = lectura actual - anterior; galones = round(m3 * factor, 3); monto = round(m3 * factor * precio, 2)
+--   factor por condominio: condominios.glp_factor_m3_galon (1.22, deducido de los datos de Access; confirmar con Misael)
+--   saldo = depositos ACTIVOS - consumos ACTIVOS (positivo = a favor, negativo = pendiente)
+-- Deposito: glp_movimientos DEPOSITO + libro_financiero 'Deposito GLP'/'GLP' (EC si, FC no; codigo_pago GLP-DEP-<id>). Solo CEO.
+-- Consumo: glp_lecturas + glp_movimientos CONSUMO + glp_facturas GLP-FAC-AAAA-NNNN (CEO -> Aprobado; Asistente -> Sometido).
+--   Bloquea periodo duplicado y lectura menor que la anterior. CEO o staff GLP.crear.
+-- Anular: solo CEO; marca ANULADO movimiento/lectura/factura y anula el asiento del deposito en el libro.
+-- Precio: fn_glp_precio_registrar (solo CEO). Medidor: fn_glp_medidor_guardar (crear: staff GLP.crear; editar: CEO).
+-- Consultas: fn_glp_panel(condo), fn_glp_unidad(unidad). Bucket privado glp-fotos (<condo>/<unidad>/<archivo>).
+-- Probado con rollback: consumo u6 0.96->1.20 = 39.88 (manual igual); u8 9.929->10.50 = 94.88; permisos OK.
