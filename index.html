@@ -368,7 +368,7 @@
           <span class="module-arrow">▼</span>
         </div>
         <div class="module-links">
-          <a href="#" class="empty" style="color:var(--ax-muted);font-style:italic;cursor:default">Próximamente</a>
+          <a href="#" onclick="navegar('automatizaciones')" data-page="automatizaciones">⚙️ Tareas programadas</a>
         </div>
       </div>
     </nav>
@@ -486,6 +486,32 @@
         <div class="rep-filtros" id="rglp-filtros"></div>
         <div class="cards-row" id="rglp-stats"></div>
         <div class="card"><div class="card-body" id="rglp-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== AUTOMATIZACIONES ===== -->
+      <div id="page-automatizaciones" class="page">
+        <h2 class="page-title">Automatizaciones</h2>
+        <p style="font-size:.85rem;color:#4d4742;margin-bottom:1rem">Tareas que la base ejecuta sola (pg_cron). Ninguna envía correos ni mensajes todavía: el envío real requiere configurar un proveedor.</p>
+        <div class="card" style="margin-bottom:1.2rem">
+          <div class="card-header">Tareas programadas</div>
+          <div class="card-body" id="auto-jobs"><div class="loading">Cargando...</div></div>
+        </div>
+        <div class="card" style="margin-bottom:1.2rem">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Cola de recordatorios de cobro <span id="auto-cola-badge" class="badge badge-danger" style="display:none"></span></span>
+          </div>
+          <div class="card-body" id="auto-cola"><div class="loading">Cargando...</div></div>
+        </div>
+        <div class="card" style="margin-bottom:1.2rem">
+          <div class="card-header">Facturación mensual automática</div>
+          <div class="card-body">
+            <p style="font-size:.85rem;color:#4d4742;margin:0">Desactivada. Generar las facturas del mes sin intervención no se revierte fácilmente, así que requiere tu visto bueno explícito para programarla. Hoy la facturación se genera manual desde <b>Captura → Facturación</b>.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Bitácora reciente</div>
+          <div class="card-body" id="auto-logs"><div class="loading">Cargando...</div></div>
+        </div>
       </div>
 
       <!-- ===== FACTURACIÓN ===== -->
@@ -1383,7 +1409,7 @@ function aplicarRestriccionesResidente() {
 // Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
 function aplicarRestriccionesRol() {
   const esCEO = sesion.rol === 'CEO';
-  const soloCEO = ['ecg', 'cap-usuarios'];            // Asistente no ve ECG ni Usuarios
+  const soloCEO = ['ecg', 'cap-usuarios', 'automatizaciones'];  // Asistente no ve ECG, Usuarios ni Automatizaciones
   soloCEO.forEach(p => {
     const a = document.querySelector('.sidebar a[data-page="' + p + '"]');
     if (a) a.style.display = esCEO ? '' : 'none';
@@ -1518,6 +1544,7 @@ function navegar(page) {
     'rep-cobros': cargarRepCobros,
     'rep-gastos': cargarRepGastos,
     'rep-glp': cargarRepGlp,
+    'automatizaciones': cargarAutomatizaciones,
     'facturacion': cargarFacturacion,
     'pagos': cargarPagos,
     'gastos': cargarGastos,
@@ -1890,6 +1917,73 @@ async function cargarRepGlp() {
       <td class="text-right money">${fmt(r.monto_consumo)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
   repData.glp = { headers: ['Período', 'Unidad', 'Medidor', 'Fecha', 'Lect. ant.', 'Lect. act.', 'Consumo', 'Precio', 'Monto', 'Estado'],
     rows: rows.map(r => [r.periodo, r.unidad_codigo, r.medidor, r.fecha_lectura, r.lectura_anterior, r.lectura_actual, r.consumo, r.precio_unitario, r.monto_consumo, r.estado]) };
+}
+
+// ==================== AUTOMATIZACIONES ====================
+const AUTO_JOBS = {
+  'axi_marcar_vencidas':      { titulo: 'Marcar facturas vencidas', desc: 'Pone estado "Vencida" a facturas con balance y fecha vencida.', accion: 'vencidas' },
+  'axi_generar_recordatorios': { titulo: 'Generar recordatorios de cobro', desc: 'Arma la cola de recordatorios por morosidad (no envía).', accion: 'recordatorios' }
+};
+function autoSchedTexto(s) {
+  if (s === '0 6 * * *') return 'Diario · 06:00 UTC';
+  if (s === '15 6 * * *') return 'Diario · 06:15 UTC';
+  return s;
+}
+async function cargarAutomatizaciones() {
+  const [est, cola] = await Promise.all([
+    sb.rpc('fn_automatizaciones_estado'),
+    sb.rpc('fn_recordatorios_listar', { p_condominio_id: sesion.condominio_id })
+  ]);
+  if (est.error) { $('auto-jobs').innerHTML = `<div class="empty">${est.error.message}</div>`; return; }
+  const d = est.data || {};
+  const jobs = d.jobs || [];
+  $('auto-jobs').innerHTML = `<table>
+    <thead><tr><th>Tarea</th><th>Programación</th><th class="text-center">Activa</th><th class="text-center">Ejecutar</th></tr></thead>
+    <tbody>${jobs.map(j => {
+      const meta = AUTO_JOBS[j.nombre] || { titulo: j.nombre, desc: '', accion: '' };
+      return `<tr>
+        <td><b>${meta.titulo}</b><div style="font-size:.75rem;color:var(--ax-muted)">${meta.desc}</div></td>
+        <td>${autoSchedTexto(j.schedule)}</td>
+        <td class="text-center">${j.activo ? '<span class="badge badge-success">Sí</span>' : '<span class="badge">No</span>'}</td>
+        <td class="text-center">${meta.accion ? `<button class="btn btn-sm btn-outline" onclick="autoEjecutar('${meta.accion}')">▶ Ahora</button>` : ''}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+
+  const badge = $('auto-cola-badge');
+  const rows = cola.data || [];
+  if (badge) { badge.textContent = rows.length; badge.style.display = rows.length ? 'inline-block' : 'none'; }
+  if (!rows.length) {
+    $('auto-cola').innerHTML = '<div class="empty">Sin recordatorios pendientes. Usa “▶ Ahora” en “Generar recordatorios de cobro” para armar la cola.</div>';
+  } else {
+    $('auto-cola').innerHTML = `<table>
+      <thead><tr><th>Unidad</th><th class="text-center">Días atraso</th><th>Prioridad</th><th>Canal</th><th>Email</th><th>WhatsApp</th><th>Estado</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>#${r.unidad_id}</td>
+        <td class="text-center">${r.dias_atraso ?? ''}</td>
+        <td>${r.prioridad || ''}</td>
+        <td>${r.canal || ''}</td>
+        <td>${r.email_destino || '—'}</td>
+        <td>${r.whatsapp_destino || '—'}</td>
+        <td><span class="badge">${r.estatus_envio}</span></td>
+      </tr>`).join('')}</tbody></table>
+      <p style="font-size:.78rem;color:var(--ax-muted);margin-top:.6rem">La cola queda en espera (no se envía). El envío real por email/WhatsApp requiere configurar un proveedor.</p>`;
+  }
+
+  const logs = d.logs || [];
+  $('auto-logs').innerHTML = logs.length ? `<table>
+    <thead><tr><th>Fecha</th><th>Módulo</th><th>Evento</th><th>Estado</th><th>Resultado</th></tr></thead>
+    <tbody>${logs.map(l => `<tr>
+      <td>${(l.fecha || '').replace('T', ' ').slice(0, 16)}</td>
+      <td>${l.modulo || ''}</td><td>${l.evento || ''}</td>
+      <td>${l.estado || ''}</td><td>${l.resultado || ''}</td>
+    </tr>`).join('')}</tbody></table>` : '<div class="empty">Sin eventos registrados aún</div>';
+}
+async function autoEjecutar(accion) {
+  const fn = accion === 'vencidas' ? 'fn_run_vencidas' : 'fn_run_recordatorios';
+  const { data, error } = await sb.rpc(fn, { p_condominio_id: sesion.condominio_id });
+  if (error) { alert('Error: ' + error.message); return; }
+  alert(accion === 'vencidas' ? `✅ ${data} factura(s) marcadas como Vencida.` : `✅ ${data} recordatorio(s) en cola.`);
+  cargarAutomatizaciones();
 }
 
 // ==================== CEO: FACTURACIÓN ====================
