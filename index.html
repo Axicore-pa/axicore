@@ -297,6 +297,13 @@
         <input type="password" id="login-pass" required placeholder="••••••••">
       </div>
       <button type="submit" class="btn btn-primary" id="login-btn">Iniciar Sesión</button>
+      <div style="text-align:center;margin-top:.8rem"><a href="#" onclick="return olvideClave()" style="font-size:.85rem;color:var(--ax-gold)">¿Olvidó su contraseña?</a></div>
+    </form>
+    <form id="clave-form" style="display:none" onsubmit="return guardarClaveNueva(event)">
+      <p style="font-size:.9rem;margin:0 0 .8rem;text-align:center">Cree su contraseña para entrar a AXICORE. La usará cada vez que inicie sesión.</p>
+      <div class="form-group"><label>Nueva contraseña (mínimo 8 caracteres)</label><input type="password" id="clave-1" required minlength="8" autocomplete="new-password"></div>
+      <div class="form-group"><label>Repetir contraseña</label><input type="password" id="clave-2" required minlength="8" autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-primary" id="clave-btn">Guardar contraseña y entrar</button>
     </form>
   </div>
 </div>
@@ -1434,6 +1441,8 @@
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmZ3lmdHNud3puc3FpenJpZ2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDgxODgsImV4cCI6MjEwNjk4NDE4OH0.i-icCG4lJ7Vjkp6c_j_a4Mrwt2w5Ig2GYUcfgWoIugQ';
 
+// Enlace de invitacion o de recuperacion: el usuario debe crear su contrasena antes de entrar
+let debeCrearClave = /type=(invite|recovery)/.test(location.hash + location.search);
 let sb;
 try {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1545,15 +1554,56 @@ $('login-form').addEventListener('submit', async e => {
   }
 });
 
+// ==================== CONTRASENA: crear (invitacion) / recuperar ====================
+function mostrarCrearClave() {
+  $('login-screen').style.display = 'flex';
+  $('app-shell').style.display = 'none';
+  $('login-form').style.display = 'none';
+  $('clave-form').style.display = 'block';
+}
+async function guardarClaveNueva(e) {
+  e.preventDefault();
+  const c1 = $('clave-1').value, c2 = $('clave-2').value, btn = $('clave-btn');
+  $('login-alert').style.display = 'none';
+  if (c1.length < 8) { showAlert('La contraseña debe tener al menos 8 caracteres.'); return false; }
+  if (c1 !== c2) { showAlert('Las contraseñas no coinciden.'); return false; }
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const { error } = await sb.auth.updateUser({ password: c1 });
+    if (error) throw error;
+    debeCrearClave = false;
+    history.replaceState(null, '', location.pathname);
+    $('clave-form').style.display = 'none'; $('login-form').style.display = 'block';
+    await iniciarApp();
+  } catch (err) {
+    showAlert(/expired|invalid|session/i.test(err.message)
+      ? 'El enlace venció o ya fue usado. Pida a la administración una nueva invitación o use "¿Olvidó su contraseña?".'
+      : err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Guardar contraseña y entrar'; }
+  return false;
+}
+async function olvideClave() {
+  const email = ($('login-email').value || prompt('Escriba el correo con el que entra a AXICORE:') || '').trim();
+  if (!email) return false;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if (error) { showAlert(error.message); return false; }
+  alert('Si el correo está registrado, recibirá un enlace para crear una nueva contraseña.');
+  return false;
+}
+
 let iniciando = false;
 async function iniciarApp() {
   if (iniciando || sesion) return;   // evita arranque doble (submit + evento de sesión)
+  if (debeCrearClave) { mostrarCrearClave(); return; }
   iniciando = true;
   try {
   // Obtener sesión del sistema AXICORE
   const {data, error} = await sb.rpc('axi_sesion_iniciar');
   if (error) {
-    showAlert('Error de acceso: ' + error.message);
+    showAlert(/no tiene acceso/i.test(error.message)
+      ? 'Su cuenta está creada, pero la administración aún no la ha enlazado a su unidad. Intente más tarde.'
+      : 'Error de acceso: ' + error.message);
+    await sb.auth.signOut();
     return;
   }
   sesion = data;
@@ -1772,6 +1822,7 @@ async function cerrarSesion() {
 
 // Auto-login si ya hay sesión (incluye recarga de página: INITIAL_SESSION)
 sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { debeCrearClave = true; mostrarCrearClave(); return; }
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
       && session && !sesion) {
     await iniciarApp();
