@@ -1063,6 +1063,8 @@ try {
   document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + e.message + '</div>';
 }
 let sesion = null; // {rol, usuario_id, nombre, condominio_id}
+let pgEdit = null; // pago a proveedor en edicion (pagos_gastos row) o null
+let pagoEdit = null; // pago de residente en edicion (pagos row) o null
 let condominiosUsuario = []; // [{condominio_id, nombre, rol}]
 
 // ==================== UTILIDADES ====================
@@ -1625,7 +1627,7 @@ async function cargarPagos() {
         <td>${r.metodo || '—'}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
         <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span>${badgeAprob(r.estado_aprobacion)}</td>
-        <td class="text-center" style="white-space:nowrap">${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
+        <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' && !['anulado','anulada'].includes(String(r.estado||'').toLowerCase()) ? `<button class="btn btn-sm btn-outline" onclick="editarPago(${r.id})">✏️</button> ` : ''}${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`).join('')}
     </tbody>
   </table></div>`;
@@ -1736,7 +1738,7 @@ async function cargarPagosGastos() {
   $('pagos-gastos-lista').innerHTML = `
     <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(totalPagado)}</strong> — ${data.length} comprobantes</p>
     <table>
-      <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th></tr></thead>
+      <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th><th class="text-center">Acción</th></tr></thead>
       <tbody>${data.map(r => {
         const g = r.gastos || {};
         const prov = g.proveedores || {};
@@ -1748,8 +1750,9 @@ async function cargarPagosGastos() {
           <td>${r.metodo_pago || '—'}</td>
           <td>${r.banco || '—'}</td>
           <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
-          <td class="text-right money">${fmt(r.monto)}</td>
+          <td class="text-right money">${fmt(r.monto)}${badgeAprob(r.estado_aprobacion)}</td>
           <td class="text-center">${btnComprobantesRow(r)}</td>
+          <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' ? `<button class="btn btn-sm btn-outline" onclick="editarPagoGasto(${r.id})">✏️ Editar</button>` : ''}</td>
         </tr>`;
       }).join('')}
       </tbody>
@@ -1757,11 +1760,13 @@ async function cargarPagosGastos() {
 }
 
 async function abrirModalPagoGasto() {
+  pgEdit = null;
   $('form-pago-gasto').reset();
   $('pg-gasto-info').style.display = 'none';
   $('pg-fecha').value = new Date().toISOString().slice(0, 10);
   $('pg-btn-guardar').disabled = false;
   $('pg-btn-guardar').textContent = 'Registrar Pago';
+  $('pg-gasto-id').disabled = false; $('pg-gasto-id').required = true;
 
   const sel = $('pg-gasto-id');
   sel.innerHTML = '<option value="">Cargando...</option>';
@@ -1790,6 +1795,30 @@ async function abrirModalPagoGasto() {
   };
 }
 
+// Abrir el modal en modo EDICION de un pago a proveedor (sin duplicar)
+async function editarPagoGasto(id) {
+  const {data: r, error} = await sb.from('pagos_gastos').select('*').eq('id', id).single();
+  if (error || !r) { alert('No se pudo cargar el pago: ' + (error?.message || '')); return; }
+  pgEdit = r;
+  $('form-pago-gasto').reset();
+  $('modal-pago-gasto').classList.add('show');
+  // Bloquear selector de gasto (no se cambia el gasto al editar)
+  const sel = $('pg-gasto-id');
+  sel.innerHTML = `<option value="${r.gasto_id}">Gasto #${r.gasto_id} (no se cambia al editar)</option>`;
+  sel.value = r.gasto_id; sel.disabled = true; sel.required = false;
+  $('pg-gasto-info').style.display = 'none';
+  $('pg-fecha').value = r.fecha_pago || '';
+  $('pg-monto').value = r.monto ?? '';
+  $('pg-metodo').value = r.metodo_pago || '';
+  $('pg-banco').value = r.banco || '';
+  $('pg-referencia').value = r.referencia || '';
+  $('pg-nota').value = r.nota || '';
+  const n = Array.isArray(r.comprobantes) ? r.comprobantes.length : (r.comprobante_url ? 1 : 0);
+  $('pg-comprobante-url').placeholder = `Ya tiene ${n} comprobante(s). Aquí agregas MÁS (uno por línea); los archivos nuevos se suman.`;
+  $('pg-btn-guardar').disabled = false;
+  $('pg-btn-guardar').textContent = sesion.rol === 'CEO' ? 'Guardar cambios' : 'Enviar cambios a aprobación';
+}
+
 async function guardarPagoGasto(e) {
   e.preventDefault();
   const btn = $('pg-btn-guardar');
@@ -1798,7 +1827,7 @@ async function guardarPagoGasto(e) {
 
   try {
     const {data: {user}} = await sb.auth.getUser();
-    const gastoId = parseInt($('pg-gasto-id').value);
+    const gastoId = pgEdit ? pgEdit.gasto_id : parseInt($('pg-gasto-id').value);
 
     // Subir uno o varios archivos de comprobante
     const urlsPegadas = ($('pg-comprobante-url').value || '').split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
@@ -1815,11 +1844,37 @@ async function guardarPagoGasto(e) {
       if (upErr) throw new Error('No se pudo subir el comprobante ' + (i+1) + ': ' + upErr.message);
       rutas.push(ruta);
     }
-    // comprobante_url: primer archivo subido, o el primer enlace pegado (compatibilidad)
-    const comprobante = rutas[0] || urlsPegadas[0] || null;
-    // comprobantes: lista completa (rutas subidas + enlaces pegados)
-    const lista = [...rutas, ...urlsPegadas];
+    const nuevos = [...rutas, ...urlsPegadas];
 
+    // ----- MODO EDICION (no duplica) -----
+    if (pgEdit) {
+      btn.textContent = 'Guardando...';
+      const cambios = {};
+      const set = (k, v) => { if ((v ?? null) !== (pgEdit[k] ?? null)) cambios[k] = v; };
+      set('fecha_pago', $('pg-fecha').value || null);
+      set('monto', parseFloat($('pg-monto').value));
+      set('metodo_pago', $('pg-metodo').value || null);
+      set('banco', $('pg-banco').value.trim() || null);
+      set('referencia', $('pg-referencia').value.trim() || null);
+      set('nota', $('pg-nota').value.trim() || null);
+      if (nuevos.length) {
+        const previos = Array.isArray(pgEdit.comprobantes) ? pgEdit.comprobantes
+                       : (pgEdit.comprobante_url ? [pgEdit.comprobante_url] : []);
+        cambios.comprobantes = [...previos, ...nuevos];
+      }
+      if (!Object.keys(cambios).length) { alert('No hay cambios.'); btn.disabled=false; btn.textContent='Guardar cambios'; return; }
+      let motivo = null;
+      if (sesion.rol !== 'CEO') { motivo = prompt('Motivo del cambio (se enviará al CEO):') || 'Edicion pago proveedor'; }
+      const {data, error} = await sb.rpc('fn_pago_gasto_editar', {p_id: pgEdit.id, p_cambios: cambios, p_motivo: motivo});
+      if (error) throw error;
+      cerrarModal('modal-pago-gasto'); pgEdit = null;
+      cargarPagosGastos();
+      alert(data?.es_ceo ? '✅ Cambios guardados.' : `✅ ${data?.sometidos || 0} cambio(s) enviados al CEO para aprobación.`);
+      return;
+    }
+
+    // ----- MODO NUEVO (insert) -----
+    const comprobante = rutas[0] || urlsPegadas[0] || null;
     btn.textContent = 'Guardando...';
     const payload = {
       condominio_id: sesion.condominio_id,
@@ -1830,7 +1885,7 @@ async function guardarPagoGasto(e) {
       banco: $('pg-banco').value.trim() || null,
       referencia: $('pg-referencia').value.trim() || null,
       comprobante_url: comprobante,
-      comprobantes: lista.length ? lista : null,
+      comprobantes: nuevos.length ? nuevos : null,
       nota: $('pg-nota').value.trim() || null,
       registrado_por: user?.id || null,
     };
@@ -1842,9 +1897,9 @@ async function guardarPagoGasto(e) {
     cargarPagosGastos();
     cargarGastos(); // refresh gastos list too — estado changed to Pagado
   } catch(err) {
-    alert('Error al registrar pago: ' + err.message);
+    alert('Error al guardar el pago: ' + err.message);
     btn.disabled = false;
-    btn.textContent = 'Registrar Pago';
+    btn.textContent = pgEdit ? 'Guardar cambios' : 'Registrar Pago';
   }
 }
 
@@ -2068,8 +2123,11 @@ function cerrarModal(id) { $(id).classList.remove('show'); }
 
 // ==================== REGISTRAR PAGO ====================
 async function abrirModalPago() {
+  pagoEdit = null;
   $('pago-alert').style.display = 'none';
   $('form-pago').reset();
+  $('pago-factura').disabled = false; $('pago-factura').required = true;
+  $('pago-btn-guardar').textContent = 'Registrar Pago';
 
   // Fecha por defecto = hoy
   const hoy = new Date().toISOString().split('T')[0];
@@ -2102,14 +2160,62 @@ async function abrirModalPago() {
   };
 }
 
+// Abrir modal en modo EDICION de un pago de residente (sin duplicar)
+async function editarPago(id) {
+  const {data: r, error} = await sb.from('pagos').select('*, facturas(no_factura)').eq('id', id).single();
+  if (error || !r) { alert('No se pudo cargar el pago: ' + (error?.message || '')); return; }
+  pagoEdit = r;
+  $('pago-alert').style.display = 'none';
+  $('form-pago').reset();
+  $('modal-pago').classList.add('show');
+  const sel = $('pago-factura');
+  sel.innerHTML = `<option value="${r.factura_id}">${r.facturas?.no_factura || ('Factura #'+r.factura_id)} (no se cambia)</option>`;
+  sel.value = r.factura_id; sel.disabled = true; sel.required = false;
+  $('pago-fecha').value = r.fecha_pago || '';
+  $('pago-monto').value = r.monto ?? '';
+  $('pago-metodo').value = r.metodo || 'Efectivo';
+  $('pago-banco').value = r.banco || '';
+  $('pago-referencia').value = r.referencia || '';
+  $('pago-recibido-de').value = r.recibido_de || '';
+  $('pago-tipo-mov').value = r.tipo_movimiento || 'Ingreso recibido';
+  $('pago-tipo-apl').value = r.tipo_aplicacion || 'Propietario';
+  $('pago-obs').value = r.observaciones || '';
+  $('pago-btn-guardar').textContent = sesion.rol === 'CEO' ? 'Guardar cambios' : 'Enviar cambios a aprobación';
+}
+
 async function guardarPago(e) {
   e.preventDefault();
   const btn = $('pago-btn-guardar');
-  btn.textContent = 'Registrando...';
+  btn.textContent = pagoEdit ? 'Guardando...' : 'Registrando...';
   btn.disabled = true;
   $('pago-alert').style.display = 'none';
 
   try {
+    // ----- MODO EDICION (no duplica) -----
+    if (pagoEdit) {
+      const cambios = {};
+      const set = (k, v) => { if ((v ?? null) !== (pagoEdit[k] ?? null)) cambios[k] = v; };
+      set('fecha_pago', $('pago-fecha').value || null);
+      set('monto', parseFloat($('pago-monto').value));
+      set('metodo', $('pago-metodo').value || null);
+      set('banco', $('pago-banco').value || null);
+      set('referencia', $('pago-referencia').value || null);
+      set('recibido_de', $('pago-recibido-de').value || null);
+      set('tipo_movimiento', $('pago-tipo-mov').value || null);
+      set('tipo_aplicacion', $('pago-tipo-apl').value || null);
+      set('observaciones', $('pago-obs').value || null);
+      if (!Object.keys(cambios).length) { $('pago-alert').textContent = 'No hay cambios.'; $('pago-alert').style.display='block'; btn.disabled=false; btn.textContent='Guardar cambios'; return; }
+      let motivo = null;
+      if (sesion.rol !== 'CEO') motivo = prompt('Motivo del cambio (se enviará al CEO):') || 'Edicion de pago';
+      const {data, error} = await sb.rpc('fn_pago_editar', {p_pago_id: pagoEdit.id, p_cambios: cambios, p_motivo: motivo});
+      if (error) throw error;
+      cerrarModal('modal-pago'); pagoEdit = null;
+      cargarPagos();
+      alert(data?.es_ceo ? '✅ Cambios guardados.' : `✅ ${data?.sometidos || 0} cambio(s) enviados al CEO para aprobación.`);
+      return;
+    }
+
+    // ----- MODO NUEVO -----
     const payload = {
       factura_id: parseInt($('pago-factura').value),
       fecha_pago: $('pago-fecha').value,
@@ -2136,7 +2242,7 @@ async function guardarPago(e) {
     $('pago-alert').textContent = err.message;
     $('pago-alert').style.display = 'block';
   } finally {
-    btn.textContent = 'Registrar Pago';
+    btn.textContent = pagoEdit ? 'Guardar cambios' : 'Registrar Pago';
     btn.disabled = false;
   }
 }
