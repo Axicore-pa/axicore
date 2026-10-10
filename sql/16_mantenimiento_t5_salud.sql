@@ -1,0 +1,7 @@
+-- AXICORE | Mantenimiento T5 (10/10/2026): indice Salud General del Residencial
+-- private.salud_calc(condo) [una sola consulta, STABLE] + public.fn_salud_residencial(condo) (CEO / staff Mantenimientos.ver).
+-- Solo reportes no historicos, no cancelados, recibidos desde mant_parametros.fecha_arranque.
+-- Avance = promedio ponderado por prioridad (mant_prioridades.peso) del % de estado de los no cerrados.
+-- Plazo = % de resueltos dentro de fecha_solicitud + plazo_horas. Atrasos = 100 - % de abiertos vencidos.
+-- Indice = suma ponderada (peso_avance/plazo/atrasos), redistribuyendo pesos si un componente no tiene datos.
+-- Verificado con escenario controlado (rollback): avance 20, plazo 0, atrasos 100 -> 28.0 rojo (calculo manual igual).

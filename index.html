@@ -449,11 +449,9 @@
         </div>
         <!-- Placeholders for future modules -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem" id="dash-future-row">
-          <div class="card" style="opacity:.65">
-            <div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-muted)" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>&nbsp; Salud General — Mantenimiento <span style="font-size:.7rem;color:var(--ax-muted);font-weight:400;margin-left:.5rem">Próximamente</span></div>
-            <div class="card-body" style="min-height:140px;display:flex;align-items:center;justify-content:center;color:var(--ax-muted);font-size:.85rem">
-              <div style="text-align:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ax-border)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><br>Módulo en desarrollo</div>
-            </div>
+          <div class="card" id="dash-salud-card" style="cursor:pointer" onclick="navegar('mantenimiento')">
+            <div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-gold)" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>&nbsp; Salud General del Residencial <span id="dash-salud-desde" style="font-size:.7rem;color:var(--ax-muted);font-weight:400;margin-left:.5rem"></span></div>
+            <div class="card-body" id="dash-salud" style="min-height:140px"><div class="loading">Cargando...</div></div>
           </div>
           <div class="card" style="opacity:.65">
             <div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-muted)" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>&nbsp; Cumplimiento de Metas <span style="font-size:.7rem;color:var(--ax-muted);font-weight:400;margin-left:.5rem">Próximamente</span></div>
@@ -1868,6 +1866,7 @@ function navegar(page) {
 // ==================== CEO: DASHBOARD ====================
 async function cargarDashboard() {
   const cid = sesion.condominio_id;
+  cargarSaludResidencial();
   try {
 
   // Paralelo: ECG totales + cobros + conteos + gastos + flujo mensual + morosidad
@@ -3440,6 +3439,34 @@ async function confirmarEstado(estado) {
   cargarMantenimiento();
   if (data?.emitir_comunicacion && typeof emitirComunicacionMant === 'function') emitirComunicacionMant(m.id);
   else if (data?.emitir_comunicacion) { al.className = 'alert alert-success'; al.textContent = 'Estado actualizado. La comunicación formal se habilita en el siguiente paso.'; al.style.display = 'block'; }
+}
+
+// ==================== SALUD GENERAL DEL RESIDENCIAL ====================
+async function cargarSaludResidencial() {
+  const el = $('dash-salud'); if (!el) return;
+  const {data: h, error} = await sb.rpc('fn_salud_residencial', {p_condominio_id: sesion.condominio_id});
+  if (error) { el.innerHTML = '<div class="empty" style="font-size:.85rem">' + error.message + '</div>'; return; }
+  $('dash-salud-desde').textContent = h.desde ? 'desde ' + new Date(h.desde + 'T12:00:00').toLocaleDateString('es-DO') : '';
+  const col = {verde: 'var(--ax-success)', amarillo: '#d4a017', rojo: 'var(--ax-danger)'}[h.semaforo] || 'var(--ax-muted)';
+  if (h.indice === null) { el.innerHTML = '<div class="empty" style="font-size:.85rem">Aún no hay reportes desde la fecha de arranque.<br>El índice se calcula con los reportes recibidos por el formulario.</div>'; return; }
+  const ind = Number(h.indice), R = 44, C = 2 * Math.PI * R, off = C * (1 - ind / 100);
+  const comp = (k, v, w) => `<div style="margin-bottom:.45rem"><div style="display:flex;justify-content:space-between;font-size:.75rem"><span>${k} <small style="color:var(--ax-muted)">(${w}%)</small></span><strong>${v === null ? '—' : v + '%'}</strong></div>
+      <div style="background:#eee;border-radius:4px;height:6px"><div style="width:${v || 0}%;background:${col};height:6px;border-radius:4px"></div></div></div>`;
+  const est = h.por_estado || {};
+  el.innerHTML = `<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+    <svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="${R}" fill="none" stroke="#eee" stroke-width="10"/>
+      <circle cx="55" cy="55" r="${R}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 55 55)"/>
+      <text x="55" y="55" text-anchor="middle" font-size="22" font-weight="700" fill="${col}">${Math.round(ind)}</text>
+      <text x="55" y="72" text-anchor="middle" font-size="9" fill="#888">${h.semaforo.toUpperCase()}</text></svg>
+    <div style="flex:1;min-width:170px">
+      ${comp('Avance de reportes', h.componentes.avance, h.pesos.avance)}
+      ${comp('Cumplimiento de plazo', h.componentes.plazo, h.pesos.plazo)}
+      ${comp('Sin atrasos', h.componentes.atrasos, h.pesos.atrasos)}
+    </div></div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem;font-size:.72rem">
+      ${Object.entries(est).map(([k, n]) => `<span class="badge" style="background:${MT_COLOR[k] || '#888'};color:#fff">${k}: ${n}</span>`).join('')}
+      ${h.vencidos ? `<span class="badge badge-danger">Vencidos: ${h.vencidos}</span>` : ''}
+    </div>`;
 }
 
 // ==================== COMUNICACION FORMAL (Mantenimiento) ====================
