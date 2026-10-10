@@ -963,6 +963,30 @@
 </div>
 
 <!-- MODAL: Registrar Pago -->
+<div class="modal-overlay" id="modal-com">
+  <div class="modal" style="max-width:760px;width:96%">
+    <h3>Comunicación formal a residentes</h3>
+    <div id="mc2-alert" class="alert alert-error"></div>
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.6rem">
+      <label style="margin:0">Enviar a</label>
+      <select id="mc2-alcance" style="max-width:260px" onchange="emitirComunicacionMant(mtComId, this.value)">
+        <option value="Residencial">Todo el residencial</option><option value="Unidad">Solo quien reportó</option>
+      </select>
+      <small id="mc2-regla" style="color:#8a8578"></small>
+    </div>
+    <div id="mc2-preview" style="background:#f7f5ef;border:1px solid #e3ded3;border-radius:8px;padding:.8rem;font-size:.88rem;white-space:pre-wrap"></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+      <button class="btn btn-primary" onclick="comPDF()">⬇️ Descargar PDF</button>
+      <button class="btn" style="background:#25D366;color:#fff" onclick="comWhatsApp()">WhatsApp</button>
+      <button class="btn" onclick="comCorreo()">📧 Correo</button>
+    </div>
+    <div id="mc2-dest" style="margin-top:.8rem;max-height:220px;overflow:auto"></div>
+    <div class="modal-actions" style="display:flex;justify-content:flex-end;margin-top:1rem">
+      <button type="button" class="btn" onclick="cerrarModal('modal-com')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-mant">
   <div class="modal" style="max-width:820px;width:96%">
     <h3 id="mm-titulo">Reporte</h3>
@@ -3366,6 +3390,7 @@ async function abrirMant(id) {
     ${a.tecnico_telefono ? ' · Tel. ' + a.tecnico_telefono : ''}<br>${a.proveedor ? 'Proveedor: ' + a.proveedor + ' · ' : ''}Fecha estimada: <strong>${fechaHora(a.fecha_estimada)}</strong>${a.nota ? '<br>' + a.nota : ''}</div>` : '';
   const sig = MT_SIGUIENTES[m.estatus] || [];
   const botones = sig.map(e => `<button class="btn btn-sm" style="background:${MT_COLOR[e]};color:#fff" onclick="prepararEstado('${e}')">${e === 'En proceso' && m.estatus === 'Resuelto' ? 'Reabrir (En proceso)' : '→ ' + e}</button>`);
+  if (a && ['En proceso','Resuelto'].includes(m.estatus)) botones.push(`<button class="btn btn-sm btn-primary" onclick="emitirComunicacionMant(${m.id})">📣 Comunicación${m.comunicacion_emitida_at ? ' (emitida)' : ''}</button>`);
   if (['Recibido','En evaluación','En proceso'].includes(m.estatus) && a) botones.push(`<button class="btn btn-sm" onclick="prepararEstado('__reasignar')">Reasignar técnico</button>`);
   $('mm-acciones').innerHTML = sig.length ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center"><strong style="font-size:.85rem">Cambiar estado:</strong> ${botones.join('')}</div>
     <div id="mm-confirmar" style="margin-top:.6rem"></div>` : '<em>Reporte finalizado; no admite cambios.</em>';
@@ -3415,6 +3440,104 @@ async function confirmarEstado(estado) {
   cargarMantenimiento();
   if (data?.emitir_comunicacion && typeof emitirComunicacionMant === 'function') emitirComunicacionMant(m.id);
   else if (data?.emitir_comunicacion) { al.className = 'alert alert-success'; al.textContent = 'Estado actualizado. La comunicación formal se habilita en el siguiente paso.'; al.style.display = 'block'; }
+}
+
+// ==================== COMUNICACION FORMAL (Mantenimiento) ====================
+let mtComId = null, mtCom = null;
+const fechaLarga = d => d ? new Date(d).toLocaleString('es-DO', {weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+function comTexto(c) {
+  const lugar = c.alcance === 'Residencial' ? (c.area || 'área común') : ('Unidad ' + (c.unidad || ''));
+  return `*AXICORE — Comunicación de mantenimiento*\n` +
+    `Referencia: ${c.referencia}\nResidencial: ${c.residencial || ''}\nLugar: ${lugar}${c.bloque ? ' · Bloque ' + c.bloque : ''}\n` +
+    `Trabajo: ${c.categoria || ''}${c.prioridad ? ' (prioridad ' + c.prioridad.toLowerCase() + ')' : ''}\n` +
+    (c.proveedor ? `Empresa: ${c.proveedor}\n` : '') +
+    `Técnico: ${c.tecnico} · Cédula ${c.cedula}\nFecha estimada: ${fechaLarga(c.fecha_estimada)}\n\n` +
+    `Por su seguridad, el técnico deberá identificarse con su cédula al ingresar al residencial. ` +
+    `Para cualquier duda comuníquese con la administración: (809) 282-7776.\n\nAPA | Axicore Property Administration`;
+}
+async function emitirComunicacionMant(id, alcance) {
+  mtComId = id;
+  const al = $('mc2-alert'); al.style.display = 'none';
+  $('modal-com').classList.add('show');
+  const {data: c, error} = await sb.rpc('fn_mant_comunicacion', {p_id: id, p_alcance: alcance || null});
+  if (error) { al.textContent = error.message; al.style.display = 'block'; return; }
+  mtCom = c;
+  $('mc2-alcance').value = c.alcance;
+  $('mc2-regla').textContent = alcance ? '' : (c.alcance === 'Residencial' ? 'Sugerido: es un área común' : 'Sugerido: asunto de una unidad');
+  $('mc2-preview').textContent = comTexto(c);
+  const d = c.destinatarios || [];
+  const tel = x => (x.whatsapp || x.telefono || '').replace(/[^0-9]/g, '');
+  $('mc2-dest').innerHTML = `<strong style="font-size:.85rem">${d.length} destinatario(s)</strong> <small>(${d.filter(x => x.email).length} con correo · ${d.filter(x => tel(x)).length} con teléfono)</small>
+    <table style="font-size:.8rem"><tbody>${d.map(x => `<tr><td>${x.nombre || ''}</td><td>${x.unidad || ''}</td><td>${x.tipo || ''}</td>
+      <td>${tel(x) ? `<a href="https://wa.me/${tel(x).length === 10 ? '1' + tel(x) : tel(x)}?text=${encodeURIComponent(comTexto(c))}" target="_blank" rel="noopener" onclick="comMarcar('WhatsApp individual',1)">WhatsApp</a>` : ''}</td>
+      <td>${x.email || ''}</td></tr>`).join('')}</tbody></table>`;
+}
+async function comMarcar(canal, n) {
+  if (!mtCom) return;
+  try { await sb.rpc('fn_mant_marcar_comunicacion', {p_id: mtCom.id, p_canal: canal, p_alcance: mtCom.alcance, p_cantidad: n}); } catch (_) {}
+}
+async function comPDF() {
+  const c = mtCom; if (!c) return;
+  try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de PDF. Revisa tu conexión.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth(), Hp = doc.internal.pageSize.getHeight();
+  doc.setFillColor(...BRAND.navy); doc.rect(0, 0, W, 76, 'F');
+  doc.setFillColor(255, 255, 255); doc.roundedRect(36, 17, 170, 46, 4, 4, 'F');
+  try { doc.addImage(LOGO_AXICORE, 'PNG', 46, 26, 150, 28); } catch (e) {}
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text('Comunicación de Mantenimiento', W - 36, 40, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.gold);
+  doc.text(c.referencia + '   ·   ' + new Date().toLocaleDateString('es-DO', {day:'numeric', month:'long', year:'numeric'}), W - 36, 58, { align: 'right' });
+  doc.setFillColor(...BRAND.gold); doc.rect(0, 76, W, 3, 'F');
+  let y = 112;
+  doc.setTextColor(...BRAND.navy); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+  doc.text(c.alcance === 'Residencial' ? `Estimados residentes de ${c.residencial || 'el residencial'}:` : `Estimado(a) residente de la unidad ${c.unidad || ''}:`, 36, y);
+  y += 20; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+  const intro = `Le informamos que la situación reportada con la referencia ${c.referencia} ha sido evaluada por la administración y se encuentra EN PROCESO de atención. A continuación, los datos del personal asignado para realizar el trabajo:`;
+  const li = doc.splitTextToSize(intro, W - 72); doc.text(li, 36, y); y += li.length * 13 + 8;
+  const filas = [['Referencia', c.referencia], ['Lugar', (c.alcance === 'Residencial' ? (c.area || 'Área común') : 'Unidad ' + (c.unidad || '')) + (c.bloque ? ' · Bloque ' + c.bloque : '')],
+    ['Tipo de trabajo', c.categoria || ''], ['Prioridad', c.prioridad || '']];
+  if (c.proveedor) filas.push(['Empresa / proveedor', c.proveedor]);
+  filas.push(['Técnico asignado', c.tecnico], ['Cédula de identidad', c.cedula], ['Fecha estimada de visita', fechaLarga(c.fecha_estimada)]);
+  doc.autoTable({ body: filas, startY: y, margin: { left: 36, right: 36 }, theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 10, cellPadding: 6, lineColor: [228, 228, 228], lineWidth: 0.4 },
+    columnStyles: { 0: { fontStyle: 'bold', textColor: BRAND.navy, fillColor: BRAND.off, cellWidth: 170 } } });
+  y = doc.lastAutoTable.finalY + 22;
+  doc.setDrawColor(...BRAND.gold); doc.setLineWidth(1.2); doc.setFillColor(255, 255, 255);
+  const aviso = 'Por su seguridad: el técnico deberá identificarse con su cédula de identidad al ingresar al residencial. Si los datos no coinciden con esta comunicación, no permita el acceso y comuníquese de inmediato con la administración.';
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  const la = doc.splitTextToSize(aviso, W - 100);
+  doc.roundedRect(36, y, W - 72, la.length * 13 + 20, 4, 4, 'FD');
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...BRAND.navy); doc.text(la, 48, y + 16);
+  y += la.length * 13 + 44;
+  doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40);
+  doc.text('Agradecemos su comprensión y colaboración.', 36, y); y += 36;
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...BRAND.navy); doc.text('Administración', 36, y);
+  doc.setFont('helvetica', 'normal'); doc.text(EMPRESA, 36, y + 14);
+  doc.setDrawColor(...BRAND.gold); doc.setLineWidth(0.5); doc.line(36, Hp - 32, W - 36, Hp - 32);
+  doc.setFontSize(8); doc.setTextColor(...BRAND.gry); doc.text(EMPRESA_FOOTER, W / 2, Hp - 20, { align: 'center' });
+  doc.save(`AXICORE_Comunicacion_${c.referencia}.pdf`);
+  comMarcar('PDF', (c.destinatarios || []).length);
+}
+function comWhatsApp() {
+  const c = mtCom; if (!c) return;
+  const d = c.destinatarios || [];
+  const t = d.length === 1 ? (d[0].whatsapp || d[0].telefono || '').replace(/[^0-9]/g, '') : '';
+  const num = t ? (t.length === 10 ? '1' + t : t) : '';
+  // Varios destinatarios: abre WhatsApp para elegir el grupo/difusion del residencial
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(comTexto(c))}`, '_blank', 'noopener');
+  comMarcar('WhatsApp', d.length);
+}
+function comCorreo() {
+  const c = mtCom; if (!c) return;
+  const emails = [...new Set((c.destinatarios || []).map(x => x.email).filter(Boolean))];
+  if (!emails.length) { alert('Ningún destinatario tiene correo registrado.'); return; }
+  const asunto = encodeURIComponent('AXICORE — Comunicación de mantenimiento ' + c.referencia);
+  const cuerpo = encodeURIComponent(comTexto(c).replace(/\*/g, '') + '\n\n(Se adjunta la comunicación formal en PDF.)');
+  const campo = emails.length === 1 ? emails[0] : '?bcc=' + emails.join(',');
+  window.location.href = 'mailto:' + (emails.length === 1 ? campo + '?' : campo + '&') + 'subject=' + asunto + '&body=' + cuerpo;
+  comMarcar('Correo', emails.length);
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================

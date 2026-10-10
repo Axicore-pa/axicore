@@ -1,0 +1,5 @@
+-- AXICORE | Mantenimiento T4 (10/10/2026): comunicacion formal
+-- fn_mant_comunicacion(id, alcance): datos con cedula ENMASCARADA + destinatarios
+--   (Residencial = propietarios + inquilinos activos del condominio; Unidad = solo quien reporto).
+--   Alcance sugerido: area comun -> Residencial; sin area / 'Otro' -> Unidad (el staff puede cambiarlo).
+-- fn_mant_marcar_comunicacion(id, canal, alcance, cantidad): sella comunicacion_emitida_at + historial.
