@@ -349,6 +349,7 @@
         <div class="module-links">
           <a href="#" onclick="navegar('cap-condominios')" data-page="cap-condominios"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/></svg> Condominios</a>
           <a href="#" onclick="navegar('cap-unidades')" data-page="cap-unidades"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Unidades</a>
+          <a href="#" onclick="navegar('docs-unidades')" data-page="docs-unidades"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Documentos por Unidad</a>
           <a href="#" onclick="navegar('cap-propietarios')" data-page="cap-propietarios"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Propietarios</a>
           <a href="#" onclick="navegar('cap-inquilinos')" data-page="cap-inquilinos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Inquilinos</a>
           <a href="#" onclick="navegar('cap-proveedores')" data-page="cap-proveedores"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Proveedores</a>
@@ -411,6 +412,7 @@
       <a href="#" onclick="navegar('mi-gas')" data-page="mi-gas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Mi Gas (GLP)</a>
       <a href="#" onclick="navegar('mis-averias')" data-page="mis-averias"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Reportar Avería</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
+      <a href="#" onclick="navegar('mis-documentos')" data-page="mis-documentos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Mis Documentos</a>
       <div class="section-title" id="nav-res-condo-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Gastos del Condominio</a>
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Pago</a>
@@ -811,6 +813,27 @@
           </select>
         </div>
         <div class="card"><div class="card-body" id="cr-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== MIS DOCUMENTOS (Propietario) ===== -->
+      <div id="page-mis-documentos" class="page">
+        <h2 class="page-title">Mis Documentos</h2>
+        <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">Documentos de su unidad. Otros documentos del condominio se solicitan a la administración.</p>
+        <div class="card"><div class="card-body" id="md-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== DOCUMENTOS POR UNIDAD (Staff) ===== -->
+      <div id="page-docs-unidades" class="page">
+        <h2 class="page-title">Documentos por Unidad</h2>
+        <div class="card" style="margin-bottom:1rem"><div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;align-items:end">
+            <div><label>Unidad</label><select id="du-unidad" onchange="listarDocsUnidad()"><option value="">Cargando...</option></select></div>
+            <div><label>Archivo PDF (máx. 20 MB)</label><input type="file" id="du-archivo" accept="application/pdf"></div>
+            <div><button class="btn btn-primary" id="du-btn" onclick="subirDocUnidad()">Subir documento</button></div>
+          </div>
+          <div id="du-alert" class="alert" style="display:none;margin-top:.6rem"></div>
+        </div></div>
+        <div class="card"><div class="card-body" id="du-lista"><div class="empty">Seleccione una unidad</div></div></div>
       </div>
 
       <!-- ===== MI CONTACTO (Residente) ===== -->
@@ -1556,7 +1579,7 @@ function entrarAlApp() {
 function aplicarRestriccionesResidente() {
   const esProp = sesion.rol === 'Propietario';
   // Inquilino: no ve fondo comun, gastos, comprobantes del condominio ni morosidad (decision Misael, opcion B)
-  ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
+  ['mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
     const a = document.querySelector('#sidebar-residente a[data-page="' + p + '"]');
     if (a) a.style.display = esProp ? '' : 'none';
   });
@@ -1564,8 +1587,8 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
-const PAG_SOLO_PROPIETARIO = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_SOLO_PROPIETARIO = ['mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones','comprobantes-recibidos'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
@@ -1751,6 +1774,8 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'mi-gas': cargarMiGas,
+    'mis-documentos': cargarMisDocumentos,
+    'docs-unidades': cargarDocsUnidades,
     'enviar-comprobante': cargarEnviarComprobante,
     'comprobantes-recibidos': cargarComprobantesRecibidos,
     'mis-averias': cargarMisAverias,
@@ -3144,6 +3169,74 @@ async function revisarComprobante(id, estado) {
     $('pago-tipo-apl').value = r.inquilinos?.nombre ? 'Inquilino' : 'Propietario';
     $('pago-obs').value = 'Comprobante del portal #' + r.id + (r.nota ? ' — ' + r.nota : '');
   }
+}
+
+// ==================== DOCUMENTOS (bucket privado 'documentos/<condominio>/unidad-<id>/') ====================
+const carpetaUnidad = (cid, uid) => `${cid}/unidad-${uid}`;
+const tamano = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round((b || 0) / 1024)) + ' KB';
+async function abrirDocumento(ruta) {
+  const {data, error} = await sb.storage.from('documentos').createSignedUrl(ruta, 120);
+  if (error) { alert('No se pudo abrir el documento: ' + error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
+}
+async function listarCarpeta(prefijo) {
+  const {data, error} = await sb.storage.from('documentos').list(prefijo, {limit: 200, sortBy: {column: 'created_at', order: 'desc'}});
+  if (error) throw error;
+  return (data || []).filter(o => o.id && o.name !== '.emptyFolderPlaceholder').map(o => ({...o, ruta: prefijo + '/' + o.name}));
+}
+async function cargarMisDocumentos() {
+  try {
+    const {data: perfil} = await sb.rpc('mi_perfil');
+    const unidades = perfil?.unidades_propias || [];
+    if (!unidades.length) { $('md-lista').innerHTML = '<div class="empty">No tiene unidad asignada</div>'; return; }
+    const {data: us} = await sb.from('unidades').select('id, codigo, condominio_id').in('id', unidades);
+    let filas = [];
+    for (const u of (us || [])) (await listarCarpeta(carpetaUnidad(u.condominio_id, u.id))).forEach(d => filas.push({...d, unidad: u.codigo}));
+    if (!filas.length) { $('md-lista').innerHTML = '<div class="empty">Aún no hay documentos para su unidad</div>'; return; }
+    $('md-lista').innerHTML = `<table><thead><tr><th>Documento</th><th>Unidad</th><th>Fecha</th><th>Tamaño</th><th></th></tr></thead>
+      <tbody>${filas.map(d => `<tr><td>${d.name}</td><td>${d.unidad}</td><td>${fechaCorta(d.created_at)}</td><td>${tamano(d.metadata?.size)}</td>
+        <td><button class="btn btn-sm" onclick="abrirDocumento('${d.ruta.replace(/'/g, "\\'")}')">⬇ Descargar</button></td></tr>`).join('')}</tbody></table>`;
+  } catch (e) { $('md-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + e.message + '</div>'; }
+}
+async function cargarDocsUnidades() {
+  const sel = $('du-unidad');
+  const {data} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (data || []).map(u => `<option value="${u.id}">${u.codigo}</option>`).join('');
+  if (actual) { sel.value = actual; listarDocsUnidad(); }
+}
+async function listarDocsUnidad() {
+  const uid = $('du-unidad').value;
+  if (!uid) { $('du-lista').innerHTML = '<div class="empty">Seleccione una unidad</div>'; return; }
+  try {
+    const docs = await listarCarpeta(carpetaUnidad(sesion.condominio_id, uid));
+    $('du-lista').innerHTML = !docs.length ? '<div class="empty">Sin documentos</div>' : `<table><thead><tr><th>Documento</th><th>Fecha</th><th>Tamaño</th><th></th></tr></thead>
+      <tbody>${docs.map(d => { const r = d.ruta.replace(/'/g, "\\'"); return `<tr><td>${d.name}</td><td>${fechaCorta(d.created_at)}</td><td>${tamano(d.metadata?.size)}</td>
+        <td style="white-space:nowrap"><button class="btn btn-sm" onclick="abrirDocumento('${r}')">⬇ Ver</button>
+        <button class="btn btn-sm btn-danger" onclick="borrarDocUnidad('${r}')">Borrar</button></td></tr>`; }).join('')}</tbody></table>`;
+  } catch (e) { $('du-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + e.message + '</div>'; }
+}
+async function subirDocUnidad() {
+  const al = $('du-alert'), uid = $('du-unidad').value, f = $('du-archivo').files[0];
+  const aviso = (m, ok) => { al.className = 'alert ' + (ok ? 'alert-success' : 'alert-error'); al.textContent = m; al.style.display = 'block'; };
+  if (!uid) return aviso('Seleccione la unidad.');
+  if (!f) return aviso('Seleccione un archivo PDF.');
+  if (f.type !== 'application/pdf') return aviso('Solo se aceptan archivos PDF.');
+  if (f.size > 20 * 1024 * 1024) return aviso('El archivo excede 20 MB.');
+  const nombre = f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_');
+  $('du-btn').disabled = true;
+  try {
+    const {error} = await sb.storage.from('documentos').upload(carpetaUnidad(sesion.condominio_id, uid) + '/' + nombre, f, {contentType: 'application/pdf', upsert: false});
+    if (error) return aviso(/exists|Duplicate/i.test(error.message) ? 'Ya existe un documento con ese nombre en esta unidad.' : error.message);
+    aviso('Documento subido. El propietario de la unidad ya puede descargarlo.', true);
+    $('du-archivo').value = ''; listarDocsUnidad();
+  } finally { $('du-btn').disabled = false; }
+}
+async function borrarDocUnidad(ruta) {
+  if (!confirm('¿Borrar este documento? El propietario dejará de verlo.')) return;
+  const {error} = await sb.storage.from('documentos').remove([ruta]);
+  if (error) { alert(error.message); return; }
+  listarDocsUnidad();
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================

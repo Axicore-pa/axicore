@@ -1,0 +1,5 @@
+-- AXICORE | P4 Documentos de mi unidad (10/10/2026)
+-- Sin cambios de base: bucket privado 'documentos' (PDF, 20MB), ruta <condominio>/unidad-<id>/<archivo>.
+-- Ver: private.puede_ver_documento (CEO/staff Reportes.ver o propietario de la unidad; inquilino no).
+-- Subir/borrar: private.puede_gestionar_documento (CEO o staff Facturacion.crear).
+-- Probado con rollback: Asistente sube; propietario u18 ve 1 y no sube; inquilino 0; visitante 0.
