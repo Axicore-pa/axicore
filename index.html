@@ -1037,9 +1037,9 @@
       </div>
       <div class="form-group"><label>Referencia / No. Comprobante</label><input type="text" id="pg-referencia" placeholder="No. transferencia, cheque..."></div>
       <div class="form-group">
-        <label>Comprobante de pago (PDF o foto)</label>
-        <input type="file" id="pg-comprobante-file" accept=".pdf,image/*">
-        <small style="color:#4d4742">O pega un enlace si ya está en Drive/Photos:</small>
+        <label>Comprobante(s) de pago (PDF o fotos)</label>
+        <input type="file" id="pg-comprobante-file" accept=".pdf,image/*" multiple>
+        <small style="color:#4d4742">Puedes seleccionar varias fotos/PDF a la vez (ej. 2 facturas). O pega un enlace si ya está en Drive/Photos:</small>
         <input type="url" id="pg-comprobante-url" placeholder="https://... (opcional)" style="margin-top:.3rem">
       </div>
       <div class="form-group"><label>Nota</label><textarea id="pg-nota" rows="2" placeholder="Observaciones opcionales..."></textarea></div>
@@ -1080,6 +1080,19 @@ async function verComprobante(url) {
   const {data, error} = await sb.storage.from('pagos-proveedores').createSignedUrl(url, 120);
   if (error || !data?.signedUrl) { alert('No se pudo abrir el comprobante: ' + (error?.message || 'sin acceso')); return; }
   window.open(data.signedUrl, '_blank');
+}
+
+// Uno o varios comprobantes por fila: un boton por archivo
+function btnComprobantesRow(row) {
+  if (!row) return '—';
+  let lista = Array.isArray(row.comprobantes) ? row.comprobantes.slice() : [];
+  if (!lista.length && row.comprobante_url) lista = [row.comprobante_url];
+  if (!lista.length) return '—';
+  if (lista.length === 1) return btnComprobante(lista[0]);
+  return lista.map((u, i) => {
+    const safe = String(u).replace(/'/g, "\\'");
+    return `<button class="btn btn-sm btn-outline" style="margin:1px" onclick="verComprobante('${safe}')">📄 ${i+1}</button>`;
+  }).join(' ');
 }
 
 // Badge del estado de aprobación (matriz de status)
@@ -1674,7 +1687,7 @@ async function verDetalleGasto(gastoId) {
             <td>${p.metodo_pago || '—'}</td>
             <td>${p.banco || '—'}</td>
             <td style="font-family:monospace;font-size:.8rem">${p.referencia || '—'}</td>
-            <td class="text-center">${btnComprobante(p.comprobante_url)}</td>
+            <td class="text-center">${btnComprobantesRow(p)}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
@@ -1736,7 +1749,7 @@ async function cargarPagosGastos() {
           <td>${r.banco || '—'}</td>
           <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
           <td class="text-right money">${fmt(r.monto)}</td>
-          <td class="text-center">${btnComprobante(r.comprobante_url)}</td>
+          <td class="text-center">${btnComprobantesRow(r)}</td>
         </tr>`;
       }).join('')}
       </tbody>
@@ -1787,17 +1800,24 @@ async function guardarPagoGasto(e) {
     const {data: {user}} = await sb.auth.getUser();
     const gastoId = parseInt($('pg-gasto-id').value);
 
-    // Subir archivo de comprobante si se seleccionó uno
-    let comprobante = $('pg-comprobante-url').value.trim() || null;
-    const file = $('pg-comprobante-file').files[0];
-    if (file) {
-      btn.textContent = 'Subiendo comprobante...';
-      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-      const ruta = `${sesion.condominio_id}/${gastoId}/${Date.now()}.${ext}`;
-      const {error: upErr} = await sb.storage.from('pagos-proveedores').upload(ruta, file, {upsert:false});
-      if (upErr) throw new Error('No se pudo subir el comprobante: ' + upErr.message);
-      comprobante = ruta; // se guarda la ruta interna; se ve con enlace firmado
+    // Subir uno o varios archivos de comprobante
+    const urlPegada = $('pg-comprobante-url').value.trim() || null;
+    const files = Array.from($('pg-comprobante-file').files || []);
+    const rutas = [];
+    for (let i = 0; i < files.length; i++) {
+      btn.textContent = `Subiendo comprobante ${i+1}/${files.length}...`;
+      const f = files[i];
+      const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
+      const ruta = `${sesion.condominio_id}/${gastoId}/${Date.now()}_${i}.${ext}`;
+      const {error: upErr} = await sb.storage.from('pagos-proveedores').upload(ruta, f, {upsert:false});
+      if (upErr) throw new Error('No se pudo subir el comprobante ' + (i+1) + ': ' + upErr.message);
+      rutas.push(ruta);
     }
+    // comprobante_url: primer archivo subido, o el enlace pegado (compatibilidad)
+    const comprobante = rutas[0] || urlPegada;
+    // comprobantes: lista completa (rutas subidas + enlace pegado si lo hay)
+    const lista = [...rutas];
+    if (urlPegada) lista.push(urlPegada);
 
     btn.textContent = 'Guardando...';
     const payload = {
@@ -1809,6 +1829,7 @@ async function guardarPagoGasto(e) {
       banco: $('pg-banco').value.trim() || null,
       referencia: $('pg-referencia').value.trim() || null,
       comprobante_url: comprobante,
+      comprobantes: lista.length ? lista : null,
       nota: $('pg-nota').value.trim() || null,
       registrado_por: user?.id || null,
     };
@@ -2311,7 +2332,7 @@ async function cargarComprobantesCondo() {
           <td>${r.banco || '—'}</td>
           <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
           <td class="text-right money">${fmt(r.monto)}</td>
-          <td class="text-center">${btnComprobante(r.comprobante_url)}</td>
+          <td class="text-center">${btnComprobantesRow(r)}</td>
         </tr>`;
       }).join('')}
       </tbody>
