@@ -359,6 +359,7 @@
       <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta">🏠 Mi Cuenta</a>
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas">📄 Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos">💳 Mis Pagos</a>
+      <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto">👤 Mi Contacto</a>
       <div class="section-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo">🧾 Gastos del Condominio</a>
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo">📎 Comprobantes de Pago</a>
@@ -548,6 +549,36 @@
           <div class="card-body" id="fc-movimientos">
             <div class="loading">Cargando...</div>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== MI CONTACTO (Residente) ===== -->
+      <div id="page-mi-contacto" class="page">
+        <h2 class="page-title">Mi Contacto</h2>
+        <div id="mc-alert" class="alert alert-error"></div>
+        <div class="card" style="margin-bottom:1.2rem">
+          <div class="card-header">Datos de contacto</div>
+          <div class="card-body">
+            <p style="font-size:.85rem;color:#4d4742;margin-bottom:.8rem">Los cambios quedan <strong>pendientes de aprobación</strong> de la administración antes de aplicarse.</p>
+            <form id="form-mi-contacto" onsubmit="return guardarMiContacto(event)">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                <div class="form-group"><label>Teléfono</label><input type="text" id="mc-telefono" placeholder="809-000-0000"></div>
+                <div class="form-group"><label>WhatsApp</label><input type="text" id="mc-whatsapp" placeholder="809-000-0000"></div>
+              </div>
+              <div class="form-group"><label>Correo</label><input type="email" id="mc-email" placeholder="correo@ejemplo.com"></div>
+              <h4 style="font-size:.9rem;color:var(--ax-primary);margin:.6rem 0 .4rem">Contacto de emergencia</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                <div class="form-group"><label>Nombre</label><input type="text" id="mc-eme-nombre" placeholder="Nombre completo"></div>
+                <div class="form-group"><label>Teléfono</label><input type="text" id="mc-eme-telefono" placeholder="809-000-0000"></div>
+              </div>
+              <div class="form-group"><label>Relación</label><input type="text" id="mc-eme-relacion" placeholder="Ej: esposa, hijo, vecino"></div>
+              <div style="text-align:right"><button type="submit" class="btn btn-success" id="mc-btn">Enviar cambios</button></div>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Mis solicitudes</div>
+          <div class="card-body" id="mc-solicitudes"><div class="loading">Cargando...</div></div>
         </div>
       </div>
 
@@ -1387,6 +1418,7 @@ function navegar(page) {
     'pagos-gastos': cargarPagosGastos,
     'aprobaciones': cargarAprobaciones,
     'mi-cuenta': cargarMiCuenta,
+    'mi-contacto': cargarMiContacto,
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'fondo-comun': cargarFondoComun,
@@ -1901,6 +1933,69 @@ async function guardarPagoGasto(e) {
     btn.disabled = false;
     btn.textContent = pgEdit ? 'Guardar cambios' : 'Registrar Pago';
   }
+}
+
+// ==================== MI CONTACTO (Residente) ====================
+async function cargarMiContacto() {
+  $('mc-alert').style.display = 'none';
+  $('form-mi-contacto').reset();
+  // Prefill con el registro propio (RLS deja ver solo lo suyo)
+  const [{data: props}, {data: inqs}] = await Promise.all([
+    sb.from('propietarios').select('telefono, whatsapp, email, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_relacion').limit(1),
+    sb.from('inquilinos').select('telefono, whatsapp, email, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_relacion').limit(1),
+  ]);
+  const r = (props && props[0]) || (inqs && inqs[0]) || {};
+  $('mc-telefono').value = r.telefono || '';
+  $('mc-whatsapp').value = r.whatsapp || '';
+  $('mc-email').value = r.email || '';
+  $('mc-eme-nombre').value = r.contacto_emergencia_nombre || '';
+  $('mc-eme-telefono').value = r.contacto_emergencia_telefono || '';
+  $('mc-eme-relacion').value = r.contacto_emergencia_relacion || '';
+  cargarMisSolicitudes();
+}
+
+async function guardarMiContacto(e) {
+  e.preventDefault();
+  const btn = $('mc-btn'); btn.disabled = true; btn.textContent = 'Enviando...';
+  $('mc-alert').style.display = 'none';
+  try {
+    let totalSometidos = 0;
+    const {data: c, error: e1} = await sb.rpc('portal_actualizar_contacto', {
+      p_telefono: $('mc-telefono').value.trim() || null,
+      p_whatsapp: $('mc-whatsapp').value.trim() || null,
+      p_email: $('mc-email').value.trim() || null,
+    });
+    if (e1 && !/no hay datos/i.test(e1.message)) throw e1;
+    totalSometidos += c?.cambios_sometidos || 0;
+    const {data: em, error: e2} = await sb.rpc('portal_actualizar_emergencia', {
+      p_nombre: $('mc-eme-nombre').value.trim() || null,
+      p_telefono: $('mc-eme-telefono').value.trim() || null,
+      p_relacion: $('mc-eme-relacion').value.trim() || null,
+    });
+    if (e2 && !/no hay datos/i.test(e2.message)) throw e2;
+    totalSometidos += em?.cambios_sometidos || 0;
+    if (totalSometidos === 0) { $('mc-alert').textContent = 'No hiciste ningún cambio.'; $('mc-alert').style.display='block'; }
+    else alert(`✅ ${totalSometidos} cambio(s) enviados. Quedan pendientes de aprobación de la administración.`);
+    cargarMisSolicitudes();
+  } catch(err) { $('mc-alert').textContent = err.message; $('mc-alert').style.display = 'block'; }
+  finally { btn.disabled = false; btn.textContent = 'Enviar cambios'; }
+}
+
+async function cargarMisSolicitudes() {
+  const cont = $('mc-solicitudes');
+  const {data, error} = await sb.rpc('fn_mis_solicitudes');
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">Sin solicitudes.</p>'; return; }
+  const etiqueta = {telefono:'Teléfono', whatsapp:'WhatsApp', email:'Correo',
+    contacto_emergencia_nombre:'Emergencia: nombre', contacto_emergencia_telefono:'Emergencia: teléfono', contacto_emergencia_relacion:'Emergencia: relación'};
+  cont.innerHTML = `<div style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Campo</th><th>Nuevo valor</th><th>Estado</th><th>Comentario</th></tr></thead><tbody>${
+    data.map(s => `<tr>
+      <td style="font-size:.8rem">${(s.fecha||'').slice(0,10)}</td>
+      <td>${etiqueta[s.campo] || s.campo}</td>
+      <td>${s.valor_nuevo || '—'}</td>
+      <td>${badgeAprob(s.estado) || '<span class="badge badge-success">Aprobado</span>'}</td>
+      <td style="font-size:.8rem">${s.comentario || '—'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
 }
 
 // ==================== UTILIDAD RESIDENTE ====================
