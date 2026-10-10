@@ -365,6 +365,7 @@
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo">🧾 Gastos del Condominio</a>
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo">📎 Comprobantes de Pago</a>
       <a href="#" onclick="navegar('fondo-comun')" data-page="fondo-comun">📊 Fondo Común</a>
+      <a href="#" onclick="navegar('morosidad')" data-page="morosidad" id="nav-morosidad">📉 Morosidad</a>
     </nav>
 
     <div class="main-content">
@@ -485,6 +486,14 @@
             <div class="loading">Cargando...</div>
           </div>
         </div>
+      </div>
+
+      <!-- ===== MOROSIDAD (Propietario) ===== -->
+      <div id="page-morosidad" class="page">
+        <h2 class="page-title">Morosidad del Condominio</h2>
+        <p style="font-size:.85rem;color:#4d4742;margin-bottom:1rem">Indicador agregado y anónimo — no muestra lo que debe cada vecino.</p>
+        <div class="cards-row" id="mor-stats"></div>
+        <div id="mor-nota" style="font-size:.8rem;color:#777;margin-top:.6rem"></div>
       </div>
 
       <!-- ===== SOLICITUDES DE CONTACTO ===== -->
@@ -1289,8 +1298,16 @@ function entrarAlApp() {
   } else {
     $('sidebar-ceo').style.display = 'none';
     $('sidebar-residente').style.display = 'block';
+    aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
+}
+
+// Morosidad global es solo para Propietario (indicador anónimo); Inquilino no la ve.
+function aplicarRestriccionesResidente() {
+  const esProp = sesion.rol === 'Propietario';
+  const nm = $('nav-morosidad');
+  if (nm) nm.style.display = esProp ? '' : 'none';
 }
 
 // Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
@@ -1363,6 +1380,7 @@ function cambiarCondominio(id, nombre, rol) {
   } else {
     $('sidebar-ceo').style.display = 'none';
     $('sidebar-residente').style.display = 'block';
+    aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
 }
@@ -1430,6 +1448,7 @@ function navegar(page) {
     'solicitudes-contacto': cargarSolicitudesContacto,
     'mi-cuenta': cargarMiCuenta,
     'mi-contacto': cargarMiContacto,
+    'morosidad': cargarMorosidad,
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'fondo-comun': cargarFondoComun,
@@ -2159,6 +2178,34 @@ async function cargarFondoComun() {
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+// ==================== MOROSIDAD GLOBAL (Propietario) ====================
+async function cargarMorosidad() {
+  const cont = $('mor-stats');
+  const nota = $('mor-nota');
+  cont.innerHTML = '<div class="empty">Cargando…</div>';
+  nota.textContent = '';
+  try {
+    const {data, error} = await sb.rpc('portal_morosidad_global', {p_condominio_id: sesion.condominio_id});
+    if (error) throw error;
+    const m = (Array.isArray(data) ? data[0] : data) || {};
+    const pctU = Number(m.pct_unidades_en_mora || 0);
+    const pctM = Number(m.pct_monto_en_mora || 0);
+    const claseU = pctU >= 50 ? 'red' : pctU >= 25 ? '' : 'green';
+    const claseM = pctM >= 50 ? 'red' : pctM >= 25 ? '' : 'green';
+    cont.innerHTML = `
+      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">Unidades en mora</div><div class="value ${claseU}">${m.unidades_en_mora ?? 0} / ${m.unidades_total ?? 0}</div></div>
+      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">% unidades en mora</div><div class="value ${claseU}">${pctU.toFixed(1)}%</div></div>
+      <div class="stat-card"><div class="accent-bar red"></div><div class="label">Monto vencido</div><div class="value red money">${fmtMoney(m.monto_vencido)}</div></div>
+      <div class="stat-card"><div class="accent-bar ${claseM}"></div><div class="label">% monto en mora</div><div class="value ${claseM}">${pctM.toFixed(1)}%</div></div>
+    `;
+    const corte = m.fecha_corte ? new Date(m.fecha_corte).toLocaleDateString('es-DO') : '—';
+    nota.textContent = `Monto exigible total: ${fmtMoney(m.monto_exigible)} · Fecha de corte: ${corte}`;
+  } catch (e) {
+    cont.innerHTML = '<div class="empty">No disponible para este perfil.</div>';
+    nota.textContent = (e && e.message) ? e.message : '';
+  }
 }
 
 // ==================== SIDEBAR MOBILE ====================
