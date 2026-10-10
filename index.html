@@ -328,6 +328,7 @@
           <a href="#" onclick="navegar('gastos')" data-page="gastos">📋 Gastos</a>
           <a href="#" onclick="navegar('pagos-gastos')" data-page="pagos-gastos">🧾 Pagos a Proveedores</a>
           <a href="#" onclick="navegar('aprobaciones')" data-page="aprobaciones" id="nav-aprobaciones">✅ Aprobaciones <span id="nav-aprob-badge" style="display:none;background:#a63a2b;color:#fff;border-radius:10px;padding:0 .4rem;font-size:.7rem;margin-left:.3rem"></span></a>
+          <a href="#" onclick="navegar('solicitudes-contacto')" data-page="solicitudes-contacto">📇 Solicitudes de Contacto</a>
         </div>
       </div>
 
@@ -483,6 +484,15 @@
           <div class="card-body" id="aprob-lista">
             <div class="loading">Cargando...</div>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== SOLICITUDES DE CONTACTO ===== -->
+      <div id="page-solicitudes-contacto" class="page">
+        <h2 class="page-title">Solicitudes de Contacto</h2>
+        <div class="card">
+          <div class="card-header">Cambios de datos de contacto enviados por residentes (aprueba Asistente o CEO)</div>
+          <div class="card-body" id="sc-lista"><div class="loading">Cargando...</div></div>
         </div>
       </div>
 
@@ -1417,6 +1427,7 @@ function navegar(page) {
     'gastos': cargarGastos,
     'pagos-gastos': cargarPagosGastos,
     'aprobaciones': cargarAprobaciones,
+    'solicitudes-contacto': cargarSolicitudesContacto,
     'mi-cuenta': cargarMiCuenta,
     'mi-contacto': cargarMiContacto,
     'mis-facturas': cargarMisFacturas,
@@ -2211,6 +2222,38 @@ async function revisarAprob(modulo, id, estado) {
   const {error} = await sb.rpc('fn_aprobacion_revisar', {p_modulo: modulo, p_id: id, p_estado: estado, p_motivo: motivo});
   if (error) { alert('⚠ ' + error.message); return; }
   cargarAprobaciones();
+}
+
+// ==================== SOLICITUDES DE CONTACTO (CEO/Asistente) ====================
+async function cargarSolicitudesContacto() {
+  const cont = $('sc-lista');
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const {data, error} = await sb.rpc('fn_contacto_solicitudes', {p_condominio_id: sesion.condominio_id});
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">No hay solicitudes pendientes.</p>'; return; }
+  const etiqueta = {telefono:'Teléfono', whatsapp:'WhatsApp', email:'Correo',
+    contacto_emergencia_nombre:'Emergencia: nombre', contacto_emergencia_telefono:'Emergencia: teléfono', contacto_emergencia_relacion:'Emergencia: relación'};
+  cont.innerHTML = `<div style="overflow-x:auto"><table><thead><tr>
+    <th>Fecha</th><th>Residente</th><th>Campo</th><th>Antes</th><th>Nuevo</th><th>Acciones</th></tr></thead><tbody>${
+    data.map(s => `<tr>
+      <td style="font-size:.8rem">${(s.fecha||'').slice(0,10)}</td>
+      <td>${s.solicitante || '—'}<br><span style="font-size:.72rem;color:#777">${s.rol || ''}</span></td>
+      <td>${etiqueta[s.campo] || s.campo}</td>
+      <td style="color:#777">${s.valor_anterior || '—'}</td>
+      <td><strong>${s.valor_nuevo || '—'}</strong></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-success" onclick="revisarContacto(${s.id},'Aprobado')">Aprobar</button>
+        <button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="revisarContacto(${s.id},'Rechazado')">Rechazar</button>
+      </td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function revisarContacto(id, estado) {
+  let motivo = null;
+  if (estado === 'Rechazado') { motivo = prompt('Motivo del rechazo (obligatorio):'); if (!motivo || !motivo.trim()) return; }
+  const {error} = await sb.rpc('fn_contacto_revisar', {p_solicitud_id: id, p_estado: estado, p_motivo: motivo});
+  if (error) { alert('⚠ ' + error.message); return; }
+  cargarSolicitudesContacto();
 }
 
 // ==================== MODALES ====================
