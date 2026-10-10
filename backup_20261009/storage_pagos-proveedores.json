@@ -1,0 +1,11 @@
+{
+  "bucket": "pagos-proveedores",
+  "privado": true,
+  "nota": "Los BYTES de estos archivos NO estan en este respaldo (viven en el Storage de Supabase). Descargarlos desde el panel de Supabase (Storage > pagos-proveedores) o desde la app con el boton 'Ver comprobante'. La ruta es <condominio_id>/<gasto_id>/<archivo>.",
+  "objetos": [
+    {"ruta": "5/6/1791587513064.jpeg",   "kb": 131.9, "creado": "2026-10-09T23:11:55Z"},
+    {"ruta": "5/8/1791593036794_0.jpeg", "kb": 124.2, "creado": "2026-10-10T00:43:58Z"},
+    {"ruta": "5/6/1791593270187_0.jpeg", "kb": 127.7, "creado": "2026-10-10T00:47:51Z"},
+    {"ruta": "5/10/1791593317103_0.jpeg","kb": 127.7, "creado": "2026-10-10T00:48:38Z"}
+  ]
+}
