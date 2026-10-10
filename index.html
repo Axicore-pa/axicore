@@ -368,6 +368,7 @@
           <a href="#" onclick="navegar('gastos')" data-page="gastos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> Gastos</a>
           <a href="#" onclick="navegar('pagos-gastos')" data-page="pagos-gastos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Pagos a Proveedores</a>
           <a href="#" onclick="navegar('aprobaciones')" data-page="aprobaciones" id="nav-aprobaciones"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Aprobaciones <span id="nav-aprob-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
+          <a href="#" onclick="navegar('comprobantes-recibidos')" data-page="comprobantes-recibidos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Residentes <span id="nav-comp-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
           <a href="#" onclick="navegar('solicitudes-contacto')" data-page="solicitudes-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg> Solicitudes de Contacto</a>
         </div>
       </div>
@@ -406,6 +407,7 @@
       <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Mi Cuenta</a>
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
+      <a href="#" onclick="navegar('enviar-comprobante')" data-page="enviar-comprobante"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Enviar Comprobante</a>
       <a href="#" onclick="navegar('mi-gas')" data-page="mi-gas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Mi Gas (GLP)</a>
       <a href="#" onclick="navegar('mis-averias')" data-page="mis-averias"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Reportar Avería</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
@@ -770,6 +772,45 @@
           <div class="card-header">Mantenimientos del condominio</div>
           <div class="card-body" id="av-condo"><div class="loading">Cargando...</div></div>
         </div>
+      </div>
+
+      <!-- ===== ENVIAR COMPROBANTE (Residente) ===== -->
+      <div id="page-enviar-comprobante" class="page">
+        <h2 class="page-title">Enviar Comprobante de Pago</h2>
+        <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">La administración revisa cada comprobante. El pago se refleja en su cuenta cuando es validado.</p>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">Nuevo comprobante</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem">
+              <div style="grid-column:1/-1"><label>Factura que paga</label><select id="ec-factura"><option value="">Cargando...</option></select></div>
+              <div><label>Fecha del pago</label><input type="date" id="ec-fecha"></div>
+              <div><label>Monto (RD$)</label><input type="number" id="ec-monto" step="0.01" min="0.01"></div>
+              <div><label>Método</label><select id="ec-metodo"><option>Transferencia</option><option>Depósito</option><option>Cheque</option><option>Efectivo</option></select></div>
+              <div><label>Banco</label><input type="text" id="ec-banco" maxlength="120" placeholder="Ej: BHD, Popular"></div>
+              <div><label>Referencia</label><input type="text" id="ec-referencia" maxlength="120" placeholder="No. de transferencia"></div>
+              <div><label>Archivo (PDF o foto, máx. 10 MB)</label><input type="file" id="ec-archivo" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"></div>
+            </div>
+            <div style="margin-top:.8rem"><label>Nota (opcional)</label><textarea id="ec-nota" rows="2" maxlength="1000" style="width:100%"></textarea></div>
+            <div id="ec-alert" class="alert" style="display:none;margin-top:.6rem"></div>
+            <button class="btn btn-primary" id="ec-btn" style="margin-top:.8rem" onclick="enviarComprobante()">Enviar comprobante</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Mis comprobantes</div>
+          <div class="card-body" id="ec-lista"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+
+      <!-- ===== COMPROBANTES DE RESIDENTES (CEO) ===== -->
+      <div id="page-comprobantes-recibidos" class="page">
+        <h2 class="page-title">Comprobantes de Residentes</h2>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">
+          <label style="margin:0">Mostrar</label>
+          <select id="cr-filtro" onchange="cargarComprobantesRecibidos()" style="max-width:200px">
+            <option value="Pendiente">Pendientes</option><option value="Validado">Validados</option><option value="Rechazado">Rechazados</option><option value="">Todos</option>
+          </select>
+        </div>
+        <div class="card"><div class="card-body" id="cr-lista"><div class="loading">Cargando...</div></div></div>
       </div>
 
       <!-- ===== MI CONTACTO (Residente) ===== -->
@@ -1523,9 +1564,9 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_PROPIETARIO = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
-const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones'];
+const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones','comprobantes-recibidos'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
   const rol = sesion.rol;
@@ -1542,7 +1583,7 @@ function paginaPermitida(page) {
 // Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
 function aplicarRestriccionesRol() {
   const esCEO = sesion.rol === 'CEO';
-  const soloCEO = ['ecg', 'cap-usuarios', 'automatizaciones'];  // Asistente no ve ECG, Usuarios ni Automatizaciones
+  const soloCEO = ['ecg', 'cap-usuarios', 'automatizaciones', 'comprobantes-recibidos'];  // Asistente no valida comprobantes de residentes  // Asistente no ve ECG, Usuarios ni Automatizaciones
   soloCEO.forEach(p => {
     const a = document.querySelector('.sidebar a[data-page="' + p + '"]');
     if (a) a.style.display = esCEO ? '' : 'none';
@@ -1557,6 +1598,12 @@ async function actualizarBadgeAprobaciones() {
     const pend = (data || []).filter(r => r.estado === 'Sometido' || r.estado === 'En proceso').length;
     const b = $('nav-aprob-badge');
     if (b && sesion.rol === 'CEO') { b.textContent = pend; b.style.display = pend ? 'inline-block' : 'none'; }
+    if (sesion.rol === 'CEO') {
+      const {count} = await sb.from('comprobantes_pago').select('id', {count: 'exact', head: true})
+        .eq('condominio_id', sesion.condominio_id).eq('estado', 'Pendiente');
+      const cb = $('nav-comp-badge');
+      if (cb) { cb.textContent = count || ''; cb.style.display = count ? 'inline-block' : 'none'; }
+    }
   } catch(_) {}
 }
 
@@ -1704,6 +1751,8 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'mi-gas': cargarMiGas,
+    'enviar-comprobante': cargarEnviarComprobante,
+    'comprobantes-recibidos': cargarComprobantesRecibidos,
     'mis-averias': cargarMisAverias,
     'fondo-comun': cargarFondoComun,
     'gastos-condo': cargarGastosCondo,
@@ -2981,6 +3030,120 @@ async function enviarAveria() {
     $('av-descripcion').value = '';
     cargarMisAverias();
   } finally { btn.disabled = false; }
+}
+
+// ==================== RESIDENTE: ENVIAR COMPROBANTE ====================
+const badgeComp = e => ({'Pendiente':'badge-warning','Validado':'badge-success','Rechazado':'badge-danger'}[e] || 'badge-warning');
+async function verArchivoComprobante(ruta) {
+  const {data, error} = await sb.storage.from('comprobantes').createSignedUrl(ruta, 120);
+  if (error) { alert('No se pudo abrir el archivo: ' + error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
+}
+async function cargarEnviarComprobante() {
+  $('ec-fecha').value = new Date().toISOString().split('T')[0];
+  const sel = $('ec-factura');
+  const {data: facts, error} = await sb.from('facturas').select('id, no_factura, concepto, periodo, balance_pendiente')
+    .eq('estado_aprobacion', 'Aprobado').gt('balance_pendiente', 0).neq('estado', 'Anulada').order('fecha_vencimiento');
+  if (error) sel.innerHTML = '<option value="">' + error.message + '</option>';
+  else if (!facts?.length) sel.innerHTML = '<option value="">No tiene facturas pendientes</option>';
+  else {
+    sel.innerHTML = '<option value="">— Seleccione factura —</option>' + facts.map(f =>
+      `<option value="${f.id}" data-balance="${f.balance_pendiente}">${f.no_factura} — ${f.periodo || ''} ${f.concepto || ''} (Pend: RD$ ${fmt(f.balance_pendiente)})</option>`).join('');
+    sel.onchange = () => { const o = sel.selectedOptions[0]; if (o?.dataset.balance) $('ec-monto').value = o.dataset.balance; };
+  }
+  const {data: comps, error: e2} = await sb.from('comprobantes_pago')
+    .select('id, fecha_pago, monto, metodo, referencia, archivo_ruta, estado, comentario_revision, created_at, facturas(no_factura)')
+    .order('created_at', {ascending: false}).limit(50);
+  const rows = comps || [];
+  $('ec-lista').innerHTML = e2 ? '<div class="alert alert-error" style="display:block">' + e2.message + '</div>'
+    : !rows.length ? '<div class="empty">No ha enviado comprobantes</div>' : `<table>
+    <thead><tr><th>Enviado</th><th>Factura</th><th>Fecha pago</th><th class="text-right">Monto</th><th>Método</th><th class="text-center">Estado</th><th>Comentario</th><th></th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${fechaCorta(r.created_at)}</td><td style="font-family:monospace;font-size:.8rem">${r.facturas?.no_factura || '—'}</td>
+      <td>${r.fecha_pago || ''}</td><td class="text-right money">${fmt(r.monto)}</td><td>${r.metodo || ''}</td>
+      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${r.estado || ''}</span></td>
+      <td style="font-size:.8rem">${r.comentario_revision || ''}</td>
+      <td><button class="btn btn-sm" onclick="verArchivoComprobante('${r.archivo_ruta}')">📄 Ver</button></td></tr>`).join('')}</tbody></table>`;
+}
+async function enviarComprobante() {
+  const al = $('ec-alert'), btn = $('ec-btn');
+  const aviso = (msg, ok) => { al.className = 'alert ' + (ok ? 'alert-success' : 'alert-error'); al.textContent = msg; al.style.display = 'block'; };
+  const facturaId = $('ec-factura').value, monto = parseFloat($('ec-monto').value), fecha = $('ec-fecha').value;
+  const archivo = $('ec-archivo').files[0];
+  if (!facturaId) return aviso('Seleccione la factura.');
+  if (!(monto > 0)) return aviso('Indique un monto válido.');
+  if (!fecha) return aviso('Indique la fecha del pago.');
+  if (!archivo) return aviso('Adjunte el comprobante (PDF o foto).');
+  if (archivo.size > 10 * 1024 * 1024) return aviso('El archivo excede 10 MB.');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const {data: {user}} = await sb.auth.getUser();
+    const ext = (archivo.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const ruta = `${user.id}/${Date.now()}.${ext}`;
+    const up = await sb.storage.from('comprobantes').upload(ruta, archivo, {contentType: archivo.type, upsert: false});
+    if (up.error) return aviso('No se pudo subir el archivo: ' + up.error.message);
+    const {error} = await sb.rpc('portal_registrar_comprobante', {
+      p_factura_id: parseInt(facturaId), p_fecha_pago: fecha, p_monto: monto, p_archivo_ruta: ruta,
+      p_metodo: $('ec-metodo').value, p_banco: $('ec-banco').value || null,
+      p_referencia: $('ec-referencia').value || null, p_nota: $('ec-nota').value || null });
+    if (error) return aviso(error.message);
+    aviso('Comprobante enviado. Queda pendiente de validación de la administración.', true);
+    ['ec-monto','ec-banco','ec-referencia','ec-nota','ec-archivo'].forEach(id => $(id).value = '');
+    cargarEnviarComprobante();
+  } finally { btn.disabled = false; btn.textContent = 'Enviar comprobante'; }
+}
+
+// ==================== CEO: COMPROBANTES DE RESIDENTES ====================
+let compRecibidos = [];
+async function cargarComprobantesRecibidos() {
+  const estado = $('cr-filtro').value;
+  let q = sb.from('comprobantes_pago')
+    .select('id, factura_id, fecha_pago, monto, metodo, banco, referencia, archivo_ruta, nota, estado, comentario_revision, created_at, facturas(no_factura, balance_pendiente), unidades(codigo), propietarios(nombre), inquilinos(nombre)')
+    .eq('condominio_id', sesion.condominio_id).order('created_at', {ascending: false}).limit(100);
+  if (estado) q = q.eq('estado', estado);
+  const {data, error} = await q;
+  if (error) { $('cr-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  compRecibidos = data || [];
+  if (!compRecibidos.length) { $('cr-lista').innerHTML = '<div class="empty">Sin comprobantes</div>'; return; }
+  $('cr-lista').innerHTML = `<table>
+    <thead><tr><th>Recibido</th><th>Unidad</th><th>Residente</th><th>Factura</th><th>Fecha pago</th><th class="text-right">Monto</th><th>Método / Ref.</th><th class="text-center">Estado</th><th>Acciones</th></tr></thead>
+    <tbody>${compRecibidos.map(r => `<tr>
+      <td>${fechaCorta(r.created_at)}</td><td>${r.unidades?.codigo || ''}</td>
+      <td>${r.inquilinos?.nombre ? r.inquilinos.nombre + ' (inq.)' : (r.propietarios?.nombre || '')}</td>
+      <td style="font-family:monospace;font-size:.8rem">${r.facturas?.no_factura || ''}</td>
+      <td>${r.fecha_pago || ''}</td><td class="text-right money">${fmt(r.monto)}</td>
+      <td style="font-size:.8rem">${r.metodo || ''}${r.banco ? ' · ' + r.banco : ''}${r.referencia ? ' · ' + r.referencia : ''}${r.nota ? '<br><em>' + r.nota + '</em>' : ''}</td>
+      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${r.estado}</span>${r.comentario_revision ? '<br><small>' + r.comentario_revision + '</small>' : ''}</td>
+      <td style="white-space:nowrap"><button class="btn btn-sm" onclick="verArchivoComprobante('${r.archivo_ruta}')">📄 Ver</button>
+        ${r.estado === 'Pendiente' ? `<button class="btn btn-sm btn-success" onclick="revisarComprobante(${r.id},'Validado')">Validar</button>
+        <button class="btn btn-sm btn-danger" onclick="revisarComprobante(${r.id},'Rechazado')">Rechazar</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function revisarComprobante(id, estado) {
+  let comentario = null;
+  if (estado === 'Rechazado') {
+    comentario = prompt('Motivo del rechazo (lo verá el residente):');
+    if (!comentario || !comentario.trim()) return;
+  } else if (!confirm('¿Validar este comprobante?')) return;
+  const {error} = await sb.rpc('revisar_comprobante', {p_comprobante_id: id, p_estado: estado, p_comentario: comentario});
+  if (error) { alert(error.message); return; }
+  const r = compRecibidos.find(x => x.id === id);
+  await cargarComprobantesRecibidos();
+  actualizarBadgeAprobaciones();
+  if (estado === 'Validado' && r && confirm('Comprobante validado. ¿Registrar ahora el pago en la factura ' + (r.facturas?.no_factura || '') + '?')) {
+    await abrirModalPago();
+    const sel = $('pago-factura');
+    if ([...sel.options].some(o => o.value == r.factura_id)) sel.value = r.factura_id;
+    else alert('La factura ya no tiene balance pendiente; revise antes de registrar.');
+    $('pago-fecha').value = r.fecha_pago || $('pago-fecha').value;
+    $('pago-monto').value = r.monto;
+    if ([...$('pago-metodo').options].some(o => o.value === r.metodo)) $('pago-metodo').value = r.metodo;
+    $('pago-banco').value = r.banco || '';
+    $('pago-referencia').value = r.referencia || '';
+    $('pago-recibido-de').value = r.inquilinos?.nombre || r.propietarios?.nombre || '';
+    $('pago-tipo-apl').value = r.inquilinos?.nombre ? 'Inquilino' : 'Propietario';
+    $('pago-obs').value = 'Comprobante del portal #' + r.id + (r.nota ? ' — ' + r.nota : '');
+  }
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================

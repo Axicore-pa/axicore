@@ -1,0 +1,4 @@
+-- AXICORE | P3 Comprobantes de pago (10/10/2026)
+-- Sin cambios de base: ya existian bucket privado 'comprobantes' (10MB, pdf/imagen), politicas
+-- axi_comprobantes_subir (solo carpeta <uid> del residente) y axi_comprobantes_ver, portal_registrar_comprobante
+-- y revisar_comprobante (solo CEO). Probado con rollback: carpeta ajena y factura ajena bloqueadas; Asistente no valida.
