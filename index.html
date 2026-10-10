@@ -1040,7 +1040,7 @@
         <label>Comprobante(s) de pago (PDF o fotos)</label>
         <input type="file" id="pg-comprobante-file" accept=".pdf,image/*" multiple>
         <small style="color:#4d4742">Puedes seleccionar varias fotos/PDF a la vez (ej. 2 facturas). O pega un enlace si ya está en Drive/Photos:</small>
-        <input type="url" id="pg-comprobante-url" placeholder="https://... (opcional)" style="margin-top:.3rem">
+        <textarea id="pg-comprobante-url" rows="2" placeholder="https://...  (uno por línea si son varios)" style="margin-top:.3rem"></textarea>
       </div>
       <div class="form-group"><label>Nota</label><textarea id="pg-nota" rows="2" placeholder="Observaciones opcionales..."></textarea></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
@@ -1801,7 +1801,9 @@ async function guardarPagoGasto(e) {
     const gastoId = parseInt($('pg-gasto-id').value);
 
     // Subir uno o varios archivos de comprobante
-    const urlPegada = $('pg-comprobante-url').value.trim() || null;
+    const urlsPegadas = ($('pg-comprobante-url').value || '').split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+    const urlInvalida = urlsPegadas.find(u => !/^https?:\/\//i.test(u));
+    if (urlInvalida) throw new Error('Enlace no válido (debe empezar con http): ' + urlInvalida);
     const files = Array.from($('pg-comprobante-file').files || []);
     const rutas = [];
     for (let i = 0; i < files.length; i++) {
@@ -1813,11 +1815,10 @@ async function guardarPagoGasto(e) {
       if (upErr) throw new Error('No se pudo subir el comprobante ' + (i+1) + ': ' + upErr.message);
       rutas.push(ruta);
     }
-    // comprobante_url: primer archivo subido, o el enlace pegado (compatibilidad)
-    const comprobante = rutas[0] || urlPegada;
-    // comprobantes: lista completa (rutas subidas + enlace pegado si lo hay)
-    const lista = [...rutas];
-    if (urlPegada) lista.push(urlPegada);
+    // comprobante_url: primer archivo subido, o el primer enlace pegado (compatibilidad)
+    const comprobante = rutas[0] || urlsPegadas[0] || null;
+    // comprobantes: lista completa (rutas subidas + enlaces pegados)
+    const lista = [...rutas, ...urlsPegadas];
 
     btn.textContent = 'Guardando...';
     const payload = {
