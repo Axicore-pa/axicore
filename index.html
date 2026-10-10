@@ -1385,6 +1385,11 @@
         <label>Unidad</label>
         <select id="gasto-unidad"><option value="">— Seleccione unidad —</option></select>
       </div>
+      <div class="form-group" id="gasto-cargo-grp" style="display:none">
+        <label>Cobrar a</label>
+        <select id="gasto-cargo"></select>
+        <small id="gasto-cargo-info" style="display:block;color:var(--ax-muted);margin-top:.25rem"></small>
+      </div>
       <div class="form-group">
         <label>Área de aplicación</label>
         <select id="gasto-area" required>
@@ -4769,10 +4774,33 @@ async function abrirModalGasto() {
 
   // Tipo "Unidad": pide la unidad a la que se aplica el gasto
   $('gasto-unidad-grp').style.display = 'none'; $('gasto-unidad').required = false;
+  $('gasto-cargo-grp').style.display = 'none'; $('gasto-cargo').required = false; $('gasto-cargo').innerHTML = '';
+  // Al elegir la unidad: carga su propietario y, si tiene, su inquilino activo
+  $('gasto-unidad').onchange = async () => {
+    const uid = parseInt($('gasto-unidad').value), cg = $('gasto-cargo');
+    cg.innerHTML = ''; $('gasto-cargo-info').textContent = '';
+    if (!uid) { $('gasto-cargo-grp').style.display = 'none'; cg.required = false; return; }
+    const [{data: u}, {data: inqs}] = await Promise.all([
+      sb.from('unidades').select('id, codigo, propietario_id, propietarios(nombre, telefono, email)').eq('id', uid).single(),
+      sb.from('inquilinos').select('id, nombre, telefono, email, estado').eq('unidad_id', uid).ilike('estado', 'activo%'),
+    ]);
+    const pr = u && u.propietarios, ops = ['<option value="">— Seleccione —</option>'];
+    if (u && u.propietario_id) ops.push(`<option value="Propietario" data-id="${u.propietario_id}">Propietario: ${pr ? pr.nombre : '(sin nombre)'}</option>`);
+    (inqs || []).forEach(i => ops.push(`<option value="Inquilino" data-id="${i.id}">Inquilino: ${i.nombre}</option>`));
+    cg.innerHTML = ops.join(''); cg.required = true; $('gasto-cargo-grp').style.display = 'block';
+    $('gasto-cargo-info').textContent = (inqs && inqs.length) ? 'Esta unidad tiene propietario e inquilino: elija a quién se le cobra.' : 'Esta unidad solo tiene propietario.';
+    cg.onchange = () => {
+      const o = cg.selectedOptions[0]; if (!o || !o.value) { $('gasto-cargo-info').textContent = ''; return; }
+      const d = o.value === 'Propietario' ? (pr || {}) : ((inqs || []).find(i => String(i.id) === o.dataset.id) || {});
+      $('gasto-cargo-info').textContent = `Se generará una factura "Gasto de unidad" a ${d.nombre || ''}${d.telefono ? ' · ' + d.telefono : ''}${d.email ? ' · ' + d.email : ''}, con vencimiento el mismo día del gasto.`;
+    };
+  };
   $('gasto-tipo-apl').onchange = async () => {
     const esU = $('gasto-tipo-apl').value === 'Unidad';
     $('gasto-unidad-grp').style.display = esU ? 'block' : 'none';
     $('gasto-unidad').required = esU;
+    if (!esU) { $('gasto-cargo-grp').style.display = 'none'; $('gasto-cargo').required = false; }
+    else if ($('gasto-unidad').value) $('gasto-unidad').onchange();
     if (esU && $('gasto-unidad').options.length <= 1) {
       const {data: us} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
       $('gasto-unidad').innerHTML = '<option value="">— Seleccione unidad —</option>' + (us || []).map(u => `<option value="${u.id}">${u.codigo || ('Unidad ' + u.id)}</option>`).join('');
@@ -4817,13 +4845,19 @@ async function guardarGasto(e) {
       factura_proveedor: $('gasto-factura-prov').value.trim(),
       unidad_id: $('gasto-tipo-apl').value === 'Unidad' ? (parseInt($('gasto-unidad').value) || null) : null,
     };
-    if (payload.tipo_aplicacion === 'Unidad' && !payload.unidad_id) throw new Error('Seleccione la unidad a la que se aplica el gasto.');
+    if (payload.tipo_aplicacion === 'Unidad') {
+      if (!payload.unidad_id) throw new Error('Seleccione la unidad a la que se aplica el gasto.');
+      const o = $('gasto-cargo').selectedOptions[0];
+      if (!o || !o.value) throw new Error('Indique si el gasto se cobra al Propietario o al Inquilino.');
+      payload.cargo_a = o.value;
+      if (o.value === 'Inquilino') payload.inquilino_id = parseInt(o.dataset.id);
+    }
 
     const {data, error} = await sb.rpc('axi_gasto_registrar', {p: payload});
     if (error) throw error;
     cerrarModal('modal-gasto');
     cargarGastos();
-    alert('✅ Gasto registrado: ' + (data?.codigo || 'OK'));
+    alert('✅ Gasto registrado: ' + (data?.codigo || 'OK') + (payload.cargo_a ? '\nSe generó la factura "Gasto de unidad" a cargo del ' + payload.cargo_a + '.' : ''));
   } catch(err) {
     $('gasto-alert').textContent = err.message;
     $('gasto-alert').style.display = 'block';
