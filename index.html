@@ -371,6 +371,7 @@
           <a href="#" onclick="navegar('aprobaciones')" data-page="aprobaciones" id="nav-aprobaciones"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Aprobaciones <span id="nav-aprob-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
           <a href="#" onclick="navegar('comprobantes-recibidos')" data-page="comprobantes-recibidos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Residentes <span id="nav-comp-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
           <a href="#" onclick="navegar('solicitudes-contacto')" data-page="solicitudes-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg> Solicitudes de Contacto</a>
+          <a href="#" onclick="navegar('mantenimiento')" data-page="mantenimiento"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Mantenimiento <span id="nav-mant-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
         </div>
       </div>
 
@@ -655,6 +656,19 @@
       </div>
 
       <!-- ===== SOLICITUDES DE CONTACTO ===== -->
+      <!-- ===== MANTENIMIENTO (Staff) ===== -->
+      <div id="page-mantenimiento" class="page">
+        <h2 class="page-title">Mantenimiento y Reportes</h2>
+        <div class="cards-row" id="mt-stats"></div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin:0 0 1rem;flex-wrap:wrap">
+          <label style="margin:0">Mostrar</label>
+          <select id="mt-filtro" onchange="cargarMantenimiento()" style="max-width:220px">
+            <option value="abiertos">Abiertos</option><option value="todos">Todos (incluye cerrados)</option>
+          </select>
+        </div>
+        <div class="card"><div class="card-body" id="mt-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
+
       <div id="page-solicitudes-contacto" class="page">
         <h2 class="page-title">Solicitudes de Contacto</h2>
         <div class="card">
@@ -754,17 +768,8 @@
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header">Nuevo reporte</div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem">
-              <div><label>Tipo</label><select id="av-tipo">
-                <option>Plomería</option><option>Electricidad</option><option>Energía</option><option>Estructura</option>
-                <option>Seguridad</option><option>Limpieza</option><option>Mantenimiento</option><option selected>Otro</option></select></div>
-              <div><label>Área</label><select id="av-area"><option value="">Mi unidad</option></select></div>
-              <div><label>Prioridad</label><select id="av-prioridad"><option>Baja</option><option selected>Media</option><option>Alta</option></select></div>
-            </div>
-            <div style="margin-top:.8rem"><label>Descripción (mínimo 5 caracteres)</label>
-              <textarea id="av-descripcion" rows="3" maxlength="2000" style="width:100%" placeholder="Describa qué ocurre, dónde y desde cuándo"></textarea></div>
-            <div id="av-alert" class="alert" style="display:none;margin-top:.6rem"></div>
-            <button class="btn btn-primary" id="av-btn" style="margin-top:.8rem" onclick="enviarAveria()">Enviar reporte</button>
+            <p style="font-size:.9rem;margin:0 0 .8rem">Los reportes se envían por el formulario oficial de AXICORE: recibe su número de referencia, copia en PDF a su correo y la administración le da seguimiento aquí mismo.</p>
+            <a class="btn btn-primary" href="https://forms.gle/JNJEFQ7gX3NcqFWp9" target="_blank" rel="noopener">Abrir formulario de reporte</a>
           </div>
         </div>
         <div class="card" style="margin-bottom:1rem">
@@ -958,6 +963,34 @@
 </div>
 
 <!-- MODAL: Registrar Pago -->
+<div class="modal-overlay" id="modal-mant">
+  <div class="modal" style="max-width:820px;width:96%">
+    <h3 id="mm-titulo">Reporte</h3>
+    <div id="mm-alert" class="alert alert-error"></div>
+    <div id="mm-info" style="font-size:.88rem"></div>
+    <div id="mm-asig" style="margin:.8rem 0"></div>
+    <div id="mm-acciones" style="border-top:1px solid #e3ded3;padding-top:.8rem;margin-top:.8rem"></div>
+    <div id="mm-form-asig" style="display:none;background:#f7f5ef;border:1px solid #e3ded3;border-radius:8px;padding:.8rem;margin-top:.6rem">
+      <strong style="font-size:.85rem">Asignación del trabajo</strong>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem;margin-top:.5rem">
+        <div style="grid-column:1/-1"><label>Proveedor (opcional)</label><select id="mm-prov"><option value="">— Sin proveedor / personal propio —</option></select></div>
+        <div><label>Nombre del técnico *</label><input id="mm-tnom" maxlength="80"></div>
+        <div><label>Apellido *</label><input id="mm-tape" maxlength="80"></div>
+        <div><label>Cédula (11 dígitos) *</label><input id="mm-tced" maxlength="13" placeholder="001-0000000-0"></div>
+        <div><label>Teléfono</label><input id="mm-ttel" maxlength="20"></div>
+        <div><label>Fecha y hora estimada *</label><input type="datetime-local" id="mm-tfecha"></div>
+        <div style="grid-column:1/-1"><label>Nota</label><input id="mm-tnota" maxlength="300"></div>
+      </div>
+    </div>
+    <div style="margin-top:.6rem"><label>Comentario <span id="mm-com-req" style="color:var(--ax-danger)"></span></label>
+      <textarea id="mm-comentario" rows="2" maxlength="1000" style="width:100%"></textarea></div>
+    <div id="mm-hist" style="margin-top:1rem"></div>
+    <div class="modal-actions" style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+      <button type="button" class="btn" onclick="cerrarModal('modal-mant')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-pago">
   <div class="modal">
     <h3>Registrar Pago</h3>
@@ -1629,6 +1662,11 @@ async function actualizarBadgeAprobaciones() {
     const pend = (data || []).filter(r => r.estado === 'Sometido' || r.estado === 'En proceso').length;
     const b = $('nav-aprob-badge');
     if (b && sesion.rol === 'CEO') { b.textContent = pend; b.style.display = pend ? 'inline-block' : 'none'; }
+    try {
+      const {data: mt} = await sb.rpc('fn_mant_bandeja', {p_condominio_id: sesion.condominio_id, p_incluir_cerrados: false});
+      const nr = (mt || []).filter(r => r.estado === 'Recibido').length, mb = $('nav-mant-badge');
+      if (mb) { mb.textContent = nr || ''; mb.style.display = nr ? 'inline-block' : 'none'; }
+    } catch (_) {}
     if (sesion.rol === 'CEO') {
       const {count} = await sb.from('comprobantes_pago').select('id', {count: 'exact', head: true})
         .eq('condominio_id', sesion.condominio_id).eq('estado', 'Pendiente');
@@ -1782,6 +1820,7 @@ function navegar(page) {
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
     'mi-gas': cargarMiGas,
+    'mantenimiento': cargarMantenimiento,
     'mi-inquilino': cargarMiInquilino,
     'mis-documentos': cargarMisDocumentos,
     'docs-unidades': cargarDocsUnidades,
@@ -3020,7 +3059,7 @@ const badgeEstatusAv = e => ({'Abierto':'badge-warning','En proceso':'badge-info
 const fechaCorta = d => d ? String(d).substring(0, 10) : '';
 async function cargarMisAverias() {
   const sel = $('av-area');
-  if (sel.options.length <= 1) {
+  if (sel && sel.options.length <= 1) {
     const {data: areas} = await sb.from('areas_aplicacion').select('area_aplicacion').eq('activo', true).order('area_aplicacion');
     (areas || []).forEach(a => { const o = document.createElement('option'); o.textContent = a.area_aplicacion; sel.appendChild(o); });
   }
@@ -3265,6 +3304,117 @@ async function cargarMiInquilino() {
       ${dato('Correo', i.email ? `<a href="mailto:${i.email}">${i.email}</a>` : '')}${dato('Desde', i.desde)}
       ${dato('Contacto de emergencia', [i.emergencia_nombre, i.emergencia_relacion].filter(Boolean).join(' · '))}${dato('Tel. emergencia', tel(i.emergencia_telefono))}
     </div></div></div>`).join('');
+}
+
+// ==================== STAFF: MANTENIMIENTO ====================
+const MT_COLOR = {'Recibido':'#8a8578','En evaluación':'#2f6fb0','En proceso':'#c08838','Resuelto':'#2e8b57','Cerrado':'#1b2a49','Cancelado':'#b03a2e'};
+const MT_PRI = {'Crítica':'badge-danger','Alta':'badge-warning','Media':'badge-info','Baja':'badge-success'};
+// Siguientes estados posibles (igual a la regla de la base)
+const MT_SIGUIENTES = {'Recibido':['En evaluación','En proceso','Cancelado'],'En evaluación':['En proceso','Cancelado'],
+  'En proceso':['Resuelto','Cancelado'],'Resuelto':['Cerrado','En proceso'],'Cerrado':[],'Cancelado':[]};
+const fechaHora = d => d ? new Date(d).toLocaleString('es-DO', {dateStyle:'short', timeStyle:'short'}) : '';
+const barraAvance = (pct, color) => `<div style="background:#eee;border-radius:6px;height:8px;min-width:80px"><div style="width:${pct}%;background:${color || 'var(--ax-gold)'};height:8px;border-radius:6px"></div></div><small>${pct}%</small>`;
+let mtActual = null;
+async function cargarMantenimiento() {
+  const todos = $('mt-filtro').value === 'todos';
+  const {data, error} = await sb.rpc('fn_mant_bandeja', {p_condominio_id: sesion.condominio_id, p_incluir_cerrados: todos});
+  if (error) { $('mt-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  const rows = data || [];
+  const abiertos = rows.filter(r => !['Cerrado','Cancelado'].includes(r.estado));
+  const cuenta = e => abiertos.filter(r => r.estado === e).length;
+  $('mt-stats').innerHTML = `
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Abiertos</div><div class="value">${abiertos.length}</div></div>
+    <div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Sin atender (Recibido)</div><div class="value">${cuenta('Recibido')}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">En proceso</div><div class="value">${cuenta('En proceso')}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Vencidos</div><div class="value" style="color:var(--ax-danger)">${abiertos.filter(r => r.vencido).length}</div></div>`;
+  const b = $('nav-mant-badge'); const pend = cuenta('Recibido');
+  if (b) { b.textContent = pend || ''; b.style.display = pend ? 'inline-block' : 'none'; }
+  if (!rows.length) { $('mt-lista').innerHTML = '<div class="empty">Sin reportes</div>'; return; }
+  $('mt-lista').innerHTML = `<table>
+    <thead><tr><th>Referencia</th><th>Recibido</th><th>Unidad / Área</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Avance</th><th>Técnico / Fecha est.</th><th></th></tr></thead>
+    <tbody>${rows.map(r => `<tr style="${r.vencido ? 'background:#fdf1ef' : ''}">
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '#' + r.id}${r.es_historico ? '<br><small style="color:#8a8578">histórico</small>' : ''}</td>
+      <td>${fechaHora(r.fecha_solicitud)}</td>
+      <td>${r.unidad || '—'}<br><small>${r.area || ''}${r.bloque ? ' · Bloque ' + r.bloque : ''}</small></td>
+      <td>${r.categoria || ''}</td>
+      <td><span class="badge ${MT_PRI[r.prioridad] || ''}">${r.prioridad || ''}</span>${r.vencido ? '<br><small style="color:var(--ax-danger);font-weight:600">Vencido</small>' : ''}</td>
+      <td><span class="badge" style="background:${MT_COLOR[r.estado] || '#888'};color:#fff">${r.estado}</span></td>
+      <td>${barraAvance(r.avance, MT_COLOR[r.estado])}</td>
+      <td style="font-size:.82rem">${r.tecnico || '—'}${r.proveedor ? '<br><small>' + r.proveedor + '</small>' : ''}${r.fecha_estimada ? '<br><small>' + fechaHora(r.fecha_estimada) + '</small>' : ''}</td>
+      <td><button class="btn btn-sm" onclick="abrirMant(${r.id})">Abrir</button></td></tr>`).join('')}</tbody></table>`;
+}
+async function abrirMant(id) {
+  $('mm-alert').style.display = 'none';
+  $('mm-comentario').value = ''; $('mm-form-asig').style.display = 'none';
+  $('modal-mant').classList.add('show');
+  const {data: m, error} = await sb.rpc('fn_mant_detalle', {p_id: id});
+  if (error) { $('mm-alert').textContent = error.message; $('mm-alert').style.display = 'block'; return; }
+  mtActual = m;
+  $('mm-titulo').innerHTML = `${m.codigo || 'Reporte #' + m.id} <span class="badge" style="background:${MT_COLOR[m.estatus]};color:#fff;margin-left:.4rem">${m.estatus}</span> <small>${m.avance ?? 0}%</small>`;
+  const dato = (k, v) => v ? `<div><strong>${k}</strong><br>${v}</div>` : '';
+  const evid = Array.isArray(m.evidencia) ? m.evidencia.map((u, i) => `<a href="${u}" target="_blank" rel="noopener">📷 ${i + 1}</a>`).join(' ') : '';
+  $('mm-info').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem">
+    ${dato('Reportado por', m.reportante_nombre)}${dato('Teléfono', m.reportante_telefono)}${dato('Correo', m.reportante_email)}
+    ${dato('Unidad', m.unidad || m.unidad_texto)}${dato('Bloque', m.bloque)}${dato('Área', m.area_aplicacion)}
+    ${dato('Categoría', m.tipo)}${dato('Prioridad', m.prioridad)}${dato('Recibido', fechaHora(m.fecha_solicitud))}
+    ${dato('Origen', m.origen)}${dato('Evidencia', evid)}</div>
+    <div style="margin-top:.6rem"><strong>Descripción</strong><br>${(m.descripcion || '').replace(/</g, '&lt;')}</div>
+    ${m.solucion ? `<div style="margin-top:.6rem"><strong>Solución</strong><br>${m.solucion.replace(/</g, '&lt;')}</div>` : ''}`;
+  const a = m.asignacion;
+  $('mm-asig').innerHTML = a ? `<div style="background:#f7f5ef;border-left:4px solid var(--ax-gold);padding:.6rem .8rem;border-radius:6px;font-size:.88rem">
+    <strong>Asignado:</strong> ${a.tecnico_nombre} ${a.tecnico_apellido} · Cédula ${a.tecnico_cedula} (en comunicaciones: ${a.cedula_mascara})
+    ${a.tecnico_telefono ? ' · Tel. ' + a.tecnico_telefono : ''}<br>${a.proveedor ? 'Proveedor: ' + a.proveedor + ' · ' : ''}Fecha estimada: <strong>${fechaHora(a.fecha_estimada)}</strong>${a.nota ? '<br>' + a.nota : ''}</div>` : '';
+  const sig = MT_SIGUIENTES[m.estatus] || [];
+  const botones = sig.map(e => `<button class="btn btn-sm" style="background:${MT_COLOR[e]};color:#fff" onclick="prepararEstado('${e}')">${e === 'En proceso' && m.estatus === 'Resuelto' ? 'Reabrir (En proceso)' : '→ ' + e}</button>`);
+  if (['Recibido','En evaluación','En proceso'].includes(m.estatus) && a) botones.push(`<button class="btn btn-sm" onclick="prepararEstado('__reasignar')">Reasignar técnico</button>`);
+  $('mm-acciones').innerHTML = sig.length ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center"><strong style="font-size:.85rem">Cambiar estado:</strong> ${botones.join('')}</div>
+    <div id="mm-confirmar" style="margin-top:.6rem"></div>` : '<em>Reporte finalizado; no admite cambios.</em>';
+  const h = m.historial || [];
+  $('mm-hist').innerHTML = `<strong style="font-size:.85rem">Historial</strong><table style="font-size:.82rem"><tbody>${h.map(x => `<tr>
+    <td style="white-space:nowrap">${fechaHora(x.fecha)}</td><td>${x.accion || ''}</td>
+    <td>${x.de && x.de !== x.a ? x.de + ' → ' : ''}<strong>${x.a || ''}</strong></td><td>${(x.comentario || '').replace(/</g, '&lt;')}</td><td>${x.usuario || ''}</td></tr>`).join('')}</tbody></table>`;
+}
+async function prepararEstado(estado) {
+  const m = mtActual; if (!m) return;
+  const necesitaAsig = estado === '__reasignar' || (estado === 'En proceso' && !m.asignacion);
+  $('mm-form-asig').style.display = (necesitaAsig || estado === 'En proceso') ? 'block' : 'none';
+  if ($('mm-form-asig').style.display === 'block' && $('mm-prov').options.length <= 1) {
+    const {data: provs} = await sb.from('proveedores').select('id, nombre, nombre_comercial').eq('estado_aprobacion', 'Aprobado').order('nombre');
+    (provs || []).forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.nombre_comercial || p.nombre; $('mm-prov').appendChild(o); });
+  }
+  if (m.asignacion && estado !== '__reasignar') {
+    const a = m.asignacion;
+    $('mm-prov').value = a.proveedor_id || ''; $('mm-tnom').value = a.tecnico_nombre; $('mm-tape').value = a.tecnico_apellido;
+    $('mm-tced').value = a.tecnico_cedula; $('mm-ttel').value = a.tecnico_telefono || '';
+    const f = new Date(a.fecha_estimada); f.setMinutes(f.getMinutes() - f.getTimezoneOffset());
+    $('mm-tfecha').value = f.toISOString().slice(0, 16); $('mm-tnota').value = a.nota || '';
+  }
+  $('mm-com-req').textContent = estado === 'Resuelto' ? '* describa la solución aplicada' : estado === 'Cancelado' ? '* motivo de la cancelación' : '';
+  const etiqueta = estado === '__reasignar' ? 'Guardar nueva asignación' : 'Confirmar: ' + estado;
+  $('mm-confirmar').innerHTML = `<button class="btn btn-primary" id="mm-btn-ok" onclick="confirmarEstado('${estado}')">${etiqueta}</button>
+    ${estado === 'En proceso' ? '<small style="margin-left:.5rem">Al confirmar se prepara la comunicación formal a los residentes.</small>' : ''}`;
+}
+async function confirmarEstado(estado) {
+  const m = mtActual; const al = $('mm-alert'); al.style.display = 'none';
+  const reasignar = estado === '__reasignar';
+  let asig = null;
+  if ($('mm-form-asig').style.display === 'block') {
+    const fecha = $('mm-tfecha').value;
+    asig = { proveedor_id: $('mm-prov').value || '', tecnico_nombre: $('mm-tnom').value.trim(), tecnico_apellido: $('mm-tape').value.trim(),
+             tecnico_cedula: $('mm-tced').value.trim(), tecnico_telefono: $('mm-ttel').value.trim(),
+             fecha_estimada: fecha ? new Date(fecha).toISOString() : '', nota: $('mm-tnota').value.trim() };
+    const igual = m.asignacion && !reasignar && asig.tecnico_cedula === m.asignacion.tecnico_cedula && asig.fecha_estimada === new Date(m.asignacion.fecha_estimada).toISOString()
+                  && asig.tecnico_nombre === m.asignacion.tecnico_nombre && String(asig.proveedor_id) === String(m.asignacion.proveedor_id || '');
+    if (igual) asig = null;
+  }
+  $('mm-btn-ok').disabled = true;
+  const {data, error} = await sb.rpc('fn_mant_cambiar_estado', {p_id: m.id, p_estado: reasignar ? m.estatus : estado,
+    p_comentario: $('mm-comentario').value.trim() || null, p_asignacion: asig});
+  if (error) { al.textContent = error.message; al.style.display = 'block'; $('mm-btn-ok').disabled = false; return; }
+  await abrirMant(m.id);
+  cargarMantenimiento();
+  if (data?.emitir_comunicacion && typeof emitirComunicacionMant === 'function') emitirComunicacionMant(m.id);
+  else if (data?.emitir_comunicacion) { al.className = 'alert alert-success'; al.textContent = 'Estado actualizado. La comunicación formal se habilita en el siguiente paso.'; al.style.display = 'block'; }
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================
