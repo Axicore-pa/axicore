@@ -406,6 +406,7 @@
       <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Mi Cuenta</a>
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
+      <a href="#" onclick="navegar('mi-gas')" data-page="mi-gas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Mi Gas (GLP)</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
       <div class="section-title" id="nav-res-condo-title">Condominio</div>
       <a href="#" onclick="navegar('gastos-condo')" data-page="gastos-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Gastos del Condominio</a>
@@ -719,6 +720,25 @@
           <div class="card-body" id="fc-movimientos">
             <div class="loading">Cargando...</div>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== MI GAS GLP (Residente) ===== -->
+      <div id="page-mi-gas" class="page">
+        <h2 class="page-title">Mi Gas (GLP)</h2>
+        <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">El gas es responsabilidad de cada unidad y no afecta el fondo común.</p>
+        <div class="cards-row" id="glp-stats"></div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">Medidor</div>
+          <div class="card-body" id="glp-medidor"><div class="loading">Cargando...</div></div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">Depósitos y consumos</div>
+          <div class="card-body" id="glp-movimientos"><div class="loading">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Lecturas del medidor</div>
+          <div class="card-body" id="glp-lecturas"><div class="loading">Cargando...</div></div>
         </div>
       </div>
 
@@ -1473,7 +1493,7 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['mi-cuenta','mis-facturas','mis-pagos','mi-gas','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_PROPIETARIO = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones'];
 function paginaPermitida(page) {
@@ -1653,6 +1673,7 @@ function navegar(page) {
     'morosidad': cargarMorosidad,
     'mis-facturas': cargarMisFacturas,
     'mis-pagos': cargarMisPagos,
+    'mi-gas': cargarMiGas,
     'fondo-comun': cargarFondoComun,
     'gastos-condo': cargarGastosCondo,
     'comprobantes-condo': cargarComprobantesCondo,
@@ -2831,6 +2852,53 @@ async function cargarMiCuenta() {
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+// ==================== RESIDENTE: MI GAS (GLP) ====================
+// Convencion: saldo positivo = a favor (verde); negativo = balance pendiente (rojo)
+async function cargarMiGas() {
+  const unidadId = await obtenerMiUnidad();
+  const vacio = msg => { $('glp-stats').innerHTML = ''; ['glp-medidor','glp-movimientos','glp-lecturas'].forEach(id => $(id).innerHTML = '<div class="empty">' + msg + '</div>'); };
+  if (!unidadId) { vacio('No tiene unidad asignada'); return; }
+  const {data: g, error} = await sb.rpc('portal_mi_glp', {p_unidad_id: unidadId});
+  if (error) { vacio(error.message); return; }
+  const saldo = parseFloat(g.saldo || 0);
+  const aFavor = saldo >= 0;
+  $('glp-stats').innerHTML = `
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${g.unidad || '—'}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total depositado</div><div class="value green money">${fmtMoney(g.total_depositos)}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Total consumido</div><div class="value red money">${fmtMoney(g.total_consumos)}</div></div>
+    <div class="stat-card"><div class="accent-bar ${aFavor ? 'green' : 'red'}"></div><div class="label">${aFavor ? 'Saldo a favor' : 'Balance pendiente'}</div><div class="value ${aFavor ? 'green' : 'red'} money">${fmtMoney(Math.abs(saldo))}</div></div>`;
+  const m = g.medidor;
+  $('glp-medidor').innerHTML = m ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;font-size:.9rem">
+      <div><strong>No. de serie</strong><br>${m.serie || '—'}</div>
+      <div><strong>Marca/modelo</strong><br>${m.marca || '—'}</div>
+      <div><strong>Ubicación</strong><br>${m.ubicacion || '—'}</div>
+      <div><strong>Unidad de medida</strong><br>${m.unidad_medida || '—'}</div>
+      <div><strong>Precio vigente</strong><br>${g.precio_vigente != null ? fmtMoney(g.precio_vigente) : '—'}</div>
+    </div>` : '<div class="empty">Sin medidor registrado</div>';
+  const movs = g.movimientos || [];
+  $('glp-movimientos').innerHTML = !movs.length ? '<div class="empty">Sin movimientos</div>' : `<table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Período</th><th>Concepto</th><th class="text-right">Depósito</th><th class="text-right">Consumo</th><th class="text-right">Saldo</th></tr></thead>
+    <tbody>${movs.map(x => { const dep = (x.tipo || '').toUpperCase() === 'DEPOSITO'; const sal = parseFloat(x.saldo || 0); return `<tr>
+      <td>${x.fecha || ''}</td>
+      <td><span class="badge ${dep ? 'badge-success' : 'badge-danger'}">${dep ? 'Depósito' : 'Consumo'}</span></td>
+      <td>${x.periodo || ''}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.concepto || ''}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${dep ? fmt(x.monto) : ''}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${dep ? '' : fmt(x.monto)}</td>
+      <td class="text-right money" style="color:${sal >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'}">${fmt(x.saldo)}</td>
+    </tr>`; }).join('')}</tbody></table>`;
+  const lect = g.lecturas || [];
+  $('glp-lecturas').innerHTML = !lect.length ? '<div class="empty">Sin lecturas</div>' : `<table>
+    <thead><tr><th>Fecha</th><th>Período</th><th class="text-right">Lectura anterior</th><th class="text-right">Lectura actual</th><th class="text-right">Consumo</th><th class="text-right">Precio</th><th class="text-right">Monto</th></tr></thead>
+    <tbody>${lect.map(l => `<tr>
+      <td>${l.fecha || ''}</td><td>${l.periodo || ''}</td>
+      <td class="text-right">${l.anterior ?? ''}</td><td class="text-right">${l.actual ?? ''}</td>
+      <td class="text-right">${l.consumo ?? ''}</td>
+      <td class="text-right money">${l.precio != null ? fmt(l.precio) : ''}</td>
+      <td class="text-right money">${fmt(l.monto)}</td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================

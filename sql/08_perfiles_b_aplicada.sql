@@ -4,3 +4,6 @@
 -- facturas emitidas a su nombre (f.inquilino_id = ANY(private.mis_inquilinos())) y sus pagos.
 -- Verificado: inquilino 11 (u8) ve 831.65 de 12,331.65 de la unidad; inquilino 10 no ve u18.
 -- Para revertir: volver a los cuerpos de sql/07_roles_aprobaciones.sql seccion 10.
+-- NOTA 10/10/2026 11:20: la primera aplicacion se revirtio (iba en el mismo envio que la prueba con RAISE).
+-- Reaplicada y verificada por separado: inquilino 11 u8 fact=831.65; propietario 12 u18 fact=9000.
+-- LECCION: cada execute_sql es UNA transaccion -> nunca mezclar CREATE con pruebas que terminan en RAISE.
