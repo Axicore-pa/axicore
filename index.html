@@ -2901,13 +2901,13 @@ async function exportarPDF(tipo) {
   if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
   const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para exportar.'); return; }
   try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
-  construirPDF(m).save(`AXICORE_${tipo}_${hoyStr()}.pdf`);
+  construirPDF(tsParaExportar(m, tipo)).save(`AXICORE_${tipo}_${hoyStr()}.pdf`);
 }
 async function exportarExcel(tipo) {
   if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
   const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para exportar.'); return; }
   try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
-  descargarBlob(await construirExcelBlob(m), `AXICORE_${tipo}_${hoyStr()}.xlsx`);
+  descargarBlob(await construirExcelBlob(tsParaExportar(m, tipo)), `AXICORE_${tipo}_${hoyStr()}.xlsx`);
 }
 async function emailReporte(tipo) {
   if (sesion.rol !== 'CEO') { alert('Tu perfil no exporta documentos.'); return; }
@@ -2917,7 +2917,7 @@ async function emailReporte(tipo) {
   abrirCorreo({
     subject: 'AXICORE — ' + m.titulo,
     texto: 'Estimados,\n\nAdjunto el reporte "' + m.titulo + '"' + (m.subtitulo ? ' (' + m.subtitulo + ')' : '') + ' generado desde AXICORE.\n\nAtentamente,\nAPA | Axicore Property Administration\nTel. (809) 282-7776 | axispard@gmail.com',
-    adjuntos: [{ nombre, mime: 'application/pdf', base64: construirPDF(m).output('datauristring').split(',')[1] }]
+    adjuntos: [{ nombre, mime: 'application/pdf', base64: construirPDF(tsParaExportar(m, tipo)).output('datauristring').split(',')[1] }]
   }, `AXICORE_Correo_${tipo}_${hoyStr()}.eml`);
 }
 
@@ -4192,7 +4192,7 @@ async function glpCargarUnidad(id) {
       <td>${x.periodo || ''}</td><td>${x.fecha ? fechaCorta(x.fecha) : ''}</td><td>${x.concepto || ''}${x.factura ? ' · ' + x.factura : ''}</td>
       <td class="r">${dep ? fmt(x.monto) : ''}</td><td class="r">${dep ? '' : fmt(x.monto)}</td><td class="r">${an ? '' : fmt(x.saldo)}</td></tr>`;
   }).join('') || '<tr><td colspan="6" style="color:#888;cursor:default">Sin movimientos</td></tr>';
-  const h = $('gx-hist').parentElement.parentElement; h.scrollTop = h.scrollHeight;
+  const h = $('gx-hist').parentElement.parentElement; h.scrollTop = 0;
   // Sumario
   const act = movs.filter(glpAct);
   const dep = act.filter(glpEsDep).reduce((a, x) => a + Number(x.monto), 0);
@@ -4443,7 +4443,8 @@ async function glpGenerarReporte() {
     kpis: [{label: 'Total depósitos', value: fmtMoney(dep)}, {label: 'Total consumos', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
     resumen: [{label: 'Total depósitos', value: fmtMoney(dep)}, {label: 'Total consumos', value: fmtMoney(con)}, {label: lbl, value: fmtMoney(Math.abs(s))}],
     moneyCols: [3, 4, 5], headers: ['Período', 'Fecha', 'Concepto', 'Depósito', 'Consumo', 'Saldo a favor'],
-    rows: act.map(x => [x.periodo, x.fecha, x.concepto, glpEsDep(x) ? x.monto : '', glpEsDep(x) ? '' : x.monto, x.saldo]) })
+    rows: tsOrdenarFilas(['Periodo', 'Fecha', 'Concepto', 'Deposito', 'Consumo', 'SaldoFavor'],
+      act.map(x => [x.periodo, x.fecha, x.concepto, glpEsDep(x) ? x.monto : '', glpEsDep(x) ? '' : x.monto, x.saldo]), 'page-glp') })
     .save(`AXICORE_EstadoCuenta_GLP_${g.unidad.replace(/\s+/g, '_')}_${hoyStr()}.pdf`);
 }
 async function glpAnularTrans() {
@@ -4799,6 +4800,86 @@ async function rptEnviar() {
     cargarMantenimiento();
   } catch (e) { err(e.message); }
   finally { btn.disabled = false; btn.textContent = 'Enviar reporte'; }
+}
+
+
+// ==================== ORDEN DE TABLAS (reciente arriba + clic en encabezado) ====================
+// Solo cambia el orden en pantalla; no toca datos ni calculos.
+const TS_FECHA = /fecha|per[ií]odo|recibido|registro|mes\b|^d[ií]a$/i;
+const tsOrden = {};   // ultimo orden elegido por pagina: { col, dir }
+function tsPagina(el) { const p = el.closest('.page, .modal-overlay'); return p ? p.id : 'x'; }
+function tsValor(t) {
+  t = String(t == null ? '' : t).trim();
+  let m = t.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?(?:[ T](\d{2}):(\d{2}))?/);
+  if (m) return { k: 0, v: +(m[1] + m[2] + (m[3] || '00') + (m[4] || '00') + (m[5] || '00')) };
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s*(\d{1,2}):(\d{2}))?/);
+  if (m) return { k: 0, v: +(m[3] + m[2].padStart(2, '0') + m[1].padStart(2, '0') + (m[4] || '0').padStart(2, '0') + (m[5] || '00')) };
+  const n = t.replace(/RD\$|US\$|\$|,|\s|%/g, '');
+  if (/^-?\d+(\.\d+)?$/.test(n)) return { k: 1, v: parseFloat(n) };
+  return { k: 2, v: t.toLowerCase() };
+}
+function tsComparar(a, b) {
+  const x = tsValor(a), y = tsValor(b);
+  if (x.k !== y.k) { if (!String(a).trim()) return 1; if (!String(b).trim()) return -1; return x.k - y.k; }
+  return x.k === 2 ? x.v.localeCompare(y.v, 'es') : x.v - y.v;
+}
+// Vacios siempre al final, sin importar la direccion
+function tsCmpDir(a, b, dir) {
+  const ea = !String(a ?? '').trim(), eb = !String(b ?? '').trim();
+  if (ea || eb) return ea === eb ? 0 : (ea ? 1 : -1);
+  const r = tsComparar(a, b); return dir === 'desc' ? -r : r;
+}
+function tsColFecha(heads) { return heads.findIndex(h => TS_FECHA.test(h)); }
+function tsOrdenar(tabla, col, dir) {
+  const tb = tabla.tBodies[0]; if (!tb) return;
+  const filas = [...tb.rows];
+  if (filas.length < 2 || filas.some(r => [...r.cells].some(c => c.colSpan > 1))) return;   // agrupadas o mensaje vacio: no se tocan
+  filas.sort((a, b) => tsCmpDir(a.cells[col] ? a.cells[col].textContent : '', b.cells[col] ? b.cells[col].textContent : '', dir));
+  filas.forEach(r => tb.appendChild(r));
+  tabla.dataset.tsCol = col; tabla.dataset.tsDir = dir;
+  [...tabla.tHead.rows[0].cells].forEach((th, i) => { const ic = th.querySelector('.ts-ic'); if (ic) ic.textContent = i === col ? (dir === 'desc' ? ' ▼' : ' ▲') : ' ⇅'; });
+  tb.dataset.tsSig = tb.rows.length + '|' + tb.textContent.length;
+}
+function tsPreparar(tabla) {
+  if (!tabla.tHead || !tabla.tHead.rows.length || !tabla.tBodies.length) return;
+  const ths = [...tabla.tHead.rows[0].cells], heads = ths.map(th => th.textContent.replace(/[⇅▲▼]/g, '').trim());
+  if (!tabla.dataset.tsInit) {
+    tabla.dataset.tsInit = '1';
+    ths.forEach((th, i) => {
+      if (!heads[i]) return;
+      th.style.cursor = 'pointer'; th.style.userSelect = 'none'; th.title = 'Ordenar';
+      const ic = document.createElement('span'); ic.className = 'ts-ic'; ic.textContent = ' ⇅'; ic.style.cssText = 'opacity:.55;font-size:.8em';
+      th.appendChild(ic);
+      th.addEventListener('click', () => {
+        const dir = Number(tabla.dataset.tsCol) === i && tabla.dataset.tsDir === 'desc' ? 'asc' : 'desc';
+        tsOrden[tsPagina(tabla)] = { col: heads[i], dir };
+        tsOrdenar(tabla, i, dir);
+      });
+    });
+  }
+  const tb = tabla.tBodies[0];
+  if (tb.dataset.tsSig === tb.rows.length + '|' + tb.textContent.length) return;   // ya ordenada
+  const pref = tsOrden[tsPagina(tabla)];
+  let col = pref ? heads.indexOf(pref.col) : -1, dir = pref ? pref.dir : 'desc';
+  if (col < 0) { col = tsColFecha(heads); dir = 'desc'; }
+  if (col >= 0) tsOrdenar(tabla, col, dir); else tb.dataset.tsSig = tb.rows.length + '|' + tb.textContent.length;
+}
+let tsPend = false;
+new MutationObserver(() => {
+  if (tsPend) return; tsPend = true;
+  requestAnimationFrame(() => { tsPend = false; document.querySelectorAll('#app-shell table, .modal table').forEach(tsPreparar); });
+}).observe(document.body, { childList: true, subtree: true });
+// Exportaciones (PDF / Excel / correo): mismo orden que la pantalla
+function tsOrdenarFilas(headers, rows, paginaId) {
+  const h = (headers || []).map(x => String(x).trim()), pref = tsOrden[paginaId];
+  let col = pref ? h.indexOf(pref.col) : -1, dir = pref ? pref.dir : 'desc';
+  if (col < 0) { col = tsColFecha(h); dir = 'desc'; }
+  if (col < 0) return rows;
+  return [...rows].sort((a, b) => tsCmpDir(a[col], b[col], dir));
+}
+function tsParaExportar(m, tipo) {
+  const pg = document.querySelector('.page.active');
+  return { ...m, rows: tsOrdenarFilas(m.headers, m.rows, pg ? pg.id : tipo) };
 }
 
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
