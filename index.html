@@ -1003,7 +1003,32 @@
 
       <!-- ===== RESERVAS AREA SOCIAL (Staff) ===== -->
       <div id="page-reservas-admin" class="page">
-        <h2 class="page-title">Reservas del Área Social</h2>
+        <h2 class="page-title" style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">Reservas del Área Social
+          <button class="btn btn-sm btn-primary solo-ceo" style="width:auto" onclick="raNuevaToggle()">+ Reservar en nombre de un residente</button></h2>
+        <div class="card solo-ceo" id="ra-nueva" style="display:none;margin-bottom:1rem">
+          <div class="card-header">Reservar en nombre de un residente <small style="font-weight:400;color:var(--ax-muted)">Queda aprobada al guardar</small></div>
+          <div class="card-body">
+            <div id="ran-alert" class="alert alert-error"></div>
+            <div class="rv-grid">
+              <div class="form-group"><label>Unidad *</label><select id="ran-unidad" onchange="ranUnidad()"></select></div>
+              <div class="form-group"><label>A nombre de *</label><select id="ran-titular" onchange="ranTitular()"></select></div>
+              <div class="form-group"><label>Fecha *</label><input type="date" id="ran-fecha" onchange="ranDisponibilidad()"></div>
+            </div>
+            <div id="ran-franjas" class="rv-franjas"><div class="empty" style="padding:1rem">Elija una fecha para ver la disponibilidad.</div></div>
+            <div class="form-group" style="margin-top:.6rem"><label>Incluir en la reservación</label>
+              <label class="rv-check"><input type="checkbox" id="ran-picuzzi"> Uso del Picuzzi</label>
+              <label class="rv-check"><input type="checkbox" id="ran-bbq"> Uso del BBQ</label></div>
+            <div class="rv-grid">
+              <div class="form-group"><label>Responsable — Nombre y Apellido *</label><input id="ran-responsable"></div>
+              <div class="form-group"><label>Teléfono *</label><input id="ran-telefono"></div>
+              <div class="form-group"><label>Email (para enviarle la confirmación)</label><input type="email" id="ran-email"></div>
+              <div class="form-group"><label>Nombre de quien reserva</label><input id="ran-nombre"></div>
+              <div class="form-group"><label>Cantidad de personas *</label><input type="number" min="1" id="ran-cantidad"></div>
+            </div>
+            <div class="form-group"><label>Motivo *</label><textarea id="ran-motivo" rows="2"></textarea></div>
+            <button class="btn btn-success" style="width:auto" id="ran-guardar" onclick="ranGuardar()">Guardar reserva aprobada</button>
+          </div>
+        </div>
         <div class="cards-row" id="ra-stats"></div>
         <div style="display:flex;gap:.5rem;align-items:center;margin:0 0 1rem;flex-wrap:wrap">
           <label style="margin:0">Mostrar</label>
@@ -1015,7 +1040,8 @@
       </div>
       <!-- ===== MANTENIMIENTO (Staff) ===== -->
       <div id="page-mantenimiento" class="page">
-        <h2 class="page-title">Mantenimiento y Reportes</h2>
+        <h2 class="page-title" style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">Mantenimiento y Reportes
+          <button class="btn btn-sm btn-primary solo-ceo" style="width:auto" onclick="abrirReporteCEO()">+ Reportar en nombre de un residente</button></h2>
         <div class="cards-row" id="mt-stats"></div>
         <div style="display:flex;gap:.5rem;align-items:center;margin:0 0 1rem;flex-wrap:wrap">
           <label style="margin:0">Mostrar</label>
@@ -1320,6 +1346,33 @@
 </div>
 
 <!-- MODAL: Registrar Pago -->
+<!-- ===== REPORTE DE SITUACION (CEO en nombre de un residente) ===== -->
+<div class="modal-overlay" id="modal-rpt">
+  <div class="modal" style="max-width:640px">
+    <h3>Reporte de Situación — en nombre de un residente</h3>
+    <div id="rpt-alert" class="alert alert-error"></div>
+    <div class="form-group"><label>Condominio / Residencial</label><input id="rpt-condo" readonly></div>
+    <div class="form-group"><label>Unidad que Ocupa *</label><select id="rpt-unidad" onchange="rptUnidad()"></select></div>
+    <div class="form-group"><label>Reporta</label><select id="rpt-titular" onchange="rptTitular()"></select></div>
+    <div class="form-group"><label>Nombre y Apellido *</label><input id="rpt-nombre"></div>
+    <div class="form-group"><label>Teléfono (WhatsApp) *</label><input id="rpt-telefono"></div>
+    <div class="form-group"><label>Correo Electrónico</label><input type="email" id="rpt-correo"></div>
+    <div class="form-group"><label>Categoría del Problema *</label><select id="rpt-categoria"><option value="">— Seleccione —</option><option>Administración</option><option>Agua</option><option>Ascensor</option><option>Electricidad</option><option>Energía</option><option>Fumigación</option><option>Jardinería</option><option>Limpieza</option><option>Mantenimiento</option><option>Materiales</option><option>Pintura</option><option>Plomería</option><option>Reparación</option><option>Seguridad</option><option>Servicios generales</option><option>Suministros</option><option>Tecnología / Sistema de cámaras</option><option>Otro</option></select></div>
+    <div class="form-group"><label>Descripción del Problema *</label><textarea id="rpt-desc" rows="4" placeholder="Describa la situación. Incluya ubicación exacta si es posible."></textarea></div>
+    <div class="form-group"><label>Bloque</label><input id="rpt-bloque" placeholder="Si su residencial tiene bloques o torres, indique cuál. Deje vacío si no aplica."></div>
+    <div class="form-group"><label>Área Afectada *</label><select id="rpt-area"><option value="">— Seleccione —</option><option>Lobby</option><option>Recepción</option><option>Pasillos</option><option>Escaleras</option><option>Ascensores</option><option>Salón multiuso</option><option>Baños comunes</option><option>Cuarto de basura</option><option>Cuarto de limpieza</option><option>Parqueos</option><option>Entrada vehicular</option><option>Entrada peatonal</option><option>Jardines</option><option>Áreas verdes</option><option>Patio común</option><option>Terraza común</option><option>Azotea</option><option>Piscina</option><option>Área BBQ</option><option>Gazebo</option><option>Área infantil</option><option>Cisterna</option><option>Tinacos</option><option>Cuarto de bombas</option><option>Planta eléctrica</option><option>Cuarto eléctrico</option><option>Área de inversores y baterías</option><option>Cuarto de medidores</option><option>Sistema contra incendio</option><option>Cámaras de seguridad</option><option>Intercom / portero eléctrico</option><option>Aires acondicionados comunes</option><option>Iluminación común</option><option>Registros sanitarios</option><option>Desagües pluviales</option><option>Canaletas</option><option>Bajantes</option><option>Séptico</option><option>Trampa de grasa</option><option>Garita de seguridad</option><option>Portón eléctrico</option><option>Puertas comunes</option><option>Cerraduras de acceso</option><option>Controles de acceso</option><option>Señalización</option><option>Luces de emergencia</option><option>Extintores</option><option>Fachada</option><option>Muros perimetrales</option><option>Rejas</option><option>Barandas</option><option>Pisos comunes</option><option>Paredes comunes</option><option>Techos comunes</option><option>Ventanas comunes</option><option>Oficina administrativa</option><option>Archivo</option><option>Área de empleados</option><option>Depósito general</option><option>Área de proveedores</option><option>Área social</option><option>Área de lavado</option><option>Área de mantenimiento</option><option>Área de basura</option><option>Área de carga y descarga</option><option>Otro</option></select></div>
+    <div class="form-group"><label>Prioridad *</label>
+      <div style="font-size:.78rem;color:var(--ax-muted);margin-bottom:.3rem">Baja = sin urgencia · Media = requiere atención · Alta = urgente · Crítica = riesgo inmediato</div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap"><label class="rv-check"><input type="radio" name="rpt-pri" value="Baja"> Baja</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Media"> Media</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Alta"> Alta</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Crítica"> Crítica</label></div></div>
+    <div class="form-group"><label>Evidencia fotográfica</label><input type="file" id="rpt-fotos" accept="image/*" multiple>
+      <small style="color:var(--ax-muted)">Máx. 3 fotos, 10 MB cada una.</small></div>
+    <p style="font-size:.78rem;color:var(--ax-muted)">Se registra con número AXI-RPT-AAAA-W####. Se envía el PDF a la administración (con el evento de calendario según la prioridad) y una copia al residente si tiene correo.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-rpt')">Cancelar</button>
+      <button type="button" class="btn btn-success" id="rpt-enviar" onclick="rptEnviar()">Enviar reporte</button>
+    </div>
+  </div>
+</div>
 <!-- ===== CORREO: enviar ahora (Gmail) o borrador Outlook (.eml) ===== -->
 <div class="modal-overlay" id="modal-correo">
   <div class="modal" style="max-width:640px">
@@ -2194,6 +2247,9 @@ function aplicarRestriccionesRol() {
   });
   // Exportar reportes: solo CEO (Asistente no exporta)
   document.querySelectorAll('.rep-export').forEach(b => { b.style.display = esCEO ? 'inline-block' : 'none'; });
+  // Acciones en nombre de un residente: solo CEO
+  document.querySelectorAll('button.solo-ceo').forEach(b => { b.style.display = esCEO ? '' : 'none'; });
+  if (!esCEO) { const n = $('ra-nueva'); if (n) n.style.display = 'none'; }
 }
 
 async function actualizarBadgeAprobaciones() {
@@ -3907,7 +3963,9 @@ async function abrirMant(id) {
   mtActual = m;
   $('mm-titulo').innerHTML = `${m.codigo || 'Reporte #' + m.id} <span class="badge" style="background:${MT_COLOR[m.estatus]};color:#fff;margin-left:.4rem">${m.estatus}</span> <small>${m.avance ?? 0}%</small>`;
   const dato = (k, v) => v ? `<div><strong>${k}</strong><br>${v}</div>` : '';
-  const evid = Array.isArray(m.evidencia) ? m.evidencia.map((u, i) => `<a href="${u}" target="_blank" rel="noopener">📷 ${i + 1}</a>`).join(' ') : '';
+  const evid = Array.isArray(m.evidencia) ? m.evidencia.map((u, i) => String(u).startsWith('sb:')
+    ? `<a href="#" onclick="return mtVerEvidencia('${String(u).slice(3)}')">📷 ${i + 1}</a>`
+    : `<a href="${u}" target="_blank" rel="noopener">📷 ${i + 1}</a>`).join(' ') : '';
   $('mm-info').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem">
     ${dato('Reportado por', m.reportante_nombre)}${dato('Teléfono', m.reportante_telefono)}${dato('Correo', m.reportante_email)}
     ${dato('Unidad', m.unidad || m.unidad_texto)}${dato('Bloque', m.bloque)}${dato('Área', m.area_aplicacion)}
@@ -4560,6 +4618,187 @@ async function raCancelar(id, codigo) {
   const { error } = await sb.rpc('fn_reserva_cancelar', { p_id: id, p_motivo: m.trim() });
   if (error) { alert(error.message); return; }
   alert('Reserva cancelada. Se notificó al residente.'); cargarReservasAdmin();
+}
+
+
+// ---- CEO: reservar en nombre de un residente
+let ranSel = null, ranUnidades = [];
+async function ranCargarUnidades() {
+  if (ranUnidades.length) return;
+  const [{ data: us }, { data: inqs }] = await Promise.all([
+    sb.from('unidades').select('id, codigo, propietario_id, propietarios(nombre, telefono, email)').eq('condominio_id', sesion.condominio_id).order('codigo'),
+    sb.from('inquilinos').select('id, unidad_id, nombre, telefono, email, estado').eq('condominio_id', sesion.condominio_id).ilike('estado', 'activo%'),
+  ]);
+  ranUnidades = (us || []).map(u => ({ ...u, inquilinos: (inqs || []).filter(i => i.unidad_id === u.id) }));
+}
+function titularesDe(u) {
+  const t = [];
+  if (u && u.propietario_id) t.push({ tipo: 'Propietario', id: u.propietario_id, nombre: (u.propietarios || {}).nombre || '', telefono: (u.propietarios || {}).telefono || '', email: (u.propietarios || {}).email || '' });
+  (u ? u.inquilinos : []).forEach(i => t.push({ tipo: 'Inquilino', id: i.id, nombre: i.nombre || '', telefono: i.telefono || '', email: i.email || '' }));
+  return t;
+}
+async function raNuevaToggle() {
+  const c = $('ra-nueva'); const abrir = c.style.display === 'none';
+  c.style.display = abrir ? 'block' : 'none'; if (!abrir) return;
+  $('ran-alert').style.display = 'none';
+  await ranCargarUnidades();
+  $('ran-unidad').innerHTML = '<option value="">— Seleccione —</option>' + ranUnidades.map(u => {
+    const t = titularesDe(u), ocu = t.find(x => x.tipo === 'Inquilino') || t[0];
+    return `<option value="${u.id}">${u.codigo} | ${ocu ? ocu.nombre + ' | ' + ocu.tipo : ''}</option>`; }).join('');
+  $('ran-titular').innerHTML = ''; $('ran-fecha').min = hoyStr();
+}
+function ranUnidad() {
+  const u = ranUnidades.find(x => String(x.id) === $('ran-unidad').value);
+  const t = titularesDe(u);
+  $('ran-titular').innerHTML = t.map((x, i) => `<option value="${i}">${x.tipo}: ${x.nombre}</option>`).join('');
+  if (t.length > 1) $('ran-titular').value = String(t.findIndex(x => x.tipo === 'Inquilino'));
+  ranTitular();
+}
+function ranTitularSel() { const u = ranUnidades.find(x => String(x.id) === $('ran-unidad').value); return titularesDe(u)[Number($('ran-titular').value)]; }
+function ranTitular() {
+  const t = ranTitularSel() || {};
+  $('ran-responsable').value = t.nombre || ''; $('ran-telefono').value = t.telefono || ''; $('ran-email').value = t.email || ''; $('ran-nombre').value = t.nombre || '';
+}
+async function ranDisponibilidad() {
+  const fecha = $('ran-fecha').value; if (!fecha) return;
+  const { data, error } = await sb.rpc('fn_reserva_disponibilidad', { p_fecha: fecha });
+  if (error) { $('ran-franjas').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (ranSel && !(data || []).some(f => f.franja === ranSel && f.estado === 'Disponible')) ranSel = null;
+  $('ran-franjas').innerHTML = (data || []).map(f => { const off = f.estado !== 'Disponible';
+    return `<div class="rv-slot ${off ? 'off' : ''} ${ranSel === f.franja ? 'sel' : ''}" ${off ? '' : `onclick="ranSel='${f.franja}';ranDisponibilidad()"`}><div class="h">${f.etiqueta}</div><div class="e">${f.estado}</div></div>`; }).join('');
+}
+async function ranGuardar() {
+  const err = t => { $('ran-alert').textContent = t; $('ran-alert').style.display = 'block'; };
+  $('ran-alert').style.display = 'none';
+  const t = ranTitularSel();
+  if (!$('ran-unidad').value || !t) return err('Seleccione la unidad y a nombre de quién.');
+  if (!$('ran-fecha').value || !ranSel) return err('Seleccione la fecha y un horario disponible.');
+  const p = { unidad_id: Number($('ran-unidad').value), cargo_a: t.tipo, inquilino_id: t.tipo === 'Inquilino' ? t.id : null,
+    fecha: $('ran-fecha').value, franja: ranSel, responsable: $('ran-responsable').value, telefono: $('ran-telefono').value,
+    email: $('ran-email').value, nombre_quien_reserva: $('ran-nombre').value, cantidad_personas: Number($('ran-cantidad').value || 0),
+    motivo: $('ran-motivo').value, incluye_picuzzi: $('ran-picuzzi').checked, incluye_bbq: $('ran-bbq').checked };
+  if (!confirm(`¿Guardar como APROBADA la reserva de ${t.nombre} (${t.tipo})?`)) return;
+  $('ran-guardar').disabled = true;
+  const { data, error } = await sb.rpc('fn_reserva_crear_admin', { p });
+  $('ran-guardar').disabled = false;
+  if (error) { err(error.message); ranDisponibilidad(); return; }
+  alert(`✅ Reserva ${data.codigo} aprobada.` + (p.email ? '\nSe envió la confirmación al residente.' : '\nEl residente no tiene correo: la confirmación te llega a ti.'));
+  ranSel = null; ['ran-motivo', 'ran-cantidad', 'ran-fecha'].forEach(i => $(i).value = ''); $('ran-picuzzi').checked = false; $('ran-bbq').checked = false;
+  $('ran-franjas').innerHTML = ''; $('ra-nueva').style.display = 'none'; cargarReservasAdmin();
+}
+
+// ---- CEO: reporte de situacion en nombre de un residente
+async function mtVerEvidencia(ruta) {
+  const i = ruta.indexOf('/'), { data, error } = await sb.storage.from(ruta.slice(0, i)).createSignedUrl(ruta.slice(i + 1), 300);
+  if (error) { alert(error.message); return false; }
+  window.open(data.signedUrl, '_blank', 'noopener'); return false;
+}
+async function abrirReporteCEO() {
+  $('rpt-alert').style.display = 'none';
+  await ranCargarUnidades();
+  $('rpt-condo').value = ($('topbar-condo-name') && $('topbar-condo-name').textContent) || 'Residencial DH2';
+  $('rpt-unidad').innerHTML = '<option value="">— Seleccione —</option>' + ranUnidades.map(u => `<option value="${u.id}">${u.codigo}</option>`).join('');
+  $('rpt-titular').innerHTML = ''; ['rpt-nombre', 'rpt-telefono', 'rpt-correo', 'rpt-desc', 'rpt-bloque', 'rpt-categoria', 'rpt-area'].forEach(i => $(i).value = '');
+  document.querySelectorAll('input[name="rpt-pri"]').forEach(r => r.checked = false); $('rpt-fotos').value = '';
+  $('modal-rpt').classList.add('show');
+}
+function rptUnidad() {
+  const u = ranUnidades.find(x => String(x.id) === $('rpt-unidad').value), t = titularesDe(u);
+  $('rpt-titular').innerHTML = t.map((x, i) => `<option value="${i}">${x.tipo}: ${x.nombre}</option>`).join('') + '<option value="otro">Otra persona (escribir datos)</option>';
+  if (t.length > 1) $('rpt-titular').value = String(t.findIndex(x => x.tipo === 'Inquilino'));
+  rptTitular();
+}
+function rptTitular() {
+  const v = $('rpt-titular').value, u = ranUnidades.find(x => String(x.id) === $('rpt-unidad').value);
+  const t = v === 'otro' ? {} : (titularesDe(u)[Number(v)] || {});
+  $('rpt-nombre').value = t.nombre || ''; $('rpt-telefono').value = t.telefono || ''; $('rpt-correo').value = t.email || '';
+}
+function rptIcs(ref, pri, d) {
+  const plan = { 'Crítica': [60, ['-PT30M', 'PT0M']], 'Alta': ['D1@08:00', ['-P1D', '-PT1H']], 'Media': ['D3@09:00', ['-P1D', '-PT2H']], 'Baja': ['D7@09:00', ['-P1D']] }[pri];
+  const ahora = new Date(); let ini;
+  if (typeof plan[0] === 'number') ini = new Date(ahora.getTime() + plan[0] * 60000);
+  else { const [dd, hh] = plan[0].slice(1).split('@'); ini = new Date(ahora); ini.setDate(ini.getDate() + Number(dd)); const [h, m] = hh.split(':'); ini.setHours(Number(h), Number(m), 0, 0); }
+  const fin = new Date(ini.getTime() + 3600000);
+  const f = x => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const esc = t => String(t).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\;');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AXICORE//Reportes//ES', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:' + ref + '@axicore', 'DTSTAMP:' + f(ahora), 'DTSTART:' + f(ini), 'DTEND:' + f(fin),
+    'SUMMARY:' + esc(`[${pri}] ${ref} - ${d.categoria} - ${d.unidad}`),
+    'DESCRIPTION:' + esc(`${d.descripcion}\nÁrea: ${d.area}\nReporta: ${d.nombre} - ${d.telefono}`),
+    'LOCATION:' + esc(d.condominio),
+    ...plan[1].flatMap(t => ['BEGIN:VALARM', 'TRIGGER:' + t, 'ACTION:DISPLAY', 'DESCRIPTION:Recordatorio ' + ref, 'END:VALARM']),
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return { nombre: ref + '.ics', mime: 'text/calendar', base64: b64utf8(ics) };
+}
+async function rptPDF(r, d, fotos) {
+  await cargarLibsExport();
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  doc.setFillColor(...BRAND.navy); doc.rect(0, 0, W, 76, 'F');
+  doc.setFillColor(255, 255, 255); doc.roundedRect(36, 17, 170, 46, 4, 4, 'F');
+  try { doc.addImage(LOGO_AXICORE, 'PNG', 46, 26, 150, 28); } catch (_) {}
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Reporte de Situación', W - 36, 40, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...BRAND.gold); doc.text(r.referencia + '   ·   ' + new Date().toLocaleString('es-DO'), W - 36, 58, { align: 'right' });
+  doc.setFillColor(...BRAND.gold); doc.rect(0, 76, W, 3, 'F');
+  doc.autoTable({ startY: 98, margin: { left: 36, right: 36 }, theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 10, cellPadding: 5, lineColor: [228, 228, 228], lineWidth: 0.4 },
+    columnStyles: { 0: { fontStyle: 'bold', textColor: BRAND.navy, fillColor: BRAND.off, cellWidth: 170 } },
+    body: [['Referencia', r.referencia], ['Condominio / Residencial', d.condominio], ['Unidad que ocupa', d.unidad], ['Nombre y apellido', d.nombre],
+      ['Teléfono (WhatsApp)', d.telefono], ['Correo electrónico', d.correo || '—'], ['Categoría del problema', d.categoria], ['Área afectada', d.area],
+      ['Bloque', d.bloque || '—'], ['Prioridad', d.prioridad], ['Descripción del problema', d.descripcion], ['Registrado por', 'Administración AXICORE (en nombre del residente)']] });
+  let y = doc.lastAutoTable.finalY + 16;
+  for (const ft of fotos) {
+    try { const pr = doc.getImageProperties(ft); let w = W - 72, h = w * pr.height / pr.width; if (h > 300) { h = 300; w = h * pr.width / pr.height; }
+      if (y + h > H - 60) { doc.addPage(); y = 50; } doc.addImage(ft, (W - w) / 2, y, w, h); y += h + 12; } catch (_) {}
+  }
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...BRAND.gry);
+  doc.setDrawColor(...BRAND.gold); doc.line(36, H - 32, W - 36, H - 32); doc.text(EMPRESA_FOOTER, W / 2, H - 20, { align: 'center' });
+  return doc.output('datauristring').split(',')[1];
+}
+async function rptEnviar() {
+  const err = t => { $('rpt-alert').textContent = t; $('rpt-alert').style.display = 'block'; };
+  $('rpt-alert').style.display = 'none';
+  const pri = (document.querySelector('input[name="rpt-pri"]:checked') || {}).value;
+  const files = [...$('rpt-fotos').files];
+  if (files.length > 3) return err('Máximo 3 fotos.');
+  if (files.some(f => f.size > 10 * 1024 * 1024)) return err('Cada foto debe pesar máximo 10 MB.');
+  const u = ranUnidades.find(x => String(x.id) === $('rpt-unidad').value);
+  const d = { condominio: $('rpt-condo').value, unidad: u ? u.codigo : '', nombre: $('rpt-nombre').value.trim(), telefono: $('rpt-telefono').value.trim(),
+    correo: $('rpt-correo').value.trim(), categoria: $('rpt-categoria').value, descripcion: $('rpt-desc').value.trim(), bloque: $('rpt-bloque').value.trim(),
+    area: $('rpt-area').value, prioridad: pri };
+  if (!u) return err('Seleccione la unidad.');
+  if (!pri) return err('Seleccione la prioridad.');
+  const btn = $('rpt-enviar'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const rutas = [], fotosData = [];
+    for (const [i, f] of files.entries()) {
+      const ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const ruta = `${sesion.condominio_id}/${Date.now()}_${i + 1}.${ext}`;
+      const { error: eu } = await sb.storage.from('mant-evidencia').upload(ruta, f, { contentType: f.type });
+      if (eu) throw new Error('No se pudo subir la foto: ' + eu.message);
+      rutas.push('sb:mant-evidencia/' + ruta);
+      fotosData.push(await new Promise(ok => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.readAsDataURL(f); }));
+    }
+    const { data: r, error } = await sb.rpc('fn_mant_reporte_web', { p: { condominio_id: sesion.condominio_id, unidad_id: u.id, unidad: u.codigo,
+      nombre: d.nombre, telefono: d.telefono, correo: d.correo, categoria: d.categoria, descripcion: d.descripcion, bloque: d.bloque,
+      area: d.area, prioridad: d.prioridad, evidencia: rutas } });
+    if (error) throw error;
+    // PDF + correos: a la administracion con el evento de calendario; al residente solo el PDF
+    let avisoCorreo = '';
+    try {
+      const pdf = await rptPDF(r, d, fotosData), adjPdf = { nombre: r.referencia + '.pdf', mime: 'application/pdf', base64: pdf };
+      const texto = `Reporte de situación ${r.referencia}\n\nCondominio: ${d.condominio}\nUnidad: ${d.unidad}\nReporta: ${d.nombre} (${d.telefono})\nCategoría: ${d.categoria}\nÁrea: ${d.area}\nPrioridad: ${d.prioridad}\n\n${d.descripcion}`;
+      const env = async b => { const { data: x, error: e } = await sb.functions.invoke('axi-enviar-correo', { body: b }); if (e || (x && x.error)) throw new Error((x && x.error) || e.message); };
+      await env({ to: ['axispard@gmail.com'], subject: `[${d.prioridad}] Reporte ${r.referencia} - ${d.categoria} - ${d.unidad}`, texto,
+        adjuntos: [adjPdf, rptIcs(r.referencia, d.prioridad, d)] });
+      if (d.correo) await env({ to: [d.correo], subject: `Reporte de situación ${r.referencia} recibido`,
+        texto: `Saludos ${d.nombre},\n\nLa Administración registró su reporte de situación con el número ${r.referencia}. Se adjunta el detalle en PDF. Le daremos seguimiento.\n\nAXICORE Property Administration\nTel. (809) 282-7776`, adjuntos: [adjPdf] });
+    } catch (e) { avisoCorreo = '\n\nAtención: el reporte quedó registrado, pero no se pudo enviar el correo: ' + e.message; }
+    cerrarModal('modal-rpt');
+    alert(`✅ Reporte ${r.referencia} registrado.` + avisoCorreo);
+    cargarMantenimiento();
+  } catch (e) { err(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Enviar reporte'; }
 }
 
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
