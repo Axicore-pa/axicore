@@ -1182,6 +1182,25 @@
 </div>
 
 <!-- MODAL: Registrar Pago -->
+<!-- ===== CORREO: enviar ahora (Gmail) o borrador Outlook (.eml) ===== -->
+<div class="modal-overlay" id="modal-correo">
+  <div class="modal" style="max-width:640px">
+    <h3>Enviar correo</h3>
+    <div id="mc-alert" class="alert alert-error"></div>
+    <div class="form-group"><label>Para</label><input id="mc-to" placeholder="correo@ejemplo.com, otro@ejemplo.com"></div>
+    <div class="form-group"><label>CC</label><input id="mc-cc"></div>
+    <div class="form-group"><label>CCO (copia oculta)</label><input id="mc-bcc"></div>
+    <div class="form-group"><label>Asunto</label><input id="mc-subject"></div>
+    <div class="form-group"><label>Mensaje</label><textarea id="mc-texto" rows="9"></textarea></div>
+    <div class="form-group"><label>Adjuntos</label><div id="mc-adj" style="font-size:.85rem"></div></div>
+    <p style="font-size:.78rem;color:var(--ax-muted);margin:.2rem 0 0">“Enviar ahora” sale desde axispard@gmail.com y queda copia en Enviados. “Borrador Outlook” descarga el .eml para revisarlo y enviarlo desde Outlook, como antes.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="mcCerrar(null)">Cancelar</button>
+      <button type="button" class="btn btn-outline" id="mc-eml" onclick="mcEml()">Borrador Outlook (.eml)</button>
+      <button type="button" class="btn btn-success" id="mc-enviar" onclick="mcEnviar()">Enviar ahora</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-com">
   <div class="modal" style="max-width:760px;width:96%">
     <h3>Comunicación formal a residentes</h3>
@@ -2694,7 +2713,7 @@ async function emailReporte(tipo) {
   const m = repData[tipo]; if (!m || !m.rows.length) { alert('No hay datos para enviar.'); return; }
   try { await cargarLibsExport(); } catch (e) { alert('No se pudieron cargar las librerías de exportación. Revisa tu conexión e intenta de nuevo.'); return; }
   const nombre = `AXICORE_${tipo}_${hoyStr()}.pdf`;
-  descargarEml({
+  abrirCorreo({
     subject: 'AXICORE — ' + m.titulo,
     texto: 'Estimados,\n\nAdjunto el reporte "' + m.titulo + '"' + (m.subtitulo ? ' (' + m.subtitulo + ')' : '') + ' generado desde AXICORE.\n\nAtentamente,\nAPA | Axicore Property Administration\nTel. (809) 282-7776 | axispard@gmail.com',
     adjuntos: [{ nombre, mime: 'application/pdf', base64: construirPDF(m).output('datauristring').split(',')[1] }]
@@ -3847,6 +3866,45 @@ function descargarEml(datos, archivo) {
   setTimeout(() => alert('Se descargó el correo listo para enviar.\nÁbralo (doble clic): Outlook lo mostrará como borrador con el adjunto para revisar y enviar.'), 300);
 }
 
+
+// ==================== CORREO: ventana unica (Enviar ahora por Gmail o Borrador Outlook) ====================
+let mcDatos = null, mcArchivo = '', mcResolver = null;
+const mcLista = v => String(v || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+function abrirCorreo(datos, archivo) {
+  mcDatos = datos; mcArchivo = archivo;
+  $('mc-alert').style.display = 'none';
+  $('mc-to').value = (datos.to || []).join(', '); $('mc-cc').value = (datos.cc || []).join(', '); $('mc-bcc').value = (datos.bcc || []).join(', ');
+  $('mc-subject').value = datos.subject || ''; $('mc-texto').value = datos.texto || '';
+  $('mc-adj').innerHTML = (datos.adjuntos || []).map(a => '📎 ' + a.nombre + ' <span style="color:var(--ax-muted)">(' + Math.round(a.base64.length * 0.75 / 1024) + ' KB)</span>').join('<br>') || '<span style="color:var(--ax-muted)">Sin adjuntos</span>';
+  $('mc-enviar').disabled = false; $('mc-eml').disabled = false; $('mc-enviar').textContent = 'Enviar ahora';
+  $('modal-correo').classList.add('show');
+  return new Promise(ok => { mcResolver = ok; });
+}
+function mcLeer() {
+  return { ...mcDatos, to: mcLista($('mc-to').value), cc: mcLista($('mc-cc').value), bcc: mcLista($('mc-bcc').value),
+           subject: $('mc-subject').value.trim(), texto: $('mc-texto').value, html: null };
+}
+function mcCerrar(r) { cerrarModal('modal-correo'); const f = mcResolver; mcResolver = null; if (f) f(r); }
+function mcEml() { descargarEml(mcLeer(), mcArchivo); mcCerrar('eml'); }
+async function mcEnviar() {
+  const d = mcLeer(), err = t => { $('mc-alert').textContent = t; $('mc-alert').style.display = 'block'; };
+  if (!d.to.length && !d.cc.length && !d.bcc.length) return err('Indique al menos un destinatario.');
+  if (!d.subject) return err('Falta el asunto.');
+  const n = d.to.length + d.cc.length + d.bcc.length;
+  if (!confirm(`¿Enviar ahora este correo a ${n} destinatario(s)?`)) return;
+  $('mc-enviar').disabled = true; $('mc-eml').disabled = true; $('mc-enviar').textContent = 'Enviando...';
+  try {
+    const { data, error } = await sb.functions.invoke('axi-enviar-correo', { body: { to: d.to, cc: d.cc, bcc: d.bcc, subject: d.subject, texto: d.texto, adjuntos: d.adjuntos || [] } });
+    let msg = data && data.error;
+    if (error) { try { const j = await error.context.json(); msg = j.error || error.message; } catch (_) { msg = msg || error.message; } }
+    if (msg) throw new Error(msg);
+    mcCerrar('enviado');
+    alert('✅ Correo enviado' + (data.rechazados && data.rechazados.length ? '. Rechazados: ' + data.rechazados.join(', ') : '.'));
+  } catch (e) {
+    err(e.message); $('mc-enviar').disabled = false; $('mc-eml').disabled = false; $('mc-enviar').textContent = 'Enviar ahora';
+  }
+}
+
 // ==================== STAFF: CONTROL DE GLP (replica de frm_GLP de Access) ====================
 // Flujo igual a Access: elegir Unidad -> se cargan propietario, telefono, correo, medidor,
 // Record/Factura, lectura anterior, precio vigente, historial (Anexo B) y totales.
@@ -4155,7 +4213,7 @@ async function glpEnviarEmail() {
     const b64 = f.doc.output('datauristring').split(',')[1];
     const texto = `Saludos ${pro.nombre || ''},\n\nAdjunto la factura de consumo de GLP ${x.factura} de la unidad ${g.unidad}, período ${x.periodo}, por RD$ ${fmt(x.monto)}.\n` +
       `Saldo de GLP tras este consumo: ${Number(x.saldo) >= 0 ? 'saldo a favor' : 'balance pendiente'} de RD$ ${fmt(Math.abs(Number(x.saldo)))}.\n\nGracias,\nAXICORE Property Administration\nTel. (809) 282-7776`;
-    descargarEml({ to, subject: `Factura de Consumo GLP ${x.factura} - ${g.unidad}`, texto, adjuntos: [{ nombre: f.nombre, mime: 'application/pdf', base64: b64 }] },
+    abrirCorreo({ to, subject: `Factura de Consumo GLP ${x.factura} - ${g.unidad}`, texto, adjuntos: [{ nombre: f.nombre, mime: 'application/pdf', base64: b64 }] },
       `Correo_${x.factura}.eml`);
   } catch (e) { glpMsg('No se pudo preparar el correo: ' + e.message); }
 }
@@ -4326,13 +4384,13 @@ async function comCorreo() {
   const doc = comConstruirPDF(c);
   const nombre = `AXICORE_Comunicacion_${c.referencia}.pdf`;
   // Un solo destinatario va en "Para"; varios van en copia oculta (no se exponen los correos entre vecinos)
-  descargarEml({
+  const res = await abrirCorreo({
     to: emails.length === 1 ? emails : [], bcc: emails.length > 1 ? emails : [],
     subject: 'AXICORE — Comunicación de mantenimiento ' + c.referencia,
     texto: comTexto(c).replace(/\*/g, '') + '\n\nSe adjunta la comunicación formal en PDF.',
     adjuntos: [{ nombre, mime: 'application/pdf', base64: doc.output('datauristring').split(',')[1] }]
   }, `AXICORE_Correo_${c.referencia}.eml`);
-  comMarcar('Correo', emails.length);
+  if (res) comMarcar('Correo', emails.length);
 }
 
 // ==================== RESIDENTE: MIS FACTURAS ====================
