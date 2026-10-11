@@ -200,6 +200,27 @@
     display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:90;
   }
 
+
+  /* ===== Reservas del Area Social ===== */
+  .rv-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 1rem; }
+  .rv-aviso { background:#eaf4ff; border-left:5px solid #2474b5; padding:.6rem .8rem; font-size:.85rem; margin:.2rem 0 .8rem; }
+  .rv-franjas { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:.6rem; }
+  .rv-slot { border:2px solid #cfd8dc; border-radius:8px; padding:.7rem; text-align:center; background:#fff; cursor:pointer; transition:all .15s; }
+  .rv-slot .h { font-weight:700; font-size:.92rem; color:var(--ax-navy); }
+  .rv-slot .e { font-size:.75rem; margin-top:.2rem; color:var(--ax-success); font-weight:600; }
+  .rv-slot:hover:not(.off) { border-color:var(--ax-gold); }
+  .rv-slot.sel { border-color:var(--ax-navy); background:var(--ax-navy); }
+  .rv-slot.sel .h, .rv-slot.sel .e { color:#fff; }
+  .rv-slot.off { background:#eceff1; border-color:#e0e0e0; cursor:default; }
+  .rv-slot.off .h { color:#9aa5ab; } .rv-slot.off .e { color:#9aa5ab; }
+  .rv-slot .esp { margin-top:.4rem; font-size:.72rem; }
+  .rv-check, .form-group label.rv-check { display:flex; gap:.5rem; align-items:flex-start; font-weight:400; text-transform:none; letter-spacing:0; font-size:.88rem; margin:.3rem 0; color:var(--ax-text); }
+  .rv-check input { width:auto; margin-top:.15rem; }
+  .rv-reglas { margin-top:.6rem; border:1px solid #d4d4d4; border-radius:6px; background:#f7f7f7; }
+  .rv-reglas summary { cursor:pointer; padding:.7rem .9rem; font-weight:700; color:#17365D; }
+  .rv-reglas-body { padding:0 1rem 1rem; max-height:420px; overflow-y:auto; font-size:.85rem; line-height:1.5; }
+  .rv-reglas-body h3 { color:#17365D; font-size:.95rem; margin:.8rem 0 .4rem; }
+  @media (max-width:768px) { .rv-grid { grid-template-columns:1fr; } }
   /* ===== MENU COLAPSABLE (computadora) ===== */
   .hamburger { display:inline-flex; align-items:center; border-radius:6px; }
   .hamburger:hover { background:rgba(255,255,255,.12); }
@@ -511,6 +532,7 @@
           <a href="#" onclick="navegar('comprobantes-recibidos')" data-page="comprobantes-recibidos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Residentes <span id="nav-comp-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
           <a href="#" onclick="navegar('solicitudes-contacto')" data-page="solicitudes-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg> Solicitudes de Contacto</a>
           <a href="#" onclick="navegar('mantenimiento')" data-page="mantenimiento"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Mantenimiento <span id="nav-mant-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
+          <a href="#" onclick="navegar('reservas-admin')" data-page="reservas-admin" id="nav-reservas"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Reservas Área Social <span id="nav-res-badge" style="display:none;background:var(--ax-danger);color:#fff;border-radius:10px;padding:0 .4rem;font-size:.65rem;margin-left:.3rem"></span></a>
           <a href="#" onclick="navegar('glp')" data-page="glp"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Control de GLP</a>
         </div>
       </div>
@@ -550,6 +572,7 @@
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
       <a href="#" onclick="navegar('enviar-comprobante')" data-page="enviar-comprobante"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Enviar Comprobante</a>
+      <a href="#" onclick="navegar('reservar')" data-page="reservar"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Reservar Área Social</a>
       <a href="#" onclick="navegar('mi-gas')" data-page="mi-gas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg> Mi Gas (GLP)</a>
       <a href="#" onclick="navegar('mis-averias')" data-page="mis-averias"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Reportar Avería</a>
       <a href="#" onclick="navegar('mi-contacto')" data-page="mi-contacto"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Mi Contacto</a>
@@ -875,6 +898,121 @@
         </div>
       </div>
 
+
+      <!-- ===== RESERVAR AREA SOCIAL (Residente) ===== -->
+      <div id="page-reservar" class="page">
+        <h2 class="page-title">Reservación del Área Social</h2>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><span id="rv-titulo">Nueva reservación</span><button class="btn btn-sm btn-outline" id="rv-cancelar-cambio" style="display:none" onclick="rvSalirCambio()">Salir del cambio</button></div>
+          <div class="card-body">
+            <div id="rv-alert" class="alert alert-error"></div>
+            <div id="rv-banner" class="alert alert-info" style="display:none"></div>
+            <div class="rv-grid">
+              <div class="form-group" id="rv-unidad-grp"><label>Unidad / Apto</label><select id="rv-unidad"></select></div>
+              <div class="form-group"><label>Fecha *</label><input type="date" id="rv-fecha" onchange="rvCargarDisponibilidad()"></div>
+            </div>
+            <div class="rv-aviso">El Área Social está disponible únicamente de <strong>9:00 a. m. a 9:00 p. m.</strong> (pausa de 1:00 a 2:00 p. m.). Elija un horario disponible:</div>
+            <div id="rv-franjas" class="rv-franjas"><div class="empty" style="padding:1rem">Elija una fecha para ver la disponibilidad.</div></div>
+            <div id="rv-actualizado" style="font-size:.72rem;color:var(--ax-muted);margin:.3rem 0 .8rem"></div>
+            <div class="form-group"><label>Incluir en la reservación</label>
+              <label class="rv-check"><input type="checkbox" id="rv-picuzzi"> Uso del Picuzzi</label>
+              <label class="rv-check"><input type="checkbox" id="rv-bbq"> Uso del BBQ</label>
+            </div>
+            <div class="rv-grid">
+              <div class="form-group"><label>Responsable — Nombre y Apellido *</label><input id="rv-responsable"></div>
+              <div class="form-group"><label>Email *</label><input type="email" id="rv-email"></div>
+              <div class="form-group"><label>Teléfono *</label><input id="rv-telefono"></div>
+              <div class="form-group"><label>Nombre de quien reserva *</label><input id="rv-nombre"></div>
+              <div class="form-group"><label>Cantidad de personas *</label><input type="number" id="rv-cantidad" min="1" oninput="rvAvisoPersonas()"></div>
+            </div>
+            <div class="form-group"><label>Motivo *</label><textarea id="rv-motivo" rows="3"></textarea></div>
+            <div id="rv-mas5" class="alert" style="display:none;background:#fff3cd;border-left:5px solid #ffc107;color:#5c4a00">Más de 5 personas: la Administración informará a los demás residentes que el área estará reservada.</div>
+            <details class="rv-reglas"><summary>Reglas y recordatorio permanente (léalas antes de reservar)</summary><div class="rv-reglas-body"><h3>5. USO DEL PICUZZI / ÁREA SOCIAL</h3>
+
+      <p><strong>40.</strong>
+      El picuzzi es un área común destinada al esparcimiento y relajación de los residentes y deberá utilizarse responsablemente, respetando las instrucciones operativas y de seguridad establecidas por la Administración.</p>
+
+      <p><strong>41.</strong>
+      Los usuarios deberán respetar la temperatura y los ciclos de funcionamiento programados del equipo. Queda prohibido manipular controles, calentadores, bombas, sistemas eléctricos o equipos técnicos.</p>
+
+      <p><strong>42.</strong>
+      Se recomienda que las personas con condiciones médicas, embarazadas o bajo tratamiento consulten a un profesional de la salud antes de utilizar el picuzzi.</p>
+
+      <p><strong>43.</strong>
+      Los menores de edad solo podrán utilizar el picuzzi bajo supervisión directa de un adulto responsable y conforme a las restricciones de edad o seguridad que establezca la Administración.</p>
+
+      <p><strong>44.</strong>
+      El tiempo máximo de uso por persona o grupo será de treinta (30) minutos cuando existan otros usuarios esperando.</p>
+
+      <p><strong>45.</strong>
+      Quedan prohibidas las conductas indecorosas, peligrosas, irrespetuosas o que perturben la tranquilidad y el uso adecuado del área.</p>
+
+      <p><strong>46.</strong>
+      No se permite introducir envases de vidrio, objetos peligrosos, alimentos ni sustancias que puedan contaminar el agua o dañar las instalaciones.</p>
+
+      <p><strong>47.</strong>
+      El uso del picuzzi implica el deber de observar las normas de seguridad, higiene y convivencia. Los usuarios serán responsables por los daños ocasionados por uso negligente, indebido o contrario a estas normas.</p>
+
+      <p><strong>48.</strong>
+      El uso del área social con invitados que sobrepasen 5 personas por apartamento debe ser comunicado a la Administración para poder dar aviso a los demás residentes sobre área reservada.</p>
+
+      <h3>6. ÁREA DE BBQ</h3>
+
+      <p><strong>49.</strong>
+      El uso del área de BBQ estará sujeto a reserva previa y a las condiciones establecidas por la Administración.</p>
+
+      <p><strong>50.</strong>
+      La reserva deberá ser realizada por un propietario, inquilino o residente autorizado, quien será responsable del uso del área, de sus invitados y del cumplimiento de estas normas.</p>
+
+      <p><strong>51.</strong>
+      El horario ordinario de uso será de 9:00 a. m. a 9:00 p. m.</p>
+
+      <p><strong>52.</strong>
+      Los equipos de audio deberán mantenerse a un volumen moderado que no afecte el descanso ni la tranquilidad de los demás residentes.</p>
+
+      <p><strong>53.</strong>
+      Las actividades deberán mantenerse dentro de la capacidad y condiciones de ocupación establecidas por la Administración. La reserva del BBQ no otorga uso exclusivo de las demás áreas comunes.</p>
+
+      <p><strong>54.</strong>
+      Las bebidas deberán mantenerse en recipientes seguros y adecuados para áreas comunes.</p>
+
+      <p><strong>55.</strong>
+      Las parrillas y equipos deberán ser utilizados exclusivamente por adultos responsables, siguiendo las instrucciones de seguridad y operación.</p>
+
+      <p><strong>56.</strong>
+      El responsable de la reserva responderá por los daños causados a equipos, mobiliario, instalaciones o áreas comunes por él o sus invitados. El monto dependerá de lo cotizado para su reparación (dichas reparaciones deberán ser cotizadas y realizadas exclusivamente por contratantes de la administración).</p>
+
+      <p><strong>57.</strong>
+      Al finalizar la actividad, los usuarios deberán recoger sus pertenencias, depositar los residuos en los recipientes correspondientes y entregar el área ordenada.</p>
+
+      <p><strong>58.</strong>
+      El consumo de bebidas alcohólicas deberá mantenerse dentro de límites razonables y nunca podrá justificar conductas que afecten la seguridad, el orden o la convivencia.</p>
+
+      <hr>
+
+      <p><strong>
+        La falta de alguna norma o regla que conlleven al buen comportamiento y cuidado adecuado del área ya sea por higiene, seguridad u otra no descrita explícitamente en este recordatorio, NO EXIME al responsable y/o usuario de otras que por sentido común deban ser tomadas en cuenta.
+      </strong></p></div></details>
+            <label class="rv-check" style="margin:.8rem 0"><input type="checkbox" id="rv-acepta"> He leído las normas anteriores y acepto cumplirlas y hacerme responsable del uso adecuado del área y de mis invitados.</label>
+            <button class="btn btn-primary" id="rv-enviar" onclick="rvEnviar()">RESERVAR Y ENVIAR</button>
+            <p style="font-size:.78rem;color:var(--ax-muted);margin-top:.6rem">Su solicitud queda <strong>pendiente</strong> hasta que la Administración la apruebe. Recibirá la respuesta por correo.</p>
+          </div>
+        </div>
+        <div class="card"><div class="card-header">Mis reservaciones</div><div class="card-body" id="rv-mias"><div class="loading">Cargando...</div></div></div>
+      </div>
+
+      <!-- ===== RESERVAS AREA SOCIAL (Staff) ===== -->
+      <div id="page-reservas-admin" class="page">
+        <h2 class="page-title">Reservas del Área Social</h2>
+        <div class="cards-row" id="ra-stats"></div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin:0 0 1rem;flex-wrap:wrap">
+          <label style="margin:0">Mostrar</label>
+          <select id="ra-filtro" onchange="cargarReservasAdmin()" style="max-width:240px">
+            <option value="pendientes">Pendientes de aprobación</option><option value="proximas">Próximas (pendientes y aprobadas)</option><option value="todas">Todas</option>
+          </select>
+        </div>
+        <div class="card"><div class="card-body" id="ra-lista"><div class="loading">Cargando...</div></div></div>
+      </div>
       <!-- ===== MANTENIMIENTO (Staff) ===== -->
       <div id="page-mantenimiento" class="page">
         <h2 class="page-title">Mantenimiento y Reportes</h2>
@@ -2005,14 +2143,14 @@ function entrarAlApp() {
 
   // Routing por rol
   if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
-    $('sidebar-ceo').style.display = 'block';
+    $('sidebar-ceo').style.display = '';
     $('sidebar-residente').style.display = 'none';
     aplicarRestriccionesRol();
     navegar('dashboard');
     actualizarBadgeAprobaciones();
   } else {
     $('sidebar-ceo').style.display = 'none';
-    $('sidebar-residente').style.display = 'block';
+    $('sidebar-residente').style.display = '';
     aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
@@ -2030,7 +2168,7 @@ function aplicarRestriccionesResidente() {
 }
 
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
-const PAG_RESIDENTE = ['mi-inquilino','mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
+const PAG_RESIDENTE = ['reservar','mi-inquilino','mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_PROPIETARIO = ['mi-inquilino','mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones','comprobantes-recibidos'];
 function paginaPermitida(page) {
@@ -2068,6 +2206,11 @@ async function actualizarBadgeAprobaciones() {
       const {data: mt} = await sb.rpc('fn_mant_bandeja', {p_condominio_id: sesion.condominio_id, p_incluir_cerrados: false});
       const nr = (mt || []).filter(r => r.estado === 'Recibido').length, mb = $('nav-mant-badge');
       if (mb) { mb.textContent = nr || ''; mb.style.display = nr ? 'inline-block' : 'none'; }
+    } catch (_) {}
+    try {
+      const {data: rs} = await sb.rpc('fn_reserva_bandeja', {p_condominio_id: sesion.condominio_id, p_filtro: 'pendientes'});
+      const nres = (rs || []).length, rb = $('nav-res-badge');
+      if (rb) { rb.textContent = nres || ''; rb.style.display = nres ? 'inline-block' : 'none'; }
     } catch (_) {}
     if (sesion.rol === 'CEO') {
       const {count} = await sb.from('comprobantes_pago').select('id', {count: 'exact', head: true})
@@ -2123,14 +2266,14 @@ function cambiarCondominio(id, nombre, rol) {
 
   // Re-routing por si el rol cambió
   if (sesion.rol === 'CEO' || sesion.rol === 'Asistente') {
-    $('sidebar-ceo').style.display = 'block';
+    $('sidebar-ceo').style.display = '';
     $('sidebar-residente').style.display = 'none';
     aplicarRestriccionesRol();
     navegar('dashboard');
     actualizarBadgeAprobaciones();
   } else {
     $('sidebar-ceo').style.display = 'none';
-    $('sidebar-residente').style.display = 'block';
+    $('sidebar-residente').style.display = '';
     aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
@@ -2228,6 +2371,8 @@ function navegar(page) {
     'mi-gas': cargarMiGas,
     'mantenimiento': cargarMantenimiento,
     'glp': cargarGLP,
+    'reservar': cargarReservar,
+    'reservas-admin': cargarReservasAdmin,
     'mi-inquilino': cargarMiInquilino,
     'mis-documentos': cargarMisDocumentos,
     'docs-unidades': cargarDocsUnidades,
@@ -4256,6 +4401,165 @@ async function glpAnularTrans() {
   if (error) { glpMsg(error.message); return; }
   await glpCargarUnidad(glpU.unidad_id);
   alert('Transacción anulada.');
+}
+
+
+// ==================== RESERVAS DEL AREA SOCIAL ====================
+let rvSel = null, rvCambio = null, rvTimer = null, rvMisDatos = [];
+const rvEstadoBadge = e => ({ Pendiente: 'badge-warning', Aprobada: 'badge-success', Rechazada: 'badge-danger', Cancelada: 'badge-danger', Reemplazada: 'badge-info' }[e] || 'badge-info');
+const rvHora = t => { const [h, m] = String(t).split(':').map(Number); return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.'); };
+const rvTipo = r => 'Área Social' + (r.incluye_picuzzi ? ' + Picuzzi' : '') + (r.incluye_bbq ? ' + BBQ' : '');
+function rvMsg(t) { $('rv-alert').textContent = t || ''; $('rv-alert').style.display = t ? 'block' : 'none'; }
+
+async function cargarReservar() {
+  rvMsg('');
+  const hoy = hoyStr();
+  $('rv-fecha').min = hoy;
+  const { data } = await sb.rpc('fn_reserva_mis_datos');
+  rvMisDatos = data || [];
+  if (!rvMisDatos.length) { rvMsg('Su cuenta no tiene una unidad asignada. Contacte a la Administración.'); }
+  $('rv-unidad').innerHTML = rvMisDatos.map(u => `<option value="${u.unidad_id}">${u.unidad} (${u.rol})</option>`).join('');
+  $('rv-unidad-grp').style.display = rvMisDatos.length > 1 ? 'block' : 'none';
+  const d = rvMisDatos[0] || {};
+  if (!$('rv-responsable').value) $('rv-responsable').value = d.nombre || '';
+  if (!$('rv-email').value) $('rv-email').value = d.email || '';
+  if (!$('rv-telefono').value) $('rv-telefono').value = d.telefono || '';
+  if (!$('rv-nombre').value) $('rv-nombre').value = d.nombre || '';
+  rvCargarMias();
+  if ($('rv-fecha').value) rvCargarDisponibilidad();
+  clearInterval(rvTimer);
+  rvTimer = setInterval(() => {
+    if (!$('page-reservar').classList.contains('active')) { clearInterval(rvTimer); return; }
+    if ($('rv-fecha').value) rvCargarDisponibilidad(true);
+  }, 30000);
+}
+
+async function rvCargarDisponibilidad(silencioso) {
+  const fecha = $('rv-fecha').value; if (!fecha) return;
+  if (!silencioso) $('rv-franjas').innerHTML = '<div class="loading" style="padding:1rem">Consultando disponibilidad...</div>';
+  const { data, error } = await sb.rpc('fn_reserva_disponibilidad', { p_fecha: fecha });
+  if (error) { $('rv-franjas').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  // En modo cambio, el horario actual de la reserva no cuenta como ocupado para mostrarlo
+  if (rvSel && !(data || []).some(f => f.franja === rvSel && f.estado === 'Disponible')) rvSel = null;
+  $('rv-franjas').innerHTML = (data || []).map(f => {
+    const off = f.estado !== 'Disponible';
+    const esp = f.estado === 'Reservado'
+      ? `<div class="esp"><label class="rv-check" style="justify-content:center;font-size:.72rem" onclick="event.stopPropagation()"><input type="checkbox" ${f.en_espera ? 'checked' : ''} onchange="rvEspera('${f.franja}', this.checked)"> Avísame si se libera</label></div>` : '';
+    return `<div class="rv-slot ${off ? 'off' : ''} ${rvSel === f.franja ? 'sel' : ''}" ${off ? '' : `onclick="rvElegir('${f.franja}')"`}>
+      <div class="h">${f.etiqueta}</div><div class="e">${f.estado}</div>${esp}</div>`;
+  }).join('');
+  $('rv-actualizado').textContent = 'Disponibilidad actualizada ' + new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' · se actualiza sola cada 30 segundos';
+}
+function rvElegir(fr) { rvSel = fr; rvCargarDisponibilidad(true); }
+async function rvEspera(fr, on) {
+  const { error } = await sb.rpc('fn_reserva_espera', { p_fecha: $('rv-fecha').value, p_franja: fr, p_activar: on });
+  if (error) { rvMsg(error.message); return; }
+  if (on) alert('Listo. Le avisaremos por correo si ese horario se libera.');
+}
+function rvAvisoPersonas() { $('rv-mas5').style.display = Number($('rv-cantidad').value) > 5 ? 'block' : 'none'; }
+
+async function rvEnviar() {
+  rvMsg('');
+  if (!$('rv-fecha').value) return rvMsg('Seleccione la fecha.');
+  if (!rvSel) return rvMsg('Seleccione un horario disponible.');
+  if (!$('rv-acepta').checked) return rvMsg('Debe confirmar que ha leído y acepta las reglas de uso.');
+  const p = {
+    unidad_id: Number($('rv-unidad').value), fecha: $('rv-fecha').value, franja: rvSel,
+    responsable: $('rv-responsable').value, email: $('rv-email').value, telefono: $('rv-telefono').value,
+    nombre_quien_reserva: $('rv-nombre').value, motivo: $('rv-motivo').value, cantidad_personas: Number($('rv-cantidad').value || 0),
+    incluye_picuzzi: $('rv-picuzzi').checked, incluye_bbq: $('rv-bbq').checked, acepta_reglas: true,
+    reserva_origen_id: rvCambio ? rvCambio.id : null,
+  };
+  const btn = $('rv-enviar'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const { data, error } = await sb.rpc('fn_reserva_crear', { p });
+    if (error) throw error;
+    alert(`✅ Solicitud ${data.codigo} registrada.\nQueda pendiente de aprobación; recibirá la respuesta por correo.`);
+    rvSel = null; rvSalirCambio(true);
+    $('rv-motivo').value = ''; $('rv-cantidad').value = ''; $('rv-acepta').checked = false; $('rv-picuzzi').checked = false; $('rv-bbq').checked = false; rvAvisoPersonas();
+    rvCargarDisponibilidad(); rvCargarMias();
+  } catch (e) { rvMsg(e.message); rvCargarDisponibilidad(true); }
+  finally { btn.disabled = false; btn.textContent = rvCambio ? 'SOLICITAR CAMBIO' : 'RESERVAR Y ENVIAR'; }
+}
+
+async function rvCargarMias() {
+  const { data, error } = await sb.rpc('fn_reserva_mias');
+  if (error) { $('rv-mias').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  const rows = data || [];
+  const activa = r => ['Pendiente', 'Aprobada'].includes(r.estado) && new Date(r.fecha + 'T' + r.hora_inicio + '-04:00') > new Date();
+  const conCambio = new Set(rows.filter(r => r.reserva_origen_id && r.estado === 'Pendiente').map(r => r.reserva_origen_id));
+  $('rv-mias').innerHTML = !rows.length ? '<div class="empty">Aún no tiene reservaciones</div>' : `<table>
+    <thead><tr><th>Reserva</th><th>Fecha</th><th>Horario</th><th>Área</th><th class="text-center">Estado</th><th>Detalle</th><th></th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo}${r.reserva_origen_id ? '<div style="font-size:.7rem;color:var(--ax-muted)">cambio</div>' : ''}</td>
+      <td>${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-DO')}</td>
+      <td>${rvHora(r.hora_inicio)} - ${rvHora(r.hora_fin)}</td><td>${rvTipo(r)}</td>
+      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${r.estado}</span></td>
+      <td style="font-size:.78rem;max-width:220px;white-space:normal">${r.motivo_rechazo ? 'Razón: ' + r.motivo_rechazo : (r.motivo_cancelacion || '')}</td>
+      <td style="white-space:nowrap">${activa(r) ? `${!r.reserva_origen_id || r.estado === 'Aprobada' ? (conCambio.has(r.id) ? '<span style="font-size:.72rem;color:var(--ax-muted)">Cambio en revisión</span> ' : `<button class="btn btn-sm btn-outline" onclick='rvIniciarCambio(${JSON.stringify({ id: r.id, codigo: r.codigo })})'>Cambiar fecha/horario</button> `) : ''}<button class="btn btn-sm btn-danger" onclick="rvCancelar(${r.id}, '${r.codigo}')">Cancelar</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function rvIniciarCambio(r) {
+  rvCambio = r; rvSel = null;
+  $('rv-titulo').textContent = 'Cambiar fecha u horario de ' + r.codigo;
+  $('rv-banner').innerHTML = `Está solicitando un <strong>cambio</strong> de la reserva <strong>${r.codigo}</strong>. Elija la nueva fecha y horario. Su reserva actual se mantiene hasta que la Administración apruebe el cambio.`;
+  $('rv-banner').style.display = 'block'; $('rv-cancelar-cambio').style.display = 'inline-block';
+  $('rv-enviar').textContent = 'SOLICITAR CAMBIO';
+  window.scrollTo(0, 0);
+}
+function rvSalirCambio(silencioso) {
+  rvCambio = null; $('rv-titulo').textContent = 'Nueva reservación'; $('rv-banner').style.display = 'none';
+  $('rv-cancelar-cambio').style.display = 'none'; $('rv-enviar').textContent = 'RESERVAR Y ENVIAR';
+}
+async function rvCancelar(id, codigo) {
+  if (!confirm(`¿Cancelar la reserva ${codigo}?\nEl horario quedará libre para otros residentes.`)) return;
+  const { error } = await sb.rpc('fn_reserva_cancelar', { p_id: id, p_motivo: null });
+  if (error) { alert(error.message); return; }
+  alert('Reserva cancelada. La Administración fue notificada.');
+  rvCargarMias(); if ($('rv-fecha').value) rvCargarDisponibilidad(true);
+}
+
+// ---- Administracion
+async function cargarReservasAdmin() {
+  const cid = sesion.condominio_id;
+  const [lista, pend] = await Promise.all([
+    sb.rpc('fn_reserva_bandeja', { p_condominio_id: cid, p_filtro: $('ra-filtro').value }),
+    sb.rpc('fn_reserva_bandeja', { p_condominio_id: cid, p_filtro: 'proximas' }),
+  ]);
+  if (lista.error) { $('ra-lista').innerHTML = `<div class="empty">${lista.error.message}</div>`; return; }
+  const prox = pend.data || [];
+  const nP = prox.filter(r => r.estado === 'Pendiente').length, nA = prox.filter(r => r.estado === 'Aprobada').length;
+  $('ra-stats').innerHTML = `<div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Pendientes</div><div class="value">${nP}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Próximas aprobadas</div><div class="value">${nA}</div></div>`;
+  const b = $('nav-res-badge'); if (b) { b.textContent = nP; b.style.display = nP ? 'inline-block' : 'none'; }
+  const rows = lista.data || [];
+  $('ra-lista').innerHTML = !rows.length ? '<div class="empty">Sin reservas en esta vista</div>' : `<table>
+    <thead><tr><th>Reserva</th><th>Fecha</th><th>Horario</th><th>Unidad</th><th>Responsable</th><th>Área</th><th class="text-center">Personas</th><th class="text-center">Estado</th><th>Acciones</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td style="font-family:monospace;font-size:.8rem">${r.codigo}${r.cambio_de ? `<div style="font-size:.7rem;color:var(--ax-gold)">Cambio de ${r.cambio_de}<br>(antes ${new Date(r.original_fecha + 'T12:00:00').toLocaleDateString('es-DO')} ${r.original_horario})</div>` : ''}</td>
+      <td>${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-DO')}</td><td>${r.horario}</td><td>${r.unidad_texto || ''}</td>
+      <td>${r.responsable}<div style="font-size:.72rem;color:var(--ax-muted)">${r.telefono} · ${r.email}</div></td>
+      <td>${r.tipo}<div style="font-size:.72rem;color:var(--ax-muted);white-space:normal;max-width:200px">${r.motivo}</div></td>
+      <td class="text-center">${r.cantidad_personas}${r.cantidad_personas > 5 ? ' ⚠️' : ''}</td>
+      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${r.estado}</span>${r.motivo_rechazo ? `<div style="font-size:.7rem;white-space:normal">${r.motivo_rechazo}</div>` : ''}</td>
+      <td style="white-space:nowrap">${r.estado === 'Pendiente' ? `<button class="btn btn-sm btn-success" onclick="raDecidir(${r.id}, true, '${r.codigo}')">Aprobar</button> <button class="btn btn-sm btn-danger" onclick="raDecidir(${r.id}, false, '${r.codigo}')">Rechazar</button>` : ''}
+        ${['Pendiente', 'Aprobada'].includes(r.estado) ? ` <button class="btn btn-sm btn-outline" onclick="raCancelar(${r.id}, '${r.codigo}')">Cancelar</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function raDecidir(id, aprobar, codigo) {
+  let razon = null;
+  if (aprobar) { if (!confirm(`¿Aprobar la reserva ${codigo}?\nEl residente recibirá la confirmación por correo con el calendario.`)) return; }
+  else { razon = prompt(`Rechazar ${codigo}\n\nEscriba la razón del rechazo (se envía al residente):`); if (!razon || !razon.trim()) return; }
+  const { error } = await sb.rpc('fn_reserva_decidir', { p_id: id, p_aprobar: aprobar, p_razon: razon });
+  if (error) { alert(error.message); return; }
+  alert(aprobar ? 'Reserva aprobada. Se envió la confirmación al residente.' : 'Reserva rechazada. Se envió la razón al residente.');
+  cargarReservasAdmin();
+}
+async function raCancelar(id, codigo) {
+  const m = prompt(`Cancelar ${codigo}\n\nMotivo de la cancelación (se envía al residente):`); if (!m || !m.trim()) return;
+  const { error } = await sb.rpc('fn_reserva_cancelar', { p_id: id, p_motivo: m.trim() });
+  if (error) { alert(error.message); return; }
+  alert('Reserva cancelada. Se notificó al residente.'); cargarReservasAdmin();
 }
 
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
