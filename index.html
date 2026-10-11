@@ -3867,7 +3867,7 @@ async function cargarGLP() {
   if (error) { glpMsg(error.message); return; }
   glpUnidades = data || [];
   const sel = $('gx-unidad'), actual = glpU ? String(glpU.unidad_id) : sel.value;
-  sel.innerHTML = '<option value=""></option>' + glpUnidades.map(r => `<option value="${r.unidad_id}">${r.unidad}</option>`).join('');
+  sel.innerHTML = '<option value=""></option>' + glpUnidades.map(r => `<option value="${r.unidad_id}">${r.unidad} | ${r.inquilino || r.propietario || ''} | ${r.inquilino ? 'Inquilino' : 'Propietario'}</option>`).join('');
   sel.value = actual || '';
   $('gd-btn').disabled = !glpEsCEO(); $('gd-btn').title = glpEsCEO() ? '' : 'Solo el CEO registra depósitos';
   $('gx-anular').disabled = !glpEsCEO(); $('gx-anular').title = glpEsCEO() ? '' : 'Solo el CEO anula transacciones';
