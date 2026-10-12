@@ -458,6 +458,21 @@
       <div class="form-group"><label>Repetir contraseña</label><input type="password" id="clave-2" required minlength="8" autocomplete="new-password"></div>
       <button type="submit" class="btn btn-primary" id="clave-btn">Guardar contraseña y entrar</button>
     </form>
+    <form id="mfa-form" style="display:none" onsubmit="return mfaVerificar(event)">
+      <div id="mfa-alta" style="display:none;text-align:center">
+        <p style="font-size:.95rem;margin:0 0 .4rem;font-weight:600;color:var(--ax-navy)">Active la verificación en 2 pasos</p>
+        <p style="font-size:.82rem;margin:0 0 .6rem">Escanee este código con <strong>Google Authenticator</strong>. Escanéelo también en su dispositivo de respaldo (tablet o segundo teléfono).</p>
+        <img id="mfa-qr" alt="Código QR de AXICORE" style="width:180px;height:180px;background:#fff;padding:6px;border:1px solid var(--ax-border);border-radius:6px">
+        <p style="font-size:.72rem;color:var(--ax-muted);margin:.4rem 0 .8rem">¿No puede escanear? Escriba esta clave en la app:<br><code id="mfa-secreto" style="word-break:break-all;font-size:.75rem"></code></p>
+      </div>
+      <div id="mfa-paso" style="display:none;text-align:center">
+        <p style="font-size:.95rem;margin:0 0 .4rem;font-weight:600;color:var(--ax-navy)">Verificación en 2 pasos</p>
+        <p style="font-size:.82rem;margin:0 0 .8rem">Abra Google Authenticator y escriba el código de AXICORE.</p>
+      </div>
+      <div class="form-group"><label>Código de 6 dígitos</label><input id="mfa-codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required style="text-align:center;letter-spacing:.3em;font-size:1.1rem"></div>
+      <button type="submit" class="btn btn-primary" id="mfa-btn">Verificar</button>
+      <p style="text-align:center;margin-top:.8rem;font-size:.8rem"><a href="#" onclick="mfaCancelar();return false">Cerrar sesión</a></p>
+    </form>
   </div>
 </div>
 
@@ -2134,6 +2149,15 @@ async function iniciarApp(opc = {}) {
     return;
   }
   if (sesion) return;
+  // Verificacion en 2 pasos: obligatoria para CEO y Asistente
+  if (data.requiere_2fa || ['CEO', 'Asistente'].includes(data.rol)) {
+    try { if (await mfaRequerido()) return; }
+    catch (e) { showAlert('Verificación en 2 pasos: ' + e.message); return; }
+    if (data.requiere_2fa) {   // el servidor aun no entrego la sesion completa: pedirla de nuevo ya en aal2
+      ({data, error} = await sb.rpc('axi_sesion_iniciar'));
+      if (error || !data || data.requiere_2fa) { showAlert('Error de acceso: ' + (error ? error.message : 'verificación incompleta')); return; }
+    }
+  }
   sesion = data;
 
   // Obtener condominios del usuario
@@ -2152,6 +2176,64 @@ async function iniciarApp(opc = {}) {
   })();
   iniciando = intento;
   try { await intento; } finally { if (iniciando === intento) iniciando = null; }
+}
+
+// ==================== VERIFICACION EN 2 PASOS (TOTP) ====================
+let mfaFactorId = null;
+// Devuelve true si se mostro la pantalla de 2FA (el arranque se detiene hasta verificar)
+async function mfaRequerido() {
+  const {data: aal, error} = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error) throw error;
+  if (aal.currentLevel === 'aal2') return false;
+  const {data: f, error: e2} = await sb.auth.mfa.listFactors();
+  if (e2) throw e2;
+  const verificados = (f.totp || []).filter(x => x.status === 'verified');
+  if (verificados.length) { mfaMostrar(false, verificados[0].id); return true; }
+  for (const x of (f.all || []).filter(x => x.status !== 'verified')) await sb.auth.mfa.unenroll({factorId: x.id});  // intentos sin terminar
+  const {data: en, error: e3} = await sb.auth.mfa.enroll({factorType: 'totp', issuer: 'AXICORE', friendlyName: 'AXICORE ' + new Date().toISOString().slice(0, 16)});
+  if (e3) throw e3;
+  // Supabase entrega el QR como SVG ('data:image/svg+xml;utf-8,<svg...>'); se normaliza para que todo navegador lo muestre
+  const qr = en.totp.qr_code || '', svg = qr.includes('<svg') ? qr.slice(qr.indexOf('<svg')) : qr.slice(qr.indexOf(',') + 1);
+  $('mfa-qr').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.trim().startsWith('<') ? svg : decodeURIComponent(svg));
+  $('mfa-secreto').textContent = en.totp.secret;
+  mfaMostrar(true, en.id);
+  return true;
+}
+function mfaMostrar(alta, factorId) {
+  mfaFactorId = factorId;
+  $('login-screen').style.display = 'flex';
+  $('app-shell').style.display = 'none';
+  $('login-form').style.display = 'none';
+  $('clave-form').style.display = 'none';
+  $('mfa-alta').style.display = alta ? 'block' : 'none';
+  $('mfa-paso').style.display = alta ? 'none' : 'block';
+  $('mfa-btn').textContent = alta ? 'Activar y entrar' : 'Verificar';
+  $('mfa-codigo').value = '';
+  $('mfa-form').style.display = 'block';
+  setTimeout(() => $('mfa-codigo').focus(), 50);
+}
+async function mfaVerificar(e) {
+  e.preventDefault();
+  const code = $('mfa-codigo').value.replace(/\D/g, ''), btn = $('mfa-btn');
+  $('login-alert').style.display = 'none';
+  if (code.length !== 6) { showAlert('Escriba los 6 dígitos del código.'); return false; }
+  btn.disabled = true; const txt = btn.textContent; btn.textContent = 'Verificando...';
+  try {
+    const {error} = await sb.auth.mfa.challengeAndVerify({factorId: mfaFactorId, code});
+    if (error) throw error;
+    $('mfa-form').style.display = 'none';
+    $('login-form').style.display = 'block';
+    await iniciarApp({forzar: true});
+  } catch (err) {
+    showAlert(/invalid|expired|code/i.test(err.message) ? 'Código incorrecto o vencido. Escriba el código que muestra la app ahora.' : err.message);
+  } finally { btn.disabled = false; btn.textContent = txt; }
+  return false;
+}
+async function mfaCancelar() {
+  try { await sb.auth.signOut(); } catch (_) {}
+  $('mfa-form').style.display = 'none';
+  $('login-form').style.display = 'block';
+  $('login-pass').value = '';
 }
 
 function mostrarSelectorCondominio() {
