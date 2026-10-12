@@ -1,6 +1,6 @@
 // AXICORE | axi-enviar-correo
 // Envia correos desde la web por Gmail (axispard@gmail.com) con contrasena de aplicacion.
-// Solo CEO o Asistente con sesion iniciada. La copia queda en "Enviados" de Gmail.
+// Solo CEO o Asistente con sesion iniciada y verificada en 2 pasos (aal2). La copia queda en "Enviados" de Gmail.
 // Secretos requeridos (Supabase > Edge Functions > Secrets): GMAIL_USER, GMAIL_APP_PASSWORD
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import nodemailer from "npm:nodemailer@6.9.14";
@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
     if (ep || !perfil) return json({ error: "Sesion no valida" }, 401);
     const roles = (perfil.accesos || []).map((a: { rol: string }) => a.rol);
     if (!roles.some((r: string) => r === "CEO" || r === "Asistente")) return json({ error: "Su perfil no envia correos" }, 403);
+    if (perfil.aal2 !== true) return json({ error: "Verificacion en 2 pasos requerida: inicie sesion de nuevo con su codigo" }, 403);
 
     // 2) Datos del correo
     const p = await req.json();
