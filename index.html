@@ -176,6 +176,19 @@
     align-items:center; justify-content:center;
   }
   .modal-overlay.show { display:flex; }
+  /* Reporte GLP: tanque a la izquierda y tarjetas apiladas a la derecha (celular: tarjetas arriba, tanque debajo) */
+  .glp-top { display:grid; grid-template-columns:minmax(0,520px) minmax(0,1fr); grid-template-areas:"tanque cards"; gap:1rem; margin-bottom:1rem; align-items:stretch; }
+  .glp-top > #rglp-tanque { grid-area:tanque; }
+  .glp-top > .glp-top-cards { grid-area:cards; display:grid; grid-template-columns:1fr; grid-auto-rows:1fr; gap:1rem; margin:0; }
+  .glp-top > .glp-top-cards .stat-card { margin:0; display:flex; flex-direction:column; justify-content:center; }
+  .glp-top > #rglp-tanque .card { max-width:none; height:100%; margin:0; }
+  .glp-top:has(#rglp-tanque:empty) { grid-template-columns:1fr; grid-template-areas:"cards"; }
+  .glp-top:has(#rglp-tanque:empty) > .glp-top-cards { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); grid-auto-rows:auto; }
+  @media (max-width:760px) {
+    .glp-top { grid-template-columns:1fr; grid-template-areas:"cards" "tanque"; }
+    .glp-top > .glp-top-cards { grid-template-columns:1fr 1fr; grid-auto-rows:auto; gap:.6rem; }
+    .glp-top > .glp-top-cards .stat-card:last-child:nth-child(odd) { grid-column:1 / -1; }
+  }
   .modal {
     background:var(--ax-card); border-radius:var(--ax-radius); padding:1.8rem;
     width:95%; max-width:520px; max-height:90vh; overflow-y:auto;
@@ -723,8 +736,10 @@
       <div id="page-rep-glp" class="page">
         <h2 class="page-title">GLP — Consumo y Facturación</h2>
         <div class="rep-filtros" id="rglp-filtros"></div>
-        <div class="cards-row" id="rglp-stats"></div>
-        <div id="rglp-tanque" style="margin-bottom:1rem"></div>
+        <div class="glp-top">
+          <div class="cards-row glp-top-cards" id="rglp-stats"></div>
+          <div id="rglp-tanque"></div>
+        </div>
         <div class="card"><div class="card-body" id="rglp-lista"><div class="loading">Cargando...</div></div></div>
       </div>
 
@@ -3238,9 +3253,11 @@ async function cargarRepGlp() {
   const { data, error } = await sb.rpc('fn_reporte_glp', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
   if (error) { $('rglp-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
   const rows = data || [];
-  const tc = rows.reduce((a, r) => a + Number(r.consumo || 0), 0);
-  const tm = rows.reduce((a, r) => a + Number(r.monto_consumo || 0), 0);
-  $('rglp-stats').innerHTML = repCard('Lecturas', rows.length, 'blue') + repCard('Consumo total', fmt(tc), 'blue') + repCard('Monto consumo', fmtMoney(tm), 'green');
+  // Tarjetas: solo lecturas de consumo vigentes (sin ANULADAS ni depositos con monto negativo), igual que Mi Gas y el tanque
+  const vig = rows.filter(r => String(r.estado || 'ACTIVO').toUpperCase() !== 'ANULADO' && Number(r.monto_consumo || 0) >= 0);
+  const tc = vig.reduce((a, r) => a + Number(r.consumo || 0), 0);
+  const tm = vig.reduce((a, r) => a + Number(r.monto_consumo || 0), 0);
+  $('rglp-stats').innerHTML = repCard('Lecturas', vig.length, 'blue') + repCard('Consumo total', fmt(tc), 'blue') + repCard('Monto consumo', fmtMoney(tm), 'green');
   if (!rows.length) { $('rglp-lista').innerHTML = '<div class="empty">Sin lecturas en el período</div>'; repData.glp = { headers: [], rows: [] }; return; }
   $('rglp-lista').innerHTML = `<table>
     <thead><tr><th>Período</th><th>Unidad</th><th>Medidor</th><th>Fecha</th><th class="text-right">Lect. ant.</th><th class="text-right">Lect. act.</th><th class="text-right">Consumo</th><th class="text-right">Precio</th><th class="text-right">Monto</th><th>Estado</th></tr></thead>
@@ -3251,8 +3268,8 @@ async function cargarRepGlp() {
       <td class="text-right money">${fmt(r.monto_consumo)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
   repData.glp = {
     titulo: 'Reporte de GLP — Consumo', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
-    kpis: [{ label: 'Lecturas', value: rows.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
-    resumen: [{ label: 'Lecturas', value: rows.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
+    kpis: [{ label: 'Lecturas', value: vig.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
+    resumen: [{ label: 'Lecturas', value: vig.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
     moneyCols: [8],
     headers: ['Período', 'Unidad', 'Medidor', 'Fecha', 'Lect. ant.', 'Lect. act.', 'Consumo', 'Precio', 'Monto', 'Estado'],
     rows: rows.map(r => [r.periodo, r.unidad_codigo, r.medidor, r.fecha_lectura, r.lectura_anterior, r.lectura_actual, r.consumo, r.precio_unitario, r.monto_consumo, r.estado]) };
