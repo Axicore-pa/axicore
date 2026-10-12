@@ -1391,6 +1391,22 @@
   </div>
 </div>
 <!-- ===== CORREO: enviar ahora (Gmail) o borrador Outlook (.eml) ===== -->
+<div class="modal-overlay" id="modal-llenado">
+  <div class="modal" style="max-width:440px">
+    <h3>Registrar llenado del tanque</h3>
+    <div id="ll-alert" class="alert alert-error"></div>
+    <div class="form-group"><label>Fecha del llenado</label><input type="date" id="ll-fecha"></div>
+    <div class="form-group"><label>Galones cargados</label><input type="number" id="ll-galones" step="0.01" min="0.01" inputmode="decimal"></div>
+    <div class="form-group"><label>Capacidad del tanque (gls)</label><input type="number" id="ll-capacidad" step="0.01" min="0.01" inputmode="decimal"></div>
+    <div class="form-group"><label>Observaciones (opcional)</label><input id="ll-obs" placeholder="No. de conduce del suplidor"></div>
+    <p style="font-size:.78rem;color:var(--ax-muted);margin:.2rem 0 0">El nivel queda en: lo que había en el tanque a esa fecha + los galones cargados (sin pasar la capacidad).</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="$('modal-llenado').classList.remove('show')">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="ll-btn" onclick="llenadoGuardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-correo">
   <div class="modal" style="max-width:640px">
     <h3>Enviar correo</h3>
@@ -3161,7 +3177,8 @@ function tanqueGlpHTML(t) {
   const H = 92, yNivel = 122 - H * lleno / 100;
   // verde: texto blanco (queda dentro del liquido); naranja/rojo: texto oscuro con halo blanco
   const tx = pct >= 50 ? 'fill="#fff"' : 'fill="#1B2A4A" stroke="#fff" stroke-width="3" paint-order="stroke"';
-  return `<div class="card" style="max-width:520px"><div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-gold)" stroke-width="2" stroke-linecap="round"><path d="M12 2c.5 2 2 4 2 7a4 4 0 01-8 0c0-3 1.5-5 2-7"/><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg>&nbsp; Tanque de GLP</div>
+  return `<div class="card" style="max-width:520px"><div class="card-header" style="display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-start;gap:.4rem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-gold)" stroke-width="2" stroke-linecap="round"><path d="M12 2c.5 2 2 4 2 7a4 4 0 01-8 0c0-3 1.5-5 2-7"/><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg>&nbsp; Tanque de GLP
+      ${t.puede_registrar ? `<button type="button" class="btn btn-outline btn-sm" style="margin-left:auto" onclick="llenadoAbrir(${t.capacidad})">+ Registrar llenado</button>` : ''}</div>
     <div class="card-body">
       <svg viewBox="0 0 300 150" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto" role="img" aria-label="Tanque al ${fmt(pct).replace(/,00$/, '')} por ciento">
         <defs><clipPath id="tq-clip"><rect x="20" y="30" width="260" height="92" rx="46"/></clipPath></defs>
@@ -3184,7 +3201,31 @@ function tanqueGlpHTML(t) {
       </div>
     </div></div>`;
 }
+let llenadoDestino = null;
+function llenadoAbrir(capacidad) {
+  $('ll-alert').style.display = 'none';
+  $('ll-fecha').value = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Santo_Domingo'});
+  $('ll-galones').value = ''; $('ll-capacidad').value = capacidad || ''; $('ll-obs').value = '';
+  $('modal-llenado').classList.add('show');
+}
+async function llenadoGuardar() {
+  const al = $('ll-alert'), btn = $('ll-btn'), err = m => { al.className = 'alert alert-error'; al.textContent = m; al.style.display = 'block'; };
+  const gal = Number($('ll-galones').value), cap = Number($('ll-capacidad').value);
+  if (!$('ll-fecha').value) return err('Indique la fecha del llenado.');
+  if (!(gal > 0)) return err('Indique los galones cargados.');
+  if (!(cap > 0)) return err('Indique la capacidad del tanque.');
+  btn.disabled = true;
+  const {data, error} = await sb.rpc('fn_glp_llenado_registrar', {p_condominio_id: sesion.condominio_id, p_fecha: $('ll-fecha').value,
+    p_galones: gal, p_capacidad: cap, p_observaciones: $('ll-obs').value});
+  btn.disabled = false;
+  if (error) return err(error.message);
+  $('modal-llenado').classList.remove('show');
+  alert('Llenado registrado. Había ' + fmt(data.remanente) + ' gls; el tanque queda en ' + fmt(data.nivel_tras_llenado) + ' gls.' +
+        (Number(data.excedente) > 0 ? '\n\nAtención: los galones exceden la capacidad por ' + fmt(data.excedente) + ' gls; el nivel se fijó en la capacidad.' : ''));
+  if (llenadoDestino) cargarTanqueGlp(llenadoDestino);
+}
 async function cargarTanqueGlp(elId) {
+  llenadoDestino = elId;
   const el = $(elId); if (!el) return;
   const {data, error} = await sb.rpc('fn_glp_tanque', {p_condominio_id: sesion.condominio_id});
   el.innerHTML = error ? '' : tanqueGlpHTML(data);
