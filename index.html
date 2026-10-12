@@ -724,6 +724,7 @@
         <h2 class="page-title">GLP — Consumo y Facturación</h2>
         <div class="rep-filtros" id="rglp-filtros"></div>
         <div class="cards-row" id="rglp-stats"></div>
+        <div id="rglp-tanque" style="margin-bottom:1rem"></div>
         <div class="card"><div class="card-body" id="rglp-lista"><div class="loading">Cargando...</div></div></div>
       </div>
 
@@ -1145,6 +1146,7 @@
       <div id="page-mi-gas" class="page">
         <h2 class="page-title">Mi Gas (GLP)</h2>
         <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">El gas es responsabilidad de cada unidad y no afecta el fondo común.</p>
+        <div id="glp-tanque" style="margin-bottom:1rem"></div>
         <div class="cards-row" id="glp-stats"></div>
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header">Medidor</div>
@@ -3150,7 +3152,46 @@ async function cargarRepGastos() {
     rows: rows.map(r => [r.codigo, r.fecha, r.proveedor_nombre, r.categoria, r.descripcion, r.estado, r.afecta_fondo_comun ? 'Sí' : 'No', r.monto]) };
 }
 
+// ==================== TANQUE DE GLP (nivel al corte) ====================
+const fechaTanque = d => { if (!d) return '—'; const [y, m, dd] = String(d).slice(0, 10).split('-'); return dd + '-' + ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][Number(m) - 1] + '-' + y; };
+function tanqueGlpHTML(t) {
+  if (!t) return '';
+  const pct = Number(t.pct), lleno = Math.max(0, Math.min(100, pct));
+  const col = pct >= 50 ? '#2e8b57' : pct >= 20 ? '#EF6C00' : '#D32F2F';
+  const H = 92, yNivel = 122 - H * lleno / 100;
+  // verde: texto blanco (queda dentro del liquido); naranja/rojo: texto oscuro con halo blanco
+  const tx = pct >= 50 ? 'fill="#fff"' : 'fill="#1B2A4A" stroke="#fff" stroke-width="3" paint-order="stroke"';
+  return `<div class="card" style="max-width:520px"><div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ax-gold)" stroke-width="2" stroke-linecap="round"><path d="M12 2c.5 2 2 4 2 7a4 4 0 01-8 0c0-3 1.5-5 2-7"/><path d="M12 22a7 7 0 007-7c0-4-3-7.5-7-11-4 3.5-7 7-7 11a7 7 0 007 7z"/></svg>&nbsp; Tanque de GLP</div>
+    <div class="card-body">
+      <svg viewBox="0 0 300 150" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto" role="img" aria-label="Tanque al ${fmt(pct).replace(/,00$/, '')} por ciento">
+        <defs><clipPath id="tq-clip"><rect x="20" y="30" width="260" height="92" rx="46"/></clipPath></defs>
+        <rect x="138" y="10" width="24" height="16" rx="3" fill="#8A8578"/><rect x="132" y="22" width="36" height="8" rx="2" fill="#5F5E5A"/>
+        <rect x="20" y="30" width="260" height="92" rx="46" fill="#EDEBE6"/>
+        <rect x="20" y="${yNivel}" width="260" height="${122 - yNivel}" fill="${col}" clip-path="url(#tq-clip)"/>
+        <rect x="20" y="${yNivel}" width="260" height="3" fill="#fff" opacity=".35" clip-path="url(#tq-clip)"/>
+        <rect x="20" y="30" width="260" height="92" rx="46" fill="none" stroke="#1B2A4A" stroke-width="3"/>
+        <line x1="80" y1="34" x2="80" y2="118" stroke="#1B2A4A" stroke-opacity=".15"/><line x1="220" y1="34" x2="220" y2="118" stroke="#1B2A4A" stroke-opacity=".15"/>
+        <rect x="60" y="122" width="14" height="18" fill="#5F5E5A"/><rect x="226" y="122" width="14" height="18" fill="#5F5E5A"/>
+        <rect x="48" y="138" width="38" height="5" rx="2" fill="#5F5E5A"/><rect x="214" y="138" width="38" height="5" rx="2" fill="#5F5E5A"/>
+        <text x="150" y="98" text-anchor="middle" font-size="26" font-weight="700" ${tx}>${pct.toFixed(1)}%</text>
+        <text x="150" y="116" text-anchor="middle" font-size="12" font-weight="600" ${tx}>${fmt(t.balance)} gls restantes</text>
+      </svg>
+      <div style="font-size:.85rem;margin-top:.6rem">
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Capacidad del tanque</span><strong style="margin-left:auto">${fmt(t.capacidad)} gls</strong></div>
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Consumo al corte ${fechaTanque(t.corte)}</span><strong style="margin-left:auto">${fmt(t.consumo)} gls</strong></div>
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0"><span style="color:var(--ax-muted)">Balance</span><strong style="margin-left:auto;color:${col}">${fmt(t.balance)} gls</strong></div>
+        <div style="font-size:.72rem;color:var(--ax-muted);margin-top:.3rem">Último llenado: ${fechaTanque(t.fecha_llenado)} · ${fmt(t.galones_llenado)} gls</div>
+      </div>
+    </div></div>`;
+}
+async function cargarTanqueGlp(elId) {
+  const el = $(elId); if (!el) return;
+  const {data, error} = await sb.rpc('fn_glp_tanque', {p_condominio_id: sesion.condominio_id});
+  el.innerHTML = error ? '' : tanqueGlpHTML(data);
+}
+
 async function cargarRepGlp() {
+  cargarTanqueGlp('rglp-tanque');
   const f = $('rglp-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rglp', 'cargarRepGlp', 'glp');
   const { desde, hasta } = repRango('rglp');
   const { data, error } = await sb.rpc('fn_reporte_glp', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
@@ -3704,6 +3745,7 @@ async function cargarMiCuenta() {
 // ==================== RESIDENTE: MI GAS (GLP) ====================
 // Convencion: saldo positivo = a favor (verde); negativo = balance pendiente (rojo)
 async function cargarMiGas() {
+  cargarTanqueGlp('glp-tanque');
   const unidadId = await obtenerMiUnidad();
   const vacio = msg => { $('glp-stats').innerHTML = ''; ['glp-medidor','glp-movimientos','glp-lecturas'].forEach(id => $(id).innerHTML = '<div class="empty">' + msg + '</div>'); };
   if (!unidadId) { vacio('No tiene unidad asignada'); return; }
