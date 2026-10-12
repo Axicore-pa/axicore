@@ -4883,18 +4883,45 @@ function tsParaExportar(m, tipo) {
 }
 
 // ==================== SALUD GENERAL DEL RESIDENCIAL ====================
+// Anillo de reportes por estado (todos los reportes, incluye historicos; Cancelados fuera del %)
+function donutEstadosHTML(lista) {
+  const cont = (lista || []).filter(x => x.cuenta), canc = (lista || []).filter(x => !x.cuenta).reduce((a, x) => a + Number(x.n), 0);
+  const tot = cont.reduce((a, x) => a + Number(x.n), 0);
+  const aten = cont.filter(x => x.estado === 'Resuelto' || x.estado === 'Cerrado').reduce((a, x) => a + Number(x.n), 0);
+  const pct = tot ? Math.round(100 * aten / tot) : null;
+  const R = 14, C = 2 * Math.PI * R; let acc = 0;
+  const segs = cont.filter(x => Number(x.n) > 0).map(x => { const len = C * Number(x.n) / tot;
+    const seg = `<circle cx="18" cy="18" r="${R}" fill="none" stroke="${MT_COLOR[x.estado] || '#888'}" stroke-width="4" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}"/>`;
+    acc += len; return seg; }).join('');
+  return `<div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap">
+    <div style="position:relative;width:110px;height:110px">
+      <svg viewBox="0 0 36 36" style="width:110px;height:110px;transform:rotate(-90deg)"><circle cx="18" cy="18" r="${R}" fill="none" stroke="rgba(27,42,73,.08)" stroke-width="4"/>${segs}</svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column">
+        <span style="font-size:1.2rem;font-weight:700;color:var(--ax-navy)">${pct === null ? '—' : pct + '%'}</span>
+        <span style="font-size:.6rem;color:var(--ax-muted)">atendidos</span></div></div>
+    <div style="font-size:.78rem;line-height:1.75">
+      ${cont.map(x => `<div><span style="display:inline-block;width:10px;height:10px;background:${MT_COLOR[x.estado] || '#888'};border-radius:50%;vertical-align:middle"></span> ${x.estado}: <strong>${x.n}</strong></div>`).join('')}
+      <div style="margin-top:.3rem;color:var(--ax-muted);font-size:.72rem">Cancelados (fuera del %): ${canc}</div>
+    </div></div>`;
+}
+
 async function cargarSaludResidencial() {
   const el = $('dash-salud'); if (!el) return;
-  const {data: h, error} = await sb.rpc('fn_salud_residencial', {p_condominio_id: sesion.condominio_id});
+  const [{data: h, error}, {data: estRes, error: errEst}] = await Promise.all([
+    sb.rpc('fn_salud_residencial', {p_condominio_id: sesion.condominio_id}),
+    sb.rpc('fn_mant_resumen_estados', {p_condominio_id: sesion.condominio_id})]);
   if (error) { el.innerHTML = '<div class="empty" style="font-size:.85rem">' + error.message + '</div>'; return; }
+  const bloqueEst = errEst ? '' : `<div style="font-size:.72rem;font-weight:600;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Estado de reportes · todos</div>${donutEstadosHTML(estRes)}
+    <div style="border-top:1px solid var(--ax-border);margin:.8rem 0 .6rem"></div>
+    <div style="font-size:.72rem;font-weight:600;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Índice de salud</div>`;
   $('dash-salud-desde').textContent = h.desde ? 'desde ' + new Date(h.desde + 'T12:00:00').toLocaleDateString('es-DO') : '';
   const col = {verde: 'var(--ax-success)', amarillo: '#d4a017', rojo: 'var(--ax-danger)'}[h.semaforo] || 'var(--ax-muted)';
-  if (h.indice === null) { el.innerHTML = '<div class="empty" style="font-size:.85rem">Aún no hay reportes desde la fecha de arranque.<br>El índice se calcula con los reportes recibidos por el formulario.</div>'; return; }
+  if (h.indice === null) { el.innerHTML = bloqueEst + '<div class="empty" style="font-size:.85rem">Aún no hay reportes desde la fecha de arranque.<br>El índice se calcula con los reportes recibidos por el formulario.</div>'; return; }
   const ind = Number(h.indice), R = 44, C = 2 * Math.PI * R, off = C * (1 - ind / 100);
   const comp = (k, v, w) => `<div style="margin-bottom:.45rem"><div style="display:flex;justify-content:space-between;font-size:.75rem"><span>${k} <small style="color:var(--ax-muted)">(${w}%)</small></span><strong>${v === null ? '—' : v + '%'}</strong></div>
       <div style="background:#eee;border-radius:4px;height:6px"><div style="width:${v || 0}%;background:${col};height:6px;border-radius:4px"></div></div></div>`;
   const est = h.por_estado || {};
-  el.innerHTML = `<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+  el.innerHTML = bloqueEst + `<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
     <svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="${R}" fill="none" stroke="#eee" stroke-width="10"/>
       <circle cx="55" cy="55" r="${R}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 55 55)"/>
       <text x="55" y="55" text-anchor="middle" font-size="22" font-weight="700" fill="${col}">${Math.round(ind)}</text>
