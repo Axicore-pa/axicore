@@ -2064,7 +2064,7 @@ $('login-form').addEventListener('submit', async e => {
       password: $('login-pass').value,
     });
     if (error) throw error;
-    await iniciarApp();
+    await iniciarApp({forzar: true});
   } catch(err) {
     showAlert(err.message === 'Invalid login credentials'
       ? 'Correo o contraseña incorrectos'
@@ -2112,21 +2112,28 @@ async function olvideClave() {
   return false;
 }
 
-let iniciando = false;
-async function iniciarApp() {
-  if (iniciando || sesion) return;   // evita arranque doble (submit + evento de sesión)
+let iniciando = null;   // promesa del arranque en curso (evita arranque doble)
+const conLimite = (prom, ms) => Promise.race([prom, new Promise((_, rej) => setTimeout(() => rej(new Error('TIEMPO')), ms))]);
+async function iniciarApp(opc = {}) {
+  if (sesion) return;
   if (debeCrearClave) { mostrarCrearClave(); return; }
-  iniciando = true;
-  try {
+  if (iniciando && !opc.forzar) return iniciando;
+  const intento = (async () => {
   // Obtener sesión del sistema AXICORE
-  const {data, error} = await sb.rpc('axi_sesion_iniciar');
+  let data, error;
+  try { ({data, error} = await conLimite(sb.rpc('axi_sesion_iniciar'), 15000)); }
+  catch (e) { error = {message: e.message === 'TIEMPO' ? 'El servidor no respondió. Intente de nuevo.' : e.message}; }
   if (error) {
+    // Sesion vieja/vencida guardada en el navegador: se limpia sola, sin pedir borrar el historial
+    const vieja = /jwt|token|expired|session|PGRST30/i.test((error.message || '') + (error.code || ''));
+    try { await sb.auth.signOut({scope: 'local'}); } catch (_) {}
+    if (opc.auto && vieja) return;   // al abrir la pagina: solo mostrar el login limpio
     showAlert(/no tiene acceso/i.test(error.message)
       ? 'Su cuenta está creada, pero la administración aún no la ha enlazado a su unidad. Intente más tarde.'
       : 'Error de acceso: ' + error.message);
-    await sb.auth.signOut();
     return;
   }
+  if (sesion) return;
   sesion = data;
 
   // Obtener condominios del usuario
@@ -2142,9 +2149,9 @@ async function iniciarApp() {
     // Un solo condominio — entrar directamente
     entrarAlApp();
   }
-  } finally {
-    iniciando = false;
-  }
+  })();
+  iniciando = intento;
+  try { await intento; } finally { if (iniciando === intento) iniciando = null; }
 }
 
 function mostrarSelectorCondominio() {
@@ -2350,23 +2357,17 @@ async function cerrarSesion() {
 }
 
 // Auto-login si ya hay sesión (incluye recarga de página: INITIAL_SESSION)
-sb.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'PASSWORD_RECOVERY') { debeCrearClave = true; mostrarCrearClave(); return; }
-  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
-      && session && !sesion) {
-    await iniciarApp();
+// IMPORTANTE: este callback NO debe esperar (await) otras llamadas a Supabase: supabase-js lo
+// ejecuta dentro de su bloqueo interno y se cuelga (causa del "acepta la clave pero no entra").
+// Por eso el arranque se difiere con setTimeout. INITIAL_SESSION cubre la recarga de la pagina.
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { debeCrearClave = true; setTimeout(mostrarCrearClave, 0); return; }
+  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !sesion) {
+    setTimeout(() => iniciarApp({auto: true}), 0);
   } else if (event === 'SIGNED_OUT') {
     sesion = null;
   }
 });
-
-// Restaurar sesión guardada al abrir/recargar la página (evita que el refresh saque al usuario)
-(async () => {
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session && !sesion) await iniciarApp();
-  } catch (_) { /* sin sesión previa: se muestra el login normal */ }
-})();
 
 // Cerrar dropdown al hacer clic fuera
 document.addEventListener('click', (e) => {
