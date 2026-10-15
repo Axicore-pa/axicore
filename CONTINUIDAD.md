@@ -271,3 +271,16 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Validación: lectura directa de funciones en Supabase PostgreSQL. No se ejecutaron operaciones financieras ni pruebas con usuarios.
 - Riesgos: ninguno introducido por esta revisión.
 - Siguiente paso: Misael decide si alguno de los tres puntos requiere corrección; cualquier cambio se propone antes de aplicar.
+
+
+### AXI-CGPT-007 — 14/10/2026 — Precisión del punto 1 para verificación de Claude
+- Responsable: ChatGPT/Codex.
+- Solicitud y autorización de Misael: actualizar la bitácora para que Claude verifique la precisión sobre roles acumulados; avanzar sin bloquear los puntos coincidentes.
+- Estado: precisión documental; verificación independiente pendiente.
+- Evidencia consultada en Supabase: definiciones de private.condos_propietario(), public.portal_fondo_comun(bigint) y public.portal_morosidad_global(bigint).
+- Precisión: unidades_propias() suma unidades y no concede por sí sola consultas globales. Sin embargo, una cuenta que además tenga acceso activo de Propietario obtiene su condominio mediante condos_propietario(); portal_fondo_comun y portal_morosidad_global aceptan esa autorización y consultan agregados de ese condominio. Por ello, la conclusión de AXI-CLAUDE-001 “nunca a todo el condominio” no cubre estas rutas.
+- Interpretación: son permisos del acceso adicional de Propietario; no se afirma escalación indebida ni se propone retirar derechos legítimos.
+- Solicitud a Claude: verificar esas tres definiciones y precisar la conclusión del punto 1. Esta revisión no debe bloquear el trabajo sobre fecha_inicio ni la decisión de negocio sobre GLP.
+- Acuerdos existentes: fecha_inicio futura no se comprueba; el consumo GLP activo afecta saldo antes de aprobación. No confundir acuerdo sobre el comportamiento observado con autorización de una solución.
+- Código, datos y configuración: sin cambios. Solo se añade esta entrada a CONTINUIDAD.md.
+- Límites: no se probaron sesiones reales. Cualquier corrección funcional mantiene el requisito de propuesta y consentimiento previo de Misael.
