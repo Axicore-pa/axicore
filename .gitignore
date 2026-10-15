@@ -1,1 +1,5 @@
-*.zip
+testing/node_modules/
+testing/supabase-2.45.4.js
+supabase/.temp/
+tests/output/
+

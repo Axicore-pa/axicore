@@ -7,7 +7,7 @@ import nodemailer from "npm:nodemailer@6.9.14";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-axicore-tab",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (b: unknown, s = 200) =>
@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     // 1) Quien llama: debe ser CEO o Asistente
     const auth = req.headers.get("Authorization") || "";
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: auth } },
+      global: { headers: { Authorization: auth, "x-axicore-tab": req.headers.get("x-axicore-tab") || "" } },
     });
     const { data: perfil, error: ep } = await sb.rpc("mi_perfil");
     if (ep || !perfil) return json({ error: "Sesion no valida" }, 401);

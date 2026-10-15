@@ -1377,6 +1377,7 @@
       <div id="page-cap-usuarios" class="page">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
           <h2 class="page-title" style="margin-bottom:0">Usuarios del Sistema</h2>
+          <button class="btn btn-outline btn-sm" onclick="abrirSesionesActivas()">Sesiones activas</button>
           <button class="btn btn-success btn-sm" onclick="abrirModalCapUsuario()">+ Nuevo Usuario</button>
         </div>
         <div class="card">
@@ -2050,6 +2051,7 @@
 </div>
 
 <script src="assets/recibos-pago.js?v=20261015-1"></script>
+<script src="assets/sesiones.js?v=20261015-1"></script>
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -2059,7 +2061,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let debeCrearClave = /type=(invite|recovery)/.test(location.hash + location.search);
 let sb;
 try {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, AXISession.options);
 } catch(e) {
   document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + e.message + '</div>';
 }
@@ -2209,6 +2211,7 @@ let iniciando = null;   // promesa del arranque en curso (evita arranque doble)
 const conLimite = (prom, ms) => Promise.race([prom, new Promise((_, rej) => setTimeout(() => rej(new Error('TIEMPO')), ms))]);
 async function iniciarApp(opc = {}) {
   if (sesion) return;
+  try { await AXISession.ready; } catch (e) { showAlert(e.message); return; }
   if (debeCrearClave) { mostrarCrearClave(); return; }
   if (iniciando && !opc.forzar) return iniciando;
   const intento = (async () => {
@@ -2219,7 +2222,8 @@ async function iniciarApp(opc = {}) {
   if (error) {
     // Sesion vieja/vencida guardada en el navegador: se limpia sola, sin pedir borrar el historial
     const vieja = /jwt|token|expired|session|PGRST30/i.test((error.message || '') + (error.code || ''));
-    try { await sb.auth.signOut({scope: 'local'}); } catch (_) {}
+    // No revocar Auth aquí: una pestaña duplicada puede tener el mismo session_id.
+    AXISession.clearLocal();
     if (opc.auto && vieja) return;   // al abrir la pagina: solo mostrar el login limpio
     showAlert(/no tiene acceso/i.test(error.message)
       ? 'Su cuenta está creada, pero la administración aún no la ha enlazado a su unidad. Intente más tarde.'
@@ -2236,6 +2240,8 @@ async function iniciarApp(opc = {}) {
       if (error || !data || data.requiere_2fa) { showAlert('Error de acceso: ' + (error ? error.message : 'verificación incompleta')); return; }
     }
   }
+  if (data.sesion_bloqueada) { mostrarSesionBloqueada(data); return; }
+  document.getElementById('axi-recuperar-sesion')?.remove();
   sesion = data;
 
   // Obtener condominios del usuario
@@ -2308,7 +2314,8 @@ async function mfaVerificar(e) {
   return false;
 }
 async function mfaCancelar() {
-  try { await sb.auth.signOut(); } catch (_) {}
+  AXISession.clearLocal();
+  location.reload();
   $('mfa-form').style.display = 'none';
   $('login-form').style.display = 'block';
   $('login-pass').value = '';
@@ -2513,8 +2520,10 @@ function cambiarCondominio(id, nombre, rol) {
 }
 
 async function cerrarSesion() {
-  await sb.rpc('axi_sesion_cerrar');
-  await sb.auth.signOut();
+  const {error} = await sb.rpc('axi_sesion_cerrar');
+  if (error) { alert('No se pudo cerrar la sesión. Intente de nuevo: ' + error.message); return; }
+  await sb.auth.signOut({scope: 'local'});
+  AXISession.clearLocal();
   sesion = null;
   condominiosUsuario = [];
   $('app-shell').style.display = 'none';
@@ -2524,6 +2533,64 @@ async function cerrarSesion() {
   // Reset topbar condo
   $('topbar-condo').style.display = 'none';
   cerrarCondoDropdown();
+}
+
+function mostrarSesionBloqueada(data) {
+  sesion = null;
+  $('app-shell').style.display = 'none';
+  $('condo-selector').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  showAlert(data.mensaje || 'Ya existe una sesión en curso con este correo. Cierra la otra sesión para acceder.');
+  document.getElementById('axi-recuperar-sesion')?.remove();
+  if (data.rol === 'CEO') {
+    const btn = document.createElement('button');
+    btn.id = 'axi-recuperar-sesion'; btn.type = 'button'; btn.className = 'btn btn-outline';
+    btn.textContent = 'Revisar sesiones activas (CEO)';
+    btn.onclick = abrirSesionesActivas;
+    $('login-alert').after(btn);
+  }
+}
+window.addEventListener('axi-session-invalid', () => mostrarSesionBloqueada({mensaje:'La sesión dejó de estar vigente. Inicie sesión de nuevo; si existe otra abierta, debe cerrarla primero.'}));
+setInterval(async () => {
+  if (!sesion || document.visibilityState === 'hidden') return;
+  const {data, error} = await sb.rpc('axi_sesion_estado');
+  if (!error && data && !data.valida) mostrarSesionBloqueada({});
+}, 30000);
+
+async function abrirSesionesActivas() {
+  const {data, error} = await sb.rpc('axi_sesiones_listar');
+  if (error) { alert(error.message); return; }
+  document.getElementById('axi-sesiones-dialog')?.remove();
+  const dialog = document.createElement('dialog');
+  dialog.id = 'axi-sesiones-dialog'; dialog.style.cssText = 'max-width:760px;width:92%;border:1px solid #b99b54;border-radius:10px;padding:24px';
+  const title = document.createElement('h3'); title.textContent = 'Sesiones activas'; dialog.append(title);
+  const info = document.createElement('p'); info.textContent = 'Verifique al usuario antes de liberar una sesión abandonada. La liberación corta su acceso y registra el motivo.'; dialog.append(info);
+  for (const row of data || []) {
+    const line = document.createElement('div'); line.style.cssText = 'border-top:1px solid #ddd;padding:12px 0';
+    const text = document.createElement('p');
+    text.textContent = row.correo + ' · Inicio: ' + new Date(row.inicio).toLocaleString() + ' · Última actividad: ' + new Date(row.ultima_actividad).toLocaleString();
+    const agent = document.createElement('small'); agent.textContent = row.agente || 'Navegador sin identificar';
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-outline btn-sm'; btn.textContent = 'Liberar sesión';
+    btn.onclick = async () => {
+      const motivo = prompt('Después de verificar al usuario, explique por qué libera esta sesión (10 a 500 caracteres):');
+      if (motivo === null) return;
+      if (motivo.trim().length < 10 || motivo.length > 500) { alert('Escriba un motivo de 10 a 500 caracteres.'); return; }
+      if (!confirm('¿Liberar la sesión de ' + row.correo + '? Su acceso actual se cortará.')) return;
+      btn.disabled = true;
+      const {error: err} = await sb.rpc('axi_sesion_liberar', {p_id:row.id,p_motivo:motivo});
+      if (err) { alert(err.message); btn.disabled = false; return; }
+      dialog.close(); dialog.remove();
+      const {data: estado} = await sb.rpc('axi_sesion_estado');
+      if (!sesion || !estado?.valida) {
+        alert('Sesión liberada. Inicie sesión nuevamente con su correo y clave.');
+        AXISession.clearLocal(); location.reload();
+      } else await abrirSesionesActivas();
+    };
+    line.append(text, agent, document.createElement('br'), btn); dialog.append(line);
+  }
+  if (!data?.length) { const p = document.createElement('p'); p.textContent = 'Sin sesiones activas.'; dialog.append(p); }
+  const close = document.createElement('button'); close.className = 'btn btn-outline'; close.textContent = 'Cerrar'; close.onclick = () => {dialog.close();dialog.remove();}; dialog.append(close);
+  document.body.append(dialog); dialog.showModal();
 }
 
 // Auto-login si ya hay sesión (incluye recarga de página: INITIAL_SESSION)
@@ -6433,3 +6500,5 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
+
