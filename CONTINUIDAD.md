@@ -332,3 +332,7 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Reversión: restaurar index.html del commit de partida y retirar la carga del generador; después puede retirarse fn_pago_recibo(bigint). No hay datos operativos que revertir. Cualquier reversión es un cambio separado y requiere autorización.
 - Límites: no se verificó todavía Outlook real, la asociación de archivos .eml de la PC ni impresión física. El navegador descarga el borrador para abrirlo y enviarlo manualmente. La inspección visual reproduce el modelo; no se afirma igualdad binaria del PDF. Datos muy largos se adaptan al espacio o se bloquean antes de recortarlos.
 - Pendiente para Claude: revisar SQL/cliente y confirmar la nueva regla de destinatarios; no modificarla ni ampliar la cascada GLP a estos recibos.
+
+
+- Cierre verificado: los seis archivos publicados se recuperaron desde GitHub y coincidieron con lo preparado. [Commit de implementación 9c6d0edea2f6674baa3ae8e59d60282c84dedbb6](https://github.com/Axicore-pa/axicore/commit/9c6d0edea2f6674baa3ae8e59d60282c84dedbb6).
+- [Despliegue GitHub Pages](https://github.com/Axicore-pa/axicore/actions/runs/38679507952): completado con success para ese commit. Recibo de muestra con datos sintéticos entregado a Misael para revisión visual. Outlook e impresión física siguen pendientes de comprobar en su PC.
