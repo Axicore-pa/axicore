@@ -541,6 +541,7 @@
           <a href="#" onclick="navegar('cap-propietarios')" data-page="cap-propietarios"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Propietarios</a>
           <a href="#" onclick="navegar('cap-inquilinos')" data-page="cap-inquilinos"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Inquilinos</a>
           <a href="#" onclick="navegar('cap-proveedores')" data-page="cap-proveedores"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Proveedores</a>
+          <a href="#" onclick="navegar('cap-administradores')" data-page="cap-administradores"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg> Administradores</a>
           <a href="#" onclick="navegar('cap-usuarios')" data-page="cap-usuarios"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Usuarios</a>
         </div>
       </div>
@@ -1359,6 +1360,19 @@
         </div>
       </div>
 
+      <!-- ===== CATALOGO: ADMINISTRADORES DE PROPIEDADES ===== -->
+      <div id="page-cap-administradores" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <h2 class="page-title" style="margin-bottom:0">Administradores de Propiedades</h2>
+          <button class="btn btn-success btn-sm" onclick="abrirModalCapAdmin()">+ Nuevo Administrador</button>
+        </div>
+        <div class="card">
+          <div class="card-body" id="cap-admin-lista">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ===== CAPTURA: USUARIOS ===== -->
       <div id="page-cap-usuarios" class="page">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
@@ -1855,6 +1869,35 @@
   </div>
 </div>
 
+<!-- MODAL: Administrador de Propiedades -->
+<div class="modal-overlay" id="modal-cap-admin">
+  <div class="modal" style="max-width:640px">
+    <h3 id="cap-adm-titulo">Nuevo Administrador</h3>
+    <div id="cap-adm-alert" class="alert alert-error"></div>
+    <form id="form-cap-admin" onsubmit="return guardarCapAdmin(event)">
+      <input type="hidden" id="cap-adm-id">
+      <div class="form-group"><label>Nombre / Razón social</label><input type="text" id="cap-adm-nombre" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem">
+        <div class="form-group"><label>Documento / RNC</label><input type="text" id="cap-adm-documento"></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cap-adm-telefono"></div>
+        <div class="form-group"><label>WhatsApp</label><input type="text" id="cap-adm-whatsapp"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cap-adm-email"></div>
+      </div>
+      <div class="form-group"><label>Estado</label>
+        <select id="cap-adm-estado"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+      </div>
+      <div id="cap-adm-unidades-wrap" style="display:none">
+        <label style="font-weight:600;margin-bottom:.4rem;display:block">Unidades asignadas</label>
+        <div id="cap-adm-unidades" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cap-admin')">Cancelar</button>
+        <button type="submit" class="btn btn-success" id="cap-adm-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: Inquilino -->
 <div class="modal-overlay" id="modal-cap-inquilino">
   <div class="modal">
@@ -2331,11 +2374,19 @@ function entrarAlApp() {
   }
 }
 
-// Morosidad global es solo para Propietario (indicador anónimo); Inquilino no la ve.
+// Restricciones por rol residente:
+// Propietario: ve todo. Administrador: ve mi-inquilino y mis-documentos, sin fondo/gastos/comprobantes/morosidad. Inquilino: las 6 ocultas.
 function aplicarRestriccionesResidente() {
-  const esProp = sesion.rol === 'Propietario';
-  // Inquilino: no ve fondo comun, gastos, comprobantes del condominio ni morosidad (decision Misael, opcion B)
-  ['mi-inquilino','mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
+  const rol = sesion.rol;
+  const esPropOAdmin = rol === 'Propietario' || rol === 'Administrador';
+  const esProp = rol === 'Propietario';
+  // mi-inquilino y mis-documentos: Propietario y Administrador las ven; Inquilino no
+  ['mi-inquilino','mis-documentos'].forEach(p => {
+    const a = document.querySelector('#sidebar-residente a[data-page="' + p + '"]');
+    if (a) a.style.display = esPropOAdmin ? '' : 'none';
+  });
+  // fondo-comun, gastos, comprobantes, morosidad: solo Propietario
+  ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'].forEach(p => {
     const a = document.querySelector('#sidebar-residente a[data-page="' + p + '"]');
     if (a) a.style.display = esProp ? '' : 'none';
   });
@@ -2345,13 +2396,15 @@ function aplicarRestriccionesResidente() {
 // Paginas permitidas por rol (capa visual; el backend tambien bloquea)
 const PAG_RESIDENTE = ['reservar','mi-inquilino','mis-documentos','mi-cuenta','mis-facturas','mis-pagos','enviar-comprobante','mi-gas','mis-averias','mi-contacto','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 const PAG_SOLO_PROPIETARIO = ['mi-inquilino','mis-documentos','gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
-const PAG_SOLO_CEO = ['ecg','cap-usuarios','automatizaciones','comprobantes-recibidos'];
+const PAG_SOLO_CEO = ['ecg','cap-usuarios','cap-administradores','automatizaciones','comprobantes-recibidos'];
+const PAG_EXCLUIDO_ADMIN = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
   const rol = sesion.rol;
-  if (rol === 'Propietario' || rol === 'Inquilino') {
+  if (rol === 'Propietario' || rol === 'Inquilino' || rol === 'Administrador') {
     if (!PAG_RESIDENTE.includes(page)) return 'mi-cuenta';
     if (rol === 'Inquilino' && PAG_SOLO_PROPIETARIO.includes(page)) return 'mi-cuenta';
+    if (rol === 'Administrador' && PAG_EXCLUIDO_ADMIN.includes(page)) return 'mi-cuenta';
     return page;
   }
   if (PAG_RESIDENTE.includes(page)) return 'dashboard';
@@ -2362,7 +2415,7 @@ function paginaPermitida(page) {
 // Oculta opciones según el rol (el backend ya las bloquea; esto es la capa visual)
 function aplicarRestriccionesRol() {
   const esCEO = sesion.rol === 'CEO';
-  const soloCEO = ['ecg', 'cap-usuarios', 'automatizaciones', 'comprobantes-recibidos'];  // Asistente no valida comprobantes de residentes  // Asistente no ve ECG, Usuarios ni Automatizaciones
+  const soloCEO = ['ecg', 'cap-usuarios', 'cap-administradores', 'automatizaciones', 'comprobantes-recibidos'];  // Asistente no valida comprobantes de residentes  // Asistente no ve ECG, Usuarios ni Automatizaciones
   soloCEO.forEach(p => {
     const a = document.querySelector('.sidebar a[data-page="' + p + '"]');
     if (a) a.style.display = esCEO ? '' : 'none';
@@ -2560,6 +2613,7 @@ function navegar(page) {
     'cap-inquilinos': cargarCapInquilinos,
     'cap-proveedores': cargarCapProveedores,
     'cap-usuarios': cargarCapUsuarios,
+    'cap-administradores': cargarCapAdministradores,
   };
   if (loaders[page]) loaders[page]().catch?.(err => console.error('Loader error ['+page+']:', err));
   return false;
@@ -6238,6 +6292,105 @@ async function guardarCapUsuario(e) {
     cerrarModal('modal-cap-usuario'); cargarCapUsuarios();
     alert(id ? '✅ Usuario actualizado' : '✅ Usuario creado');
   } catch(err) { $('cap-usr-alert').textContent=err.message; $('cap-usr-alert').style.display='block';
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ==================== CATALOGO: ADMINISTRADORES DE PROPIEDADES ====================
+let _adminUnidades = []; // cache de unidades del condo para chips
+async function cargarCapAdministradores() {
+  const el = $('cap-admin-lista');
+  try {
+    const {data, error} = await sb.rpc('fn_admin_listar', {p_condominio_id: sesion.condominio_id});
+    if (error) { el.innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+    if (!data?.length) { el.innerHTML='<div class="empty">Sin administradores registrados</div>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Código</th><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Unidades</th><th>Estado</th><th class="text-center">Acceso</th><th></th></tr></thead>
+      <tbody>${data.map(r => `<tr>
+        <td>${r.codigo||'—'}</td><td>${r.nombre}</td><td>${r.documento||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
+        <td>${(r.unidades||[]).map(u => '<span class="badge badge-info" style="margin:.1rem">'+u.codigo+'</span>').join('') || '—'}</td>
+        <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+        <td class="text-center">${r.con_acceso ? '<span class="badge badge-success">Sí</span>' : '<span class="badge" style="background:#ccc">No</span>'}</td>
+        <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapAdmin(${r.id})">✏️</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e) { el.innerHTML='<div class="alert alert-error" style="display:block">'+e.message+'</div>'; }
+}
+
+async function abrirModalCapAdmin(id) {
+  $('cap-adm-alert').style.display='none'; $('form-cap-admin').reset(); $('cap-adm-id').value='';
+  $('cap-adm-unidades').innerHTML=''; $('cap-adm-unidades-wrap').style.display='none';
+  // Cargar unidades del condo para chips
+  const {data: unids} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
+  _adminUnidades = unids || [];
+  if (id) {
+    const {data} = await sb.rpc('fn_admin_listar', {p_condominio_id: sesion.condominio_id});
+    const r = (data||[]).find(x => x.id === id);
+    if (r) {
+      $('cap-adm-id').value = r.id;
+      $('cap-adm-titulo').textContent = 'Editar Administrador';
+      $('cap-adm-nombre').value = r.nombre||'';
+      $('cap-adm-documento').value = r.documento||'';
+      $('cap-adm-telefono').value = r.telefono||'';
+      $('cap-adm-whatsapp').value = r.whatsapp||'';
+      $('cap-adm-email').value = r.email||'';
+      $('cap-adm-estado').value = r.estado;
+      const asig = new Set((r.unidades||[]).map(u => u.unidad_id));
+      renderChipsAdmin(asig, r.id);
+    }
+  } else {
+    $('cap-adm-titulo').textContent = 'Nuevo Administrador';
+  }
+  $('modal-cap-admin').classList.add('show');
+}
+
+function renderChipsAdmin(asignadas, adminId) {
+  const wrap = $('cap-adm-unidades-wrap');
+  const cont = $('cap-adm-unidades');
+  if (!_adminUnidades.length) { wrap.style.display='none'; return; }
+  wrap.style.display='';
+  cont.innerHTML = _adminUnidades.map(u => {
+    const activa = asignadas.has(u.id);
+    return `<button type="button" class="badge ${activa?'badge-success':'badge-outline'}" style="cursor:pointer;padding:.3rem .6rem;font-size:.8rem;border:1px solid ${activa?'var(--ax-success)':'#ccc'}"
+      onclick="toggleUnidadAdmin(${adminId},${u.id},${!activa})">${u.codigo} ${activa?'✓':''}</button>`;
+  }).join('');
+}
+
+async function toggleUnidadAdmin(adminId, unidadId, asignar) {
+  try {
+    const {data, error} = await sb.rpc('fn_admin_unidad', {p_administrador_id: adminId, p_unidad_id: unidadId, p_asignar: asignar});
+    if (error) throw error;
+    // Recargar datos del admin para refrescar chips
+    const {data: lista} = await sb.rpc('fn_admin_listar', {p_condominio_id: sesion.condominio_id});
+    const r = (lista||[]).find(x => x.id === adminId);
+    if (r) renderChipsAdmin(new Set((r.unidades||[]).map(u => u.unidad_id)), adminId);
+  } catch(e) { alert('⚠️ ' + e.message); }
+}
+
+async function guardarCapAdmin(e) {
+  e.preventDefault();
+  const btn = $('cap-adm-btn'); btn.textContent='Guardando...'; btn.disabled=true;
+  try {
+    const payload = {
+      nombre: $('cap-adm-nombre').value.trim(),
+      documento: $('cap-adm-documento').value.trim()||null,
+      telefono: $('cap-adm-telefono').value.trim()||null,
+      whatsapp: $('cap-adm-whatsapp').value.trim()||null,
+      email: $('cap-adm-email').value.trim()||null,
+      estado: $('cap-adm-estado').value,
+    };
+    const id = $('cap-adm-id').value;
+    if (id) payload.id = parseInt(id);
+    const {data: newId, error} = await sb.rpc('fn_admin_guardar', {p_condominio_id: sesion.condominio_id, p: payload});
+    if (error) throw error;
+    if (!id && newId) {
+      // Recién creado: reabrir para asignar unidades
+      cerrarModal('modal-cap-admin');
+      cargarCapAdministradores();
+      alert('✅ Administrador creado (código asignado). Ábralo de nuevo para asignar unidades.');
+    } else {
+      cerrarModal('modal-cap-admin'); cargarCapAdministradores();
+      alert('✅ Administrador actualizado');
+    }
+  } catch(err) { $('cap-adm-alert').textContent=err.message; $('cap-adm-alert').style.display='block';
   } finally { btn.textContent='Guardar'; btn.disabled=false; }
 }
 
