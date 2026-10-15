@@ -1570,7 +1570,8 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-pago')">Cancelar</button>
-        <button type="submit" class="btn btn-success" id="pago-btn-guardar">Registrar Pago</button>
+        <button type="button" class="btn btn-outline" id="pago-btn-correo" onclick="guardarPago(event,'correo')">Guardar y preparar correo</button>
+        <button type="submit" class="btn btn-success" id="pago-btn-guardar">Guardar pago</button>
       </div>
     </form>
   </div>
@@ -2048,6 +2049,7 @@
   </div>
 </div>
 
+<script src="assets/recibos-pago.js?v=20261015-1"></script>
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -3447,7 +3449,7 @@ async function cargarPagos() {
         <td>${r.metodo || '—'}</td>
         <td class="text-right money">${fmt(r.monto)}</td>
         <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span>${badgeAprob(r.estado_aprobacion)}</td>
-        <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' && !['anulado','anulada'].includes(String(r.estado||'').toLowerCase()) ? `<button class="btn btn-sm btn-outline" onclick="editarPago(${r.id})">✏️</button> ` : ''}${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
+        <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' && !['anulado','anulada'].includes(String(r.estado||'').toLowerCase()) ? `<button class="btn btn-sm btn-outline" onclick="editarPago(${r.id})">✏️</button> ` : ''}${pagoTieneRecibo(r) ? `<button class="btn btn-sm btn-outline" title="Descargar recibo PDF" onclick="abrirReciboPago(${r.id},true)">↓ PDF</button> ` : ''}${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`).join('')}
     </tbody>
   </table></div>`;
@@ -5530,7 +5532,8 @@ async function abrirModalPago() {
   $('pago-alert').style.display = 'none';
   $('form-pago').reset();
   $('pago-factura').disabled = false; $('pago-factura').required = true;
-  $('pago-btn-guardar').textContent = 'Registrar Pago';
+  $('pago-btn-guardar').textContent = 'Guardar pago';
+  $('pago-btn-correo').style.display = ''; $('pago-btn-correo').disabled = false;
 
   // Fecha por defecto = hoy
   const hoy = new Date().toISOString().split('T')[0];
@@ -5568,6 +5571,7 @@ async function editarPago(id) {
   const {data: r, error} = await sb.from('pagos').select('*, facturas(no_factura)').eq('id', id).single();
   if (error || !r) { alert('No se pudo cargar el pago: ' + (error?.message || '')); return; }
   pagoEdit = r;
+  $('pago-btn-correo').style.display = 'none';
   $('pago-alert').style.display = 'none';
   $('form-pago').reset();
   $('modal-pago').classList.add('show');
@@ -5586,9 +5590,12 @@ async function editarPago(id) {
   $('pago-btn-guardar').textContent = sesion.rol === 'CEO' ? 'Guardar cambios' : 'Enviar cambios a aprobación';
 }
 
-async function guardarPago(e) {
+async function guardarPago(e, accion = 'guardar') {
   e.preventDefault();
+  if (!$('form-pago').reportValidity()) return;
   const btn = $('pago-btn-guardar');
+  if (btn.disabled) return;
+  $('pago-btn-correo').disabled = true;
   btn.textContent = pagoEdit ? 'Guardando...' : 'Registrando...';
   btn.disabled = true;
   $('pago-alert').style.display = 'none';
@@ -5639,13 +5646,20 @@ async function guardarPago(e) {
     const estadoAp = data?.estado_aprobacion || 'Aprobado';
     if (estadoAp === 'Sometido')
       alert('✅ Pago sometido: ' + (data?.codigo || '') + '\nQueda PENDIENTE de aprobación del CEO antes de afectar el fondo común.');
-    else
+    else {
+      // El pago ya fue guardado. Un error del documento no vuelve a registrar el pago.
       alert('✅ Pago registrado y aprobado: ' + (data?.codigo || 'OK'));
+      if (data?.id && pagoTieneRecibo(data)) {
+        const abierto = await abrirReciboPago(data.id);
+        if (abierto !== false && accion === 'correo') await enviarReciboPago();
+      }
+    }
   } catch(err) {
     $('pago-alert').textContent = err.message;
     $('pago-alert').style.display = 'block';
   } finally {
-    btn.textContent = pagoEdit ? 'Guardar cambios' : 'Registrar Pago';
+    btn.textContent = pagoEdit ? 'Guardar cambios' : 'Guardar pago';
+    $('pago-btn-correo').disabled = false;
     btn.disabled = false;
   }
 }
