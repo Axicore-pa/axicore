@@ -443,6 +443,7 @@
   .bars .seg.egr { background:var(--ax-danger); }
   .bars .lbl { font-size:.72rem; color:var(--ax-muted); white-space:nowrap; }
 </style>
+<link rel="stylesheet" href="assets/ayuda.css?v=20261015-1">
 </head>
 <body>
 
@@ -592,6 +593,11 @@
           <a href="#" onclick="navegar('automatizaciones')" data-page="automatizaciones"><svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Tareas programadas</a>
         </div>
       </div>
+      <div class="sidebar-module" id="mod-ayuda">
+        <a href="#" class="module-header axi-help-module-link" onclick="return navegar('ayuda')" data-page="ayuda" title="Ayuda">
+          <span class="module-label"><svg class="sb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.7-2.5 1.7-2.5 3.5M12 17h.01"/></svg><span data-axi-help-label>Ayuda</span></span>
+        </a>
+      </div>
     </nav>
 
     <!-- Sidebar Residente (propietario/inquilino) -->
@@ -612,9 +618,20 @@
       <a href="#" onclick="navegar('comprobantes-condo')" data-page="comprobantes-condo"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Comprobantes de Pago</a>
       <a href="#" onclick="navegar('fondo-comun')" data-page="fondo-comun"><svg class="sb-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Fondo Común</a>
       <a href="#" onclick="navegar('morosidad')" data-page="morosidad" id="nav-morosidad"><svg class="sb-icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Morosidad</a>
+      <a href="#" onclick="return navegar('ayuda')" data-page="ayuda" title="Ayuda"><svg class="sb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.7-2.5 1.7-2.5 3.5M12 17h.01"/></svg><span data-axi-help-label>Ayuda</span></a>
     </nav>
 
     <div class="main-content">
+      <section id="page-ayuda" class="page axi-help" lang="es" aria-labelledby="ah-title">
+        <div class="ah-heading"><h2 id="ah-title" class="page-title">Ayuda</h2><label class="ah-language"><span id="ah-lang-label">Idioma</span><select id="ah-lang"><option value="es">Español</option><option value="en">English</option></select></label></div>
+        <div class="ah-hero"><h3 id="ah-heading">¿En qué podemos ayudarte?</h3><p id="ah-intro" class="ah-intro">Consulta respuestas y guías paso a paso para utilizar las funciones de tu cuenta.</p><span id="ah-role" class="ah-role"></span>
+          <div class="ah-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6"/></svg><input id="ah-search" type="search" placeholder="Buscar una pregunta o un tema…" aria-label="Buscar en la ayuda" autocomplete="off"><button id="ah-clear" type="button" class="ah-clear" aria-label="Borrar búsqueda" hidden>×</button></div>
+        </div>
+        <p id="ah-language-note" class="ah-language-note" hidden></p><div id="ah-shortcuts" class="ah-shortcuts"></div>
+        <div class="ah-faq-heading"><h3 id="ah-faq-title">Preguntas frecuentes</h3><span id="ah-count" class="ah-count" role="status" aria-live="polite"></span></div>
+        <div id="ah-topics" class="ah-topics" aria-label="Filtrar por tema"></div><div id="ah-faqs"></div>
+        <div class="ah-support"><strong id="ah-support-title">¿Tu caso necesita una revisión?</strong><p id="ah-support-text">Comunícate con la administración por los canales habituales e indica la sección y el mensaje que aparece.</p></div>
+      </section>
       <!-- ===== DASHBOARD CEO ===== -->
       <div id="page-dashboard" class="page active">
         <h2 class="page-title" style="color:var(--ax-navy)">Dashboard — <span id="dash-condo-name">DH2</span></h2>
@@ -2052,6 +2069,8 @@
 
 <script src="assets/recibos-pago.js?v=20261015-1"></script>
 <script src="assets/sesiones.js?v=20261015-2"></script>
+<script src="assets/ayuda-contenido.js?v=20261015-1"></script>
+<script src="assets/ayuda.js?v=20261015-1"></script>
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -2409,6 +2428,7 @@ const PAG_SOLO_CEO = ['ecg','cap-usuarios','cap-administradores','automatizacion
 const PAG_EXCLUIDO_ADMIN = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
+  if (page === 'ayuda' && ['CEO','Asistente','Propietario','Inquilino','Administrador'].includes(sesion.rol)) return 'ayuda';
   const rol = sesion.rol;
   if (rol === 'Propietario' || rol === 'Inquilino' || rol === 'Administrador') {
     if (!PAG_RESIDENTE.includes(page)) return 'mi-cuenta';
@@ -2656,6 +2676,7 @@ function navegar(page) {
 
   // Cargar datos de la página
   const loaders = {
+    'ayuda': cargarAyuda,
     'dashboard': cargarDashboard,
     'cobros': cargarCobros,
     'ecg': cargarECG,
@@ -2702,6 +2723,10 @@ function navegar(page) {
   };
   if (loaders[page]) loaders[page]().catch?.(err => console.error('Loader error ['+page+']:', err));
   return false;
+}
+
+async function cargarAyuda() {
+  AXIAyuda.mostrar(sesion.rol);
 }
 
 // ==================== CEO: DASHBOARD ====================

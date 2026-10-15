@@ -1,0 +1,50 @@
+/* Sólo la página de ayuda y su enlace nuevo; conservar el menú existente. */
+.sidebar a.axi-help-module-link{padding:.6rem 1.2rem;border-left:0}
+.sidebar a.axi-help-module-link.active{border-left:3px solid var(--ax-gold);padding-left:calc(1.2rem - 3px)}
+body.sb-mini .sidebar a.axi-help-module-link{display:flex}
+body.sb-mini .sidebar a.axi-help-module-link .module-label{font-size:0;gap:0}
+.axi-help{color:var(--ax-text);font-family:inherit;max-width:1120px;margin:0 auto}
+.axi-help .ah-heading{display:flex;gap:1rem;justify-content:space-between;align-items:start;flex-wrap:wrap;margin-bottom:1.2rem}
+.axi-help .ah-language{display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:var(--ax-muted)}
+.axi-help .ah-language select{width:auto;min-width:120px;padding:.45rem .65rem;border:1px solid var(--ax-border);border-radius:6px;background:#fff;font:inherit;color:var(--ax-text)}
+.axi-help .ah-hero{border-top:3px solid var(--ax-gold);padding:1.6rem;background:#fff;border-radius:var(--ax-radius);box-shadow:0 2px 10px rgba(27,42,73,.05)}
+.axi-help .ah-hero h3{font-size:1.35rem;color:var(--ax-navy);margin:0 0 .5rem}
+.axi-help .ah-intro{font-size:.9rem;color:var(--ax-muted);margin:0}
+.axi-help .ah-role{display:inline-block;margin-top:.9rem;border-radius:20px;background:#eef2f7;color:#324b64;padding:.3rem .7rem;font-size:.75rem}
+.axi-help .ah-search{position:relative;display:flex;align-items:center;margin-top:1.1rem}
+.axi-help .ah-search svg{position:absolute;left:.8rem;width:19px;height:19px;stroke:var(--ax-muted);fill:none;stroke-width:1.8}
+.axi-help .ah-search input{width:100%;padding:.8rem 2.5rem;border:1px solid #c7ccd4;border-radius:8px;background:#fff;color:var(--ax-text);font:inherit;font-size:.9rem;box-sizing:border-box}
+.axi-help .ah-clear{position:absolute;right:.4rem;border:0;background:transparent;color:var(--ax-muted);font-size:1.2rem;padding:.2rem .55rem;cursor:pointer}
+.axi-help .ah-language-note{margin:1rem 0;background:#eef2f8;border-left:3px solid #7990ae;padding:.7rem .9rem;font-size:.8rem;color:#41536a}
+.axi-help .ah-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin:1rem 0 1.4rem}
+.axi-help .ah-shortcut{border:1px solid var(--ax-border);border-radius:var(--ax-radius);background:#fff;padding:1rem;text-align:left;color:var(--ax-text);font-family:inherit;cursor:pointer}
+.axi-help .ah-shortcut:hover{border-color:var(--ax-gold)}
+.axi-help .ah-shortcut strong{display:block;font-size:.9rem;color:var(--ax-navy)}
+.axi-help .ah-shortcut small{display:block;font-size:.78rem;color:var(--ax-muted);margin-top:.35rem;line-height:1.5}
+.axi-help .ah-faq-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:.8rem}
+.axi-help .ah-faq-heading h3{margin:0;font-size:1.1rem;color:var(--ax-navy)}
+.axi-help .ah-count{font-size:.78rem;color:var(--ax-muted)}
+.axi-help .ah-topics{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.axi-help .ah-topic{border:1px solid #d5d5d0;background:#fff;border-radius:20px;padding:.45rem .8rem;font:inherit;font-size:.78rem;color:#555;cursor:pointer}
+.axi-help .ah-topic[aria-pressed="true"]{background:var(--ax-navy);border-color:var(--ax-navy);color:#fff}
+.axi-help .ah-faq{background:#fff;border:1px solid var(--ax-border);border-radius:var(--ax-radius);margin-bottom:.65rem;overflow:hidden}
+.axi-help .ah-faq summary{padding:1rem 1.1rem;display:flex;gap:.7rem;align-items:center;list-style:none;cursor:pointer;color:var(--ax-navy);font-size:.9rem;font-weight:600}
+.axi-help .ah-faq summary::-webkit-details-marker{display:none}
+.axi-help .ah-faq summary:before{content:'';display:block;width:4px;height:20px;flex-shrink:0;background:#c9a66f;border-radius:3px}
+.axi-help .ah-faq summary:after{content:'+';font-size:1.25rem;font-weight:400;color:#987444;margin-left:auto}
+.axi-help .ah-faq[open] summary:after{content:'−'}
+.axi-help .ah-answer{border-top:1px solid #efeeeb;padding:.1rem 1.3rem 1rem;font-size:.88rem;line-height:1.65}
+.axi-help .ah-answer p{margin:.75rem 0}
+.axi-help .ah-answer ol{padding-left:1.4rem;margin:.6rem 0}
+.axi-help .ah-answer li{padding:.25rem 0 .25rem .2rem}
+.axi-help .ah-note{border-left:3px solid var(--ax-gold);background:#fbf6ec;padding:.6rem .8rem;color:#655336;font-size:.8rem}
+.axi-help .ah-source{border-top:1px solid #efeeeb;padding-top:.7rem;font-size:.75rem;color:var(--ax-muted)}
+.axi-help .ah-empty{background:#fff;border:1px dashed #c9c9c4;border-radius:10px;padding:1.6rem;text-align:center;font-size:.9rem}
+.axi-help .ah-empty button{margin-top:.7rem}
+.axi-help .ah-support{margin-top:1.2rem;padding:1.1rem 1.3rem;border-radius:var(--ax-radius);border:1px solid var(--ax-border);background:var(--ax-off)}
+.axi-help .ah-support strong{color:var(--ax-navy);font-size:.9rem}
+.axi-help .ah-support p{margin:.4rem 0 0;font-size:.82rem;color:var(--ax-muted);line-height:1.6}
+.axi-help [hidden]{display:none!important}
+.axi-help input:focus-visible,.axi-help button:focus-visible,.axi-help select:focus-visible,.axi-help summary:focus-visible{outline:2px solid var(--ax-gold);outline-offset:3px}
+@media(max-width:768px){.axi-help .ah-hero{padding:1.1rem}.axi-help .ah-shortcuts{grid-template-columns:1fr;gap:.55rem}.axi-help .ah-shortcut{padding:.85rem 1rem}.axi-help .ah-hero h3{font-size:1.2rem}.axi-help .ah-heading{gap:.6rem}.axi-help .ah-answer{padding:.1rem 1rem .9rem}.axi-help .ah-faq summary{font-size:.85rem;padding:.9rem}.axi-help .ah-search input{font-size:.85rem}}
+
