@@ -4616,7 +4616,7 @@ async function glpFacturaDoc(x) {
   doc.autoTable({ startY: 98, margin: { left: 36, right: 36 }, theme: 'grid',
     styles: { font: 'helvetica', fontSize: 10, cellPadding: 5, lineColor: [228, 228, 228], lineWidth: 0.4 },
     columnStyles: { 0: { fontStyle: 'bold', textColor: BRAND.navy, fillColor: BRAND.off, cellWidth: 160 } },
-    body: [['Residencial', g.condominio || ''], ['Unidad', g.unidad], ['Propietario', pro.nombre || ''], ...(g.inquilino ? [['Inquilino', g.inquilino.nombre]] : []),
+    body: [['Residencial', g.condominio || ''], ['Unidad', g.unidad], ['Propietario', pro.nombre || ''], ...(g.inquilino ? [['Inquilino', g.inquilino.nombre]] : []), ...(g.administrador ? [['Administrador', g.administrador.nombre]] : []),
       ['Medidor', (g.medidor && g.medidor.numero_serie) || ''], ['Fecha de lectura', l.fecha || x.fecha || ''],
       ['Lectura anterior', l.anterior != null ? Number(l.anterior).toFixed(4) + ' m³' : ''], ['Lectura actual', l.actual != null ? Number(l.actual).toFixed(4) + ' m³' : ''],
       ['Consumo', (l.m3 != null ? Number(l.m3).toFixed(4) + ' m³ = ' : '') + (l.galones != null ? Number(l.galones).toFixed(3) + ' galones' : '')],
@@ -4645,25 +4645,39 @@ async function glpGenerarFactura() {
 }
 async function glpEnviarEmail() {
   const x = glpMovFactura(); if (!x) return;
-  const g = glpU, pro = g.propietario || {};
-  const to = [pro.email, g.inquilino && g.inquilino.email].filter(Boolean);
-  if (!to.length) { glpMsg('El propietario no tiene correo registrado.'); return; }
+  const g = glpU, pro = g.propietario || {}, inq = g.inquilino, adm = g.administrador;
+  // Routing GAS: inq+adm→TO inq CC adm; inq sin adm→TO inq CC prop; sin inq con adm→TO adm; solo prop→TO prop
+  let to = [], cc = [], dest;
+  if (inq && inq.email) {
+    to = [inq.email]; dest = inq.nombre || '';
+    cc = adm && adm.email ? [adm.email] : pro.email ? [pro.email] : [];
+  } else if (adm && adm.email) {
+    to = [adm.email]; dest = adm.nombre || '';
+  } else if (pro.email) {
+    to = [pro.email]; dest = pro.nombre || '';
+  }
+  if (!to.length) { glpMsg('No hay correo registrado para esta unidad (propietario, inquilino ni administrador).'); return; }
   try {
     const f = await glpFacturaDoc(x);
     const b64 = f.doc.output('datauristring').split(',')[1];
-    const texto = `Saludos ${pro.nombre || ''},\n\nAdjunto la factura de consumo de GLP ${x.factura} de la unidad ${g.unidad}, período ${x.periodo}, por RD$ ${fmt(x.monto)}.\n` +
+    const texto = `Saludos ${dest},\n\nAdjunto la factura de consumo de GLP ${x.factura} de la unidad ${g.unidad}, período ${x.periodo}, por RD$ ${fmt(x.monto)}.\n` +
       `Saldo de GLP tras este consumo: ${Number(x.saldo) >= 0 ? 'saldo a favor' : 'balance pendiente'} de RD$ ${fmt(Math.abs(Number(x.saldo)))}.\n\nGracias,\nAXICORE Property Administration\nTel. (809) 282-7776`;
-    abrirCorreo({ to, subject: `Factura de Consumo GLP ${x.factura} - ${g.unidad}`, texto, adjuntos: [{ nombre: f.nombre, mime: 'application/pdf', base64: b64 }] },
+    abrirCorreo({ to, cc, subject: `Factura de Consumo GLP ${x.factura} - ${g.unidad}`, texto, adjuntos: [{ nombre: f.nombre, mime: 'application/pdf', base64: b64 }] },
       `Correo_${x.factura}.eml`);
   } catch (e) { glpMsg('No se pudo preparar el correo: ' + e.message); }
 }
 async function glpEnviarWhatsApp() {
   const x = glpMovFactura(); if (!x) return;
-  const g = glpU, pro = g.propietario || {};
-  let num = String(pro.telefono || '').replace(/[^0-9]/g, '');
-  if (!num) { glpMsg('El propietario no tiene teléfono registrado.'); return; }
+  const g = glpU, pro = g.propietario || {}, inq = g.inquilino, adm = g.administrador;
+  // Routing GAS WhatsApp: misma cascada que email
+  let dest, num;
+  if (inq && inq.telefono) { dest = inq.nombre || ''; num = inq.telefono; }
+  else if (adm && adm.telefono) { dest = adm.nombre || ''; num = adm.telefono; }
+  else { dest = pro.nombre || ''; num = pro.telefono || ''; }
+  num = String(num).replace(/[^0-9]/g, '');
+  if (!num) { glpMsg('No hay teléfono registrado para esta unidad (propietario, inquilino ni administrador).'); return; }
   if (num.length === 10) num = '1' + num;
-  const txt = `Saludos ${pro.nombre || ''},\n\nLe compartimos su factura de consumo de GLP *${x.factura}* de la unidad ${g.unidad}, período ${x.periodo}: *RD$ ${fmt(x.monto)}*.\n` +
+  const txt = `Saludos ${dest},\n\nLe compartimos su factura de consumo de GLP *${x.factura}* de la unidad ${g.unidad}, período ${x.periodo}: *RD$ ${fmt(x.monto)}*.\n` +
     `Saldo de GLP: ${Number(x.saldo) >= 0 ? 'saldo a favor' : 'balance pendiente'} de RD$ ${fmt(Math.abs(Number(x.saldo)))}.\n\nGracias,\n*AXICORE Property Administration*`;
   const w = window.open(`https://wa.me/${num}?text=${encodeURIComponent(txt)}`, '_blank', 'noopener');
   try { const f = await glpFacturaDoc(x); f.doc.save(f.nombre); } catch (_) {}
