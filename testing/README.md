@@ -1,5 +1,7 @@
 # Pruebas de sesión única
 
+Incluye avisos de sesión aceptada al CEO: aplicar las tres migraciones en el motor local mediante sesiones-sql.cjs. Cada INSERT de sesión aceptada encola un aviso por CEO distinto; UPDATE, recarga y rechazo no lo hacen. Los avisos de rechazo conservan destinatarios y agrupación originales. Se comprueban contenido, destinatario único, inicios sucesivos y diez solicitudes sin duplicados. No prueba entrega SMTP real.
+
 Sólo datos sintéticos. No se conecta a Supabase ni se envían correos.
 
 Instalar con pnpm en esta carpeta usando package.json y pnpm-lock.yaml; ejecutar `node sesiones-sql.cjs`.
