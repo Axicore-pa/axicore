@@ -198,3 +198,15 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Base y servicios: sin cambios.
 - Validación prevista: guardar con SHA actual del archivo y recuperar el contenido para comprobar coincidencia.
 - Siguiente paso: entregar a Misael la instrucción para Claude; luego continuar revisión de Supabase cuando exista conexión.
+
+### AXI-CGPT-004 — 14/10/2026 — Preparación de conexión Supabase
+- Responsable: ChatGPT/Codex.
+- Solicitud: explicar cómo habilitar acceso Supabase en este chat.
+- Estado: parcial; integración encontrada, instalación y autorización pendientes del usuario.
+- Trabajo: comprobación de herramientas disponibles y búsqueda de Supabase en el directorio de plugins. El directorio indica que está disponible pero no instalado; se ofreció su instalación/conexión.
+- Resultado: todavía no se ha confirmado conexión ni acceso al proyecto qfgyftsnwznsqizriggr.
+- Lógica: usar la integración disponible y autorización de cuenta antes de inspeccionar la base; no solicitar contraseñas o claves por chat.
+- Corrección de orientación previa: cerrar y reabrir el chat no establece por sí mismo la conexión; primero se requiere instalar/conectar la integración y autorizar acceso.
+- Código, scripts, base y servicios: sin cambios.
+- Validación: búsqueda del directorio completada; ningún SQL ejecutado.
+- Siguiente paso: Misael instala/conecta Supabase y autoriza acceso a la organización/proyecto correspondiente; después comprobar mediante lectura que el proyecto es accesible.
