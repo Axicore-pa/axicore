@@ -304,3 +304,8 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Datos reales: sin INSERT/UPDATE/DELETE operativos. Antes/después coinciden 26 movimientos (suma monto 30592.88), 20 lecturas (suma monto_consumo -5354.59) y 12 facturas (suma monto_factura 5237.95). Las 12 facturas estaban aprobadas antes; no se reclasificó historia. Estas sumas verifican conservación, no un nuevo cuadre financiero.
 - Límites: las pruebas temporales aíslan efectos y no prueban RLS con sesiones reales ni interacción de navegador. No se ejecutaron envíos ni consumos/cobros reales.
 - Siguiente paso para Claude: revisar estas correcciones aplicadas y sus pruebas; confirmar el punto 1 pendiente mediante condos_propietario/portal_fondo_comun/portal_morosidad_global, sin bloquear los cambios ya autorizados. Cualquier corrección adicional requiere propuesta y consentimiento de Misael.
+
+
+- Comprobaciones posteriores al guardado: los cinco archivos se recuperaron desde GitHub y coincidieron con lo preparado; cinco casos JavaScript de emisión/totales pasaron (aprobado permitido; pendiente, rechazado, anulado y no aprobado bloqueados).
+- Commit de implementación: [9273abed3c134b5a700b459c687904ef5139efe5](https://github.com/Axicore-pa/axicore/commit/9273abed3c134b5a700b459c687904ef5139efe5).
+- Despliegue web de ese commit: [GitHub Pages completado correctamente](https://github.com/Axicore-pa/axicore/actions/runs/38676447898). Esto confirma el despliegue; no sustituye pruebas de interfaz con usuarios reales.
