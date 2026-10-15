@@ -4353,7 +4353,8 @@ let glpU = null, glpSel = null, glpUnidades = [];
 const mesActual = () => new Date().toISOString().slice(0, 7);
 const glpEsCEO = () => sesion.rol === 'CEO';
 const rd = v => 'RD$ ' + fmt(Number(v || 0));
-const glpAct = x => (x.estado || 'ACTIVO').toUpperCase() !== 'ANULADO';
+const glpAct = x => (x.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
+const glpEstado = x => (x.estado || 'ACTIVO').toUpperCase() === 'ANULADO' ? 'ANULADO' : (x.factura_aprobacion || x.estado || 'ACTIVO');
 const glpEsDep = x => (x.tipo || '').toUpperCase() === 'DEPOSITO';
 function glpMsg(t) { const a = $('gx-alert'); a.textContent = t || ''; a.style.display = t ? 'block' : 'none'; }
 function glpSet(id, v) { const e = $(id); if (e) e.value = v ?? ''; }
@@ -4421,13 +4422,13 @@ async function glpCargarUnidad(id) {
   // Record/Factura
   const movs = g.movimientos || [];
   $('gx-record').innerHTML = '<option value=""></option>' + movs.filter(x => x.factura).slice().reverse()
-    .map(x => `<option value="${x.id}">${x.factura} | ${x.periodo || ''} | ${fmt(x.monto)} | ${glpAct(x) ? (x.factura_aprobacion && x.factura_aprobacion !== 'Aprobado' ? x.factura_aprobacion : 'ACTIVO') : 'ANULADO'}</option>`).join('');
+    .map(x => `<option value="${x.id}">${x.factura} | ${x.periodo || ''} | ${fmt(x.monto)} | ${glpEstado(x)}</option>`).join('');
   // Anexo B
   $('gx-hist').innerHTML = movs.map(x => {
-    const dep = glpEsDep(x), an = !glpAct(x);
+    const dep = glpEsDep(x), an = (x.estado || '').toUpperCase() === 'ANULADO';
     return `<tr data-id="${x.id}" class="${an ? 'anu' : ''}" onclick="glpSeleccionar(${x.id})" title="${an ? 'Anulado: ' + (x.motivo_anulacion || '').replace(/"/g, '') : ''}">
-      <td>${x.periodo || ''}</td><td>${x.fecha ? fechaCorta(x.fecha) : ''}</td><td>${x.concepto || ''}${x.factura ? ' · ' + x.factura : ''}</td>
-      <td class="r">${dep ? fmt(x.monto) : ''}</td><td class="r">${dep ? '' : fmt(x.monto)}</td><td class="r">${an ? '' : fmt(x.saldo)}</td></tr>`;
+      <td>${x.periodo || ''}</td><td>${x.fecha ? fechaCorta(x.fecha) : ''}</td><td>${x.concepto || ''}${x.factura ? ' · ' + x.factura : ''}${!glpAct(x) && !an ? ' · ' + glpEstado(x) : ''}</td>
+      <td class="r">${dep ? fmt(x.monto) : ''}</td><td class="r">${dep ? '' : fmt(x.monto)}</td><td class="r">${glpAct(x) ? fmt(x.saldo) : ''}</td></tr>`;
   }).join('') || '<tr><td colspan="6" style="color:#888;cursor:default">Sin movimientos</td></tr>';
   const h = $('gx-hist').parentElement.parentElement; h.scrollTop = 0;
   // Sumario
@@ -4474,7 +4475,7 @@ function glpSeleccionar(movId) {
     glpSet('gc-precio', l.precio != null ? Number(l.precio).toFixed(2) : '');
     glpSet('gc-monto', fmt(x.monto)); glpSet('gc-fnom', nomFoto(l.foto || x.foto));
   }
-  glpMsg(glpAct(x) ? '' : 'Transacción ANULADA: ' + (x.motivo_anulacion || ''));
+  glpMsg(glpAct(x) ? '' : 'Transacción ' + glpEstado(x) + (x.motivo_anulacion ? ': ' + x.motivo_anulacion : ''));
 }
 
 function glpCalcular() {
@@ -4538,6 +4539,7 @@ async function glpConsumo() {
     if (error) throw error;
     await glpCargarUnidad(g.unidad_id);
     glpSeleccionar(data.movimiento_id);
+    if (data.estado_aprobacion !== 'Aprobado') { glpMsg('Consumo sometido al CEO. El saldo cambiará al aprobarlo.'); return; }
     if (confirm(`Consumo registrado. Record: ${data.factura} por RD$ ${fmt(data.monto)}${glpEsCEO() ? '' : ' (pendiente de aprobación del CEO)'}.\n¿Generar la factura ahora?`)) glpGenerarFactura();
   } catch (e) { glpMsg(e.message); $('gc-btn').disabled = false; }
 }
@@ -4574,7 +4576,7 @@ function glpMovFactura() {
   let x = glpSel && glpSel.factura ? glpSel : null;
   if (!x) x = (g.movimientos || []).filter(m => m.factura && glpAct(m)).pop();
   if (!x) { glpMsg('Esta unidad no tiene facturas de consumo. Elija un Record/Factura o registre un consumo.'); return null; }
-  if (!glpAct(x)) { glpMsg('El record ' + x.factura + ' está ANULADO.'); return null; }
+  if (!glpAct(x) || (x.factura_aprobacion && x.factura_aprobacion !== 'Aprobado')) { glpMsg('El record ' + x.factura + ' está ' + glpEstado(x) + '; solo se emiten consumos aprobados y activos.'); return null; }
   return x;
 }
 async function glpVerFoto(ruta) {

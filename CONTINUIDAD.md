@@ -2,7 +2,7 @@
 Última actualización documental: 14/10/2026.
 Responsable del proyecto: Misael.
 Colaboradores: Claude y ChatGPT/Codex.
-Estado: conexión Supabase confirmada; revisión inicial del código realizada; contraste detallado de base y pruebas de uso pendientes.
+Estado: SQL 25–27 contrastados con Supabase; correcciones de fecha de inicio y aprobación GLP aplicadas (AXI-CGPT-008); pruebas con usuarios reales pendientes.
 
 ## Leer primero al retomar
 Este archivo es la referencia compartida para retomar el proyecto desde cualquiera de las dos IA. No conecta ni sincroniza sus memorias. Cada asistente necesita acceso al repositorio y debe leer la versión actual antes de trabajar.
@@ -284,3 +284,23 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Acuerdos existentes: fecha_inicio futura no se comprueba; el consumo GLP activo afecta saldo antes de aprobación. No confundir acuerdo sobre el comportamiento observado con autorización de una solución.
 - Código, datos y configuración: sin cambios. Solo se añade esta entrada a CONTINUIDAD.md.
 - Límites: no se probaron sesiones reales. Cualquier corrección funcional mantiene el requisito de propuesta y consentimiento previo de Misael.
+
+
+### AXI-CGPT-008 — 14/10/2026 — Correcciones aprobadas: fechas de asignación y aprobación GLP
+- Responsable: ChatGPT/Codex.
+- Autorización: Misael aceptó con “ok” la propuesta de corregir fechas de inicio y hacer efectivo el consumo GLP del Asistente solo después de aprobación del CEO, incluyendo SQL versionado, validaciones y minuta. No se modifican los permisos acumulados del punto 1.
+- Estado: migración aplicada y comprobada en Supabase; archivos publicados en este cambio. Pruebas con usuarios reales pendientes.
+- Punto de partida: main, commit 710023749225ec72f3a9e5830c067cdc6b73ea68; proyecto qfgyftsnwznsqizriggr. Se releyeron continuidad y definiciones antes de aplicar.
+- Fechas: private.unidades_propias filtra fecha_inicio de Administrador usando el día de America/Santo_Domingo; el historial de Propietario usa el instante now() por ser timestamptz y conserva fechas NULL heredadas. El vínculo directo unidades.propietario_id conserva su comportamiento. No se cambian fechas ni asignaciones existentes.
+- GLP: el Asistente registra lectura/movimiento PENDIENTE y factura Sometido. Los cálculos existentes de saldo/lectura anterior/tanque consideran ACTIVO; portal_mi_glp también limita sus lecturas a ACTIVO. El consumo del CEO permanece aprobado y activo inmediatamente.
+- Aprobación/rechazo: nuevo trigger privado en glp_facturas activa lectura/movimiento al aprobar y los marca RECHAZADO al rechazar. Rechazar permite registrar una lectura corregida. No se admiten nuevos consumos de la unidad mientras haya uno pendiente, para evitar encadenar lecturas no aprobadas. Los depósitos siguen permitidos; aprobar recalcula los saldos del consumo y movimientos posteriores en orden de registro. Se utiliza el bloqueo por unidad existente.
+- Bandeja: fn_aprobaciones_bandeja incluye GLP; fn_aprobacion_revisar toma el mismo bloqueo antes de revisar GLP. fn_glp_anular usa ese bloqueo antes de anular. Se mantiene el control CEO y aal2 existente.
+- Frontend: index.html diferencia estados pendientes/rechazados de activos, excluye los no activos de totales/exportación de estado de cuenta y bloquea emisión/envío de factura no activa o no aprobada; el registro del Asistente informa que el saldo cambiará al aprobar. Sin rediseño visual.
+- Migración aplicada: 20261015032620, axicore_asignaciones_inicio_glp_aprobacion. El primer intento falló por ensamblado del SQL y no quedó aplicado; se corrigió, se comprobó el script completo con BEGIN/ROLLBACK y el segundo intento terminó correctamente. Se comprobaron después los siete cuerpos de funciones contra los preparados y permisos conservados; el nuevo trigger solo es ejecutable por su propietario.
+- Archivos: [SQL de avance](sql/28_asignaciones_inicio_glp_aprobacion.sql), [reversión](sql/rollback_28_asignaciones_glp.sql), [pruebas temporales](sql/tests/28_asignaciones_glp_temporal.sql), index.html y esta minuta. Los SQL 25-27 permanecen como historia.
+- Aplicación/reversión: avance aplicado una vez mediante la integración Supabase y registrado en schema_migrations; no volver a ejecutar encima porque crea un trigger. La reversión restaura definiciones previas y retira el trigger nuevo, pero aborta si hay movimientos PENDIENTE/RECHAZADO que requieran conciliación; no revierte decisiones o datos operativos posteriores.
+- Validación: 27 comprobaciones y 3 casos negativos pasaron en tablas temporales con ROLLBACK, usando copias de las funciones y autenticación/log simulados. Cubren pendiente, En proceso, aprobación, rechazo, reintento, doble aprobación, bloqueo de Asistente, depósito intermedio, saldo del portal, lectura anterior, bandeja GLP, fecha futura/hoy/pasada, fecha vacía heredada, perfil inactivo y aal2. Una primera ejecución de las pruebas requirió añadir una tabla temporal faltante al montaje; ejecución final completa correcta.
+- Validación adicional: sintaxis del JavaScript correcta; revisión de seguridad Supabase realizada. Persisten avisos previos fuera de alcance (search_path de fn_set_updated_at, extensión unaccent, funciones SECURITY DEFINER públicas y protección de contraseñas). No se modificaron estos objetos/configuraciones. Referencias: https://supabase.com/docs/guides/database/database-linter y https://supabase.com/docs/guides/auth/password-security.
+- Datos reales: sin INSERT/UPDATE/DELETE operativos. Antes/después coinciden 26 movimientos (suma monto 30592.88), 20 lecturas (suma monto_consumo -5354.59) y 12 facturas (suma monto_factura 5237.95). Las 12 facturas estaban aprobadas antes; no se reclasificó historia. Estas sumas verifican conservación, no un nuevo cuadre financiero.
+- Límites: las pruebas temporales aíslan efectos y no prueban RLS con sesiones reales ni interacción de navegador. No se ejecutaron envíos ni consumos/cobros reales.
+- Siguiente paso para Claude: revisar estas correcciones aplicadas y sus pruebas; confirmar el punto 1 pendiente mediante condos_propietario/portal_fondo_comun/portal_morosidad_global, sin bloquear los cambios ya autorizados. Cualquier corrección adicional requiere propuesta y consentimiento de Misael.
