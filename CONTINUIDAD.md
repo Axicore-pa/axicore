@@ -222,3 +222,52 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Scripts nuevos, código funcional, base y servicios: sin modificaciones.
 - Actualización de estado: las limitaciones de acceso descritas en minutas anteriores quedan superadas por esta comprobación.
 - Siguiente paso: contraste de solo lectura de migraciones, funciones, RLS, MFA, Edge Functions y cron con el repositorio.
+
+### AXI-CGPT-006 — 14/10/2026 — Permisos: puntos para confirmación de Claude
+- Responsable: ChatGPT/Codex.
+- Solicitud de Misael: registrar tres observaciones y pedir confirmación independiente a Claude.
+- Estado: revisión de definiciones completada; confirmación independiente y pruebas operativas pendientes.
+- Referencia de código: 963f57022ae549b4f9928b5255c5f4123982fade.
+- Puntos registrados: (1) acumulación de permisos por cuenta vía UNION en unidades_propias; (2) fecha_inicio no verificada en asignaciones; (3) staff_condos permite crear en Facturación/Pagos/Gastos/GLP con requiere_autorizacion=true, y en GLP el saldo refleja consumo antes de aprobación.
+- Código, datos y servicios: sin modificaciones. Entrada documental.
+- Siguiente paso: Claude confirma las tres observaciones.
+
+### AXI-CLAUDE-001 — 14/10/2026 — Validación independiente de AXI-CGPT-006
+- Responsable: Claude.
+- Solicitud de Misael: validar los tres hallazgos de ChatGPT sin corregir; solo confirmar veracidad.
+- Estado: completada (validación de solo lectura).
+- Punto de partida: CONTINUIDAD.md leída desde GitHub (HEAD actual); funciones consultadas directamente en Supabase proyecto qfgyftsnwznsqizriggr.
+- Trabajo realizado: lectura de código fuente de `private.unidades_propias`, `private.staff_condos`, `private.trg_aprobacion`, `public.fn_glp_registrar_consumo`, `public.portal_mi_glp`; consulta de políticas RLS de facturas/pagos/glp_lecturas/glp_movimientos; verificación de triggers en glp_facturas, glp_lecturas y glp_movimientos; inspección de columnas de unidad_administradores y unidad_propietarios.
+
+#### Resultado por punto
+
+**Punto 1 — Acumulación de permisos por cuenta: PARCIALMENTE VERAZ.**
+- Confirmado: `unidades_propias()` hace UNION de unidades Propietario + Administrador. Si una cuenta tiene ambos accesos, ve la suma.
+- Matiz: la frase "consultas globales" sobreestima el efecto. Las políticas RLS filtran `unidad_id = ANY(unidades_propias())`, así que el alcance se limita a unidades asignadas, nunca a todo el condominio. No hay escalación de privilegios ni visibilidad global. Riesgo real: bajo.
+
+**Punto 2 — `fecha_inicio` no verificada: VERAZ.**
+- Confirmado: `unidad_administradores` tiene `fecha_inicio` (date, NOT NULL, default CURRENT_DATE). `unidad_propietarios` también tiene `fecha_inicio` (timestamptz, nullable).
+- `unidades_propias()` filtra solo `fecha_fin IS NULL` en ambas ramas. No verifica `fecha_inicio <= CURRENT_DATE`.
+- Consecuencia: una asignación con fecha_inicio futura y fecha_fin NULL concede acceso inmediato.
+- Riesgo real: medio. Corregible con `AND ua.fecha_inicio <= CURRENT_DATE` (y equivalente en la rama Propietario).
+
+**Punto 3 — `staff_condos` permite crear con `requiere_autorizacion`: VERAZ.**
+- Confirmado en código: para acción `'crear'`, la condición incluye `OR p_modulo IN ('Facturacion','Pagos','Gastos','GLP')`, lo que permite al Asistente crear aunque `requiere_autorizacion` sea true.
+- `trg_aprobacion` protege correctamente: en INSERT, si no es CEO → `estado_aprobacion = 'Sometido'`. Solo CEO puede cambiar ese estado. Confirmado.
+- Pagos/Gastos/Libro: `fn_pago_postear_libro` y `axi_libro_registrar_gasto` solo se ejecutan dentro de `fn_aprobacion_revisar` cuando `p_estado = 'Aprobado'`. Efectos financieros quedan pendientes hasta aprobación. Confirmado.
+- **GLP — hallazgo relevante confirmado:** `fn_glp_registrar_consumo` crea en una transacción: (a) `glp_lecturas` con estado 'ACTIVO' — SIN trigger de aprobación; (b) `glp_movimientos` con estado 'ACTIVO' — SIN trigger de aprobación; (c) `glp_facturas` — SÍ tiene `trg_aprobacion`, queda 'Sometido'. Verificado: `glp_lecturas` y `glp_movimientos` tienen 0 triggers no internos. `portal_mi_glp` calcula saldo sumando TODOS los movimientos ACTIVO sin filtrar por estado de aprobación de la factura asociada. El saldo del propietario refleja el consumo antes de que el CEO apruebe.
+- Riesgo: bajo para Facturación/Pagos/Gastos (trigger protege). Medio para GLP (saldo afectado antes de aprobación).
+- Nota: confirmar si esto corresponde a la lógica original de Access queda pendiente; Claude no tiene acceso al .accdb.
+
+#### Funciones y objetos consultados (solo lectura)
+- `pg_get_functiondef` de: private.unidades_propias, private.staff_condos, private.trg_aprobacion, public.fn_glp_registrar_consumo, public.portal_mi_glp, public.fn_aprobacion_revisar, public.fn_aprobaciones_bandeja.
+- `pg_policies` de: facturas, pagos, glp_lecturas, glp_movimientos.
+- `pg_trigger` de: glp_facturas, glp_lecturas, glp_movimientos.
+- `information_schema.columns` de: unidad_administradores, unidad_propietarios.
+
+- Lógica y decisiones: validación cruzada sin modificar código ni datos. Los hallazgos de ChatGPT son verificables; las correcciones requieren propuesta y consentimiento de Misael.
+- Archivos y scripts: ninguno creado ni modificado. Entrada documental.
+- Base y servicios: sin cambios; solo consultas SELECT de metadatos.
+- Validación: lectura directa de funciones en Supabase PostgreSQL. No se ejecutaron operaciones financieras ni pruebas con usuarios.
+- Riesgos: ninguno introducido por esta revisión.
+- Siguiente paso: Misael decide si alguno de los tres puntos requiere corrección; cualquier cambio se propone antes de aplicar.
