@@ -122,3 +122,79 @@ Actualizar este archivo es una tarea explícita al cierre; no existe sincronizac
 - Cambio realizado: creación de este documento de continuidad.
 - Código funcional y base de datos: sin modificaciones.
 - Siguiente paso: verificar acceso a Supabase y realizar el contraste de solo lectura.
+
+## Instrucción permanente de consulta y minutas
+Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe dejar una minuta aquí, incluso si solo consiste en análisis, una decisión, un script preparado o una revisión sin cambios. Este mismo procedimiento se solicita a Claude.
+
+### Antes de empezar o retomar
+- Leer CONTINUIDAD.md desde GitHub en su versión actual, no solo una copia guardada en memoria.
+- Leer el registro de avances y localizar la última minuta del módulo a trabajar.
+- Consultar los archivos y scripts enlazados y comparar los commits actuales con las referencias de la minuta.
+- Informar brevemente a Misael qué se encontró y cuál es la tarea pendiente que se va a abordar.
+- Si una minuta contradice el código o la base, registrar la discrepancia; no asumir que lo documentado está desplegado.
+- Si no se puede consultar el documento, indicar la limitación y no afirmar que se conocen los avances recientes. Pedir el contenido vigente cuando sea necesario para continuar correctamente.
+
+### Durante y al cerrar cada tarea
+- Registrar cada avance significativo y cada tarea completada, parcial o bloqueada antes de pasar a otra tarea.
+- Actualizar también el estado y los pendientes del documento, conservando el historial de minutas.
+- Documentar la lógica implementada, las razones de la decisión y los casos límite relevantes.
+- Guardar scripts reutilizables en archivos del repositorio y enlazar su ruta y commit. Distinguir preparado, probado y aplicado; incluir orden, parámetros sin secretos y efectos esperados. Para SQL, indicar objetos afectados, si modifica datos y recuperación/reversión cuando corresponda.
+- Incluir pruebas realmente ejecutadas, sus resultados y lo que no se verificó. No atribuir a esta sesión pruebas heredadas.
+- Si se requiere aprobación de Misael, registrar la decisión exacta y su estado. No inventar autorizaciones.
+- Releer el archivo remoto antes de actualizarlo y verificar su lectura después de guardar.
+- Si falla la publicación, informar a Misael y entregar la minuta pendiente en el chat; no marcarla como publicada.
+- No es necesario registrar cada clic o llamada de herramienta: la unidad es una tarea o avance útil para retomar.
+
+### Formato de cada minuta
+- ID único y fecha (hora y zona solo cuando se hayan comprobado).
+- Asistente responsable.
+- Tarea y solicitud/autorización de Misael.
+- Estado: completada / parcial / bloqueada / pendiente de aprobación.
+- Punto de partida: rama y commit del código, y estado de base comprobado cuando aplique.
+- Trabajo realizado y resultado.
+- Lógica y decisiones: motivo, reglas de negocio y casos límite.
+- Archivos, scripts y commits: enlaces; indicar si fueron preparados, probados o aplicados.
+- Base y servicios: objetos/configuración afectados o “sin cambios”.
+- Validación: acciones ejecutadas, resultado y límites.
+- Riesgos, pendientes y siguiente paso concreto.
+- Para entradas solo documentales, usar el commit devuelto por GitHub como comprobante externo; no intentar incluir el hash del propio commit dentro del mismo archivo.
+
+## Minutas detalladas de trabajo desde ChatGPT/Codex
+### AXI-CGPT-001 — 14/10/2026 — Evaluación inicial
+- Responsable: ChatGPT/Codex.
+- Solicitud: revisar checkpoint, PDF y estado actual en GitHub/Supabase.
+- Estado: parcial; revisión documental y de código completada, contraste de base pendiente.
+- Punto de partida: código 5f247be8a1cfd8de51882fbb544559574125c3da; lectura del index.html fijada a ese commit.
+- Trabajo: extracción y lectura de las siete páginas del PDF, consulta de commits recientes y lectura del frontend y SQL 25–27.
+- Lógica examinada: tanque calcula nivel posterior con remanente + galones limitado por capacidad; SQL 27 incorpora Administrador, asignación por unidad y requisito aal2; arranque de sesión diferido con setTimeout.
+- Resultado: último commit coincide con checkpoint; Administrador sigue ausente del selector Usuarios; frontend tiene 6.420 líneas.
+- Fuentes: [index.html](https://github.com/Axicore-pa/axicore/blob/5f247be8a1cfd8de51882fbb544559574125c3da/index.html), [SQL 25](https://github.com/Axicore-pa/axicore/blob/5f247be8a1cfd8de51882fbb544559574125c3da/sql/25_glp_tanque.sql), [SQL 26](https://github.com/Axicore-pa/axicore/blob/5f247be8a1cfd8de51882fbb544559574125c3da/sql/26_glp_llenado_registrar.sql), [SQL 27](https://github.com/Axicore-pa/axicore/blob/5f247be8a1cfd8de51882fbb544559574125c3da/sql/27_administradores_propiedades.sql).
+- Scripts nuevos: ninguno. La extracción local del PDF fue auxiliar; no modifica el sistema ni es una migración.
+- Base y servicios: sin cambios; sin conexión Supabase disponible para esta revisión.
+- Validación: lecturas mediante conector GitHub y extracción PDF correctas. Una consulta a un nombre supuesto sql/24_2fa_totp.sql devolvió 404; esto no demuestra ausencia del SQL 24, cuyo nombre exacto no se verificó.
+- Límites: no se probó cascada de envío, generación PDF, interfaz, permisos reales, cron, restauración ni cuadre financiero.
+- Siguiente paso: habilitar/comprobar conexión Supabase para contraste de solo lectura.
+
+### AXI-CGPT-002 — 14/10/2026 — Creación de referencia compartida
+- Responsable: ChatGPT/Codex.
+- Solicitud: crear un punto compartido para que Claude conozca los avances y retome el trabajo.
+- Estado: completada.
+- Trabajo: creación de CONTINUIDAD.md en el repositorio con contexto, reglas, decisiones, evidencias y pendientes.
+- Lógica: GitHub conserva una referencia versionada accesible a ambos asistentes; las memorias de los chats no se sincronizan.
+- Archivo: [CONTINUIDAD.md](https://github.com/Axicore-pa/axicore/blob/main/CONTINUIDAD.md).
+- Commit publicado: [e4f679e4a76d9cbd48e169b52f3461891f369908](https://github.com/Axicore-pa/axicore/commit/e4f679e4a76d9cbd48e169b52f3461891f369908).
+- Scripts, base y servicios: sin cambios.
+- Validación: lectura posterior de GitHub; contenido recuperado idéntico al enviado.
+- Límite: no se comprobó acceso desde la cuenta o sesión de Claude.
+- Siguiente paso: Misael comparte el enlace y las instrucciones con Claude.
+
+### AXI-CGPT-003 — 14/10/2026 — Protocolo obligatorio de minutas
+- Responsable: ChatGPT/Codex.
+- Solicitud: instrucciones para que Claude consulte los avances antes de continuar y registrar cada tarea, lógica, scripts y contexto útil.
+- Estado: completada si el guardado y la lectura posterior de esta actualización se confirman; el resultado se entrega a Misael en el chat.
+- Trabajo: ampliación de este documento con consulta previa, actualización por tarea, formato de minuta y reconstrucción fiel de las tareas AXI-CGPT-001 y 002.
+- Lógica: separar evidencia comprobada de antecedentes; enlazar scripts y commits; distinguir código preparado de cambios aplicados en la base; conservar historial y pendientes.
+- Archivos: CONTINUIDAD.md. Scripts nuevos: ninguno.
+- Base y servicios: sin cambios.
+- Validación prevista: guardar con SHA actual del archivo y recuperar el contenido para comprobar coincidencia.
+- Siguiente paso: entregar a Misael la instrucción para Claude; luego continuar revisión de Supabase cuando exista conexión.
