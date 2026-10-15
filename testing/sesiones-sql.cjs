@@ -29,8 +29,8 @@ const root=path.resolve(__dirname,'..');
  INSERT INTO public.accesos VALUES(1,'00000000-0000-0000-0000-000000000001','Propietario',1,1,null,true),(2,'00000000-0000-0000-0000-000000000002','CEO',2,null,null,true);
  INSERT INTO public.usuarios VALUES(1,'Usuario Prueba','prueba',1),(2,'CEO Prueba','ceo',1);
  `);
- await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015042312_sesiones_unicas.sql'),'utf8'));
- await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015043524_sesiones_duplicadas_seguras.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015043045_axicore_sesiones_unicas_preparacion.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015043602_axicore_sesiones_duplicadas_seguras.sql'),'utf8'));
  const query=async sql=>(await db.query(sql)).rows;
  const check=async(sql,value,label)=>{assert.deepEqual((await query(sql))[0].v,value,label);console.log('OK '+label)};
  const context=async(user=1,sid=1,tab='a',aal='aal1',route='rpc/axi_sesion_iniciar')=>{
