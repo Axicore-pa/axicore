@@ -30,6 +30,7 @@ const root=path.resolve(__dirname,'..');
  INSERT INTO public.usuarios VALUES(1,'Usuario Prueba','prueba',1),(2,'CEO Prueba','ceo',1);
  `);
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015042312_sesiones_unicas.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015043524_sesiones_duplicadas_seguras.sql'),'utf8'));
  const query=async sql=>(await db.query(sql)).rows;
  const check=async(sql,value,label)=>{assert.deepEqual((await query(sql))[0].v,value,label);console.log('OK '+label)};
  const context=async(user=1,sid=1,tab='a',aal='aal1',route='rpc/axi_sesion_iniciar')=>{
@@ -82,6 +83,10 @@ const root=path.resolve(__dirname,'..');
  await context(1,6,'f');
  const results=await Promise.all(Array.from({length:10},()=>query('select public.axi_sesion_iniciar() as v')));
  assert.equal(results.length,10);await check('select count(*)::int as v from private.axi_sesiones',1,'diez solicitudes conservan una sesión');
+ await db.exec("select public.axi_sesion_cerrar(); insert into auth.sessions values('10000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000001',null)");
+ await context(1,7,'a');await db.query("select set_config('request.headers',$1,false)",[JSON.stringify({'x-axicore-tab':'a'.repeat(64),'x-axicore-duplicate':'1'})]);
+ await check("select (public.axi_sesion_iniciar()->>'sesion_bloqueada')::boolean as v",true,'copia no reclama registro libre');
+ await check('select count(*)::int as v from private.axi_sesiones',0,'copia no crea sesión autorizada');
  await db.close();console.log('PRUEBAS SQL COMPLETADAS (motor local, datos sintéticos)');
 })().catch(e=>{console.error(e);process.exit(1)});
 

@@ -50,9 +50,13 @@ const sid=token=>{try{return JSON.parse(Buffer.from(token.split('.')[1],'base64u
   await login(second);await second.waitForFunction(()=>document.getElementById('login-alert').textContent.includes('sesión en curso'));
   assert.deepEqual(active,original);assert.equal(await first.evaluate(()=>sb.auth.getSession().then(x=>x.data.session.user.email)),user.email);
   console.log('OK segundo ingreso bloqueado sin alterar tokens de primera');
-  const popupPromise=first.waitForEvent('popup');await first.evaluate(()=>window.open('https://axi.test/','_blank'));const copy=await popupPromise;
+  const popupPromise=first.waitForEvent('popup');await first.evaluate(()=>window.open('about:blank','_blank'));const copy=await popupPromise;
+  await copy.evaluate(()=>{const s=JSON.parse(sessionStorage.getItem('axi-auth-v3'));s.expires_at=Math.floor(Date.now()/1000)+5;sessionStorage.setItem('axi-auth-v3',JSON.stringify(s));});
+  const tokensBeforeCopy=n;await copy.goto('https://axi.test/');
   await copy.waitForFunction(()=>document.getElementById('login-alert')?.textContent.includes('sesión en curso'));
   assert.notEqual(await copy.evaluate(()=>sessionStorage.getItem('axi-tab-v1')),await first.evaluate(()=>sessionStorage.getItem('axi-tab-v1')));
+  assert.equal(await copy.evaluate(()=>sb.auth.getSession().then(x=>x.data.session)),null,'copia no importa ni renueva Auth original');
+  assert.equal(n,tokensBeforeCopy,'copia con token próximo a vencer no lo renueva');
   assert.deepEqual(active,original);assert.equal(signouts,0);console.log('OK pestaña duplicada cambia prueba y no revoca primera');
   await first.reload();await first.waitForFunction(()=>sesion?.rol==='Propietario');assert.equal(history,1);assert.deepEqual(active,original);console.log('OK recarga conserva sesión e historial');
   await first.evaluate(()=>cerrarSesion());assert.equal(active,null);assert.equal(signouts,1);console.log('OK cerrar sólo sesión local');

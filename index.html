@@ -2606,6 +2606,22 @@ sb.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// La copia sólo notifica el intento con el JWT existente: jamás renueva el token
+// de su original ni lo importa al cliente Auth de la nueva pestaña.
+AXISession.ready.then(async () => {
+  const copia = AXISession.takeDuplicateSession();
+  if (!copia?.access_token) return;
+  let mensaje = 'Ya existe una sesión en esta pestaña original. Cierra la otra sesión e inicia sesión aquí con tu correo y clave.';
+  try {
+    const response = await AXISession.options.global.fetch(SUPABASE_URL + '/rest/v1/rpc/axi_sesion_iniciar', {
+      method:'POST', headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer ' + copia.access_token,'Content-Type':'application/json','x-axicore-duplicate':'1'},body:'{}'
+    });
+    const data = await response.json();
+    if (response.ok && data.sesion_bloqueada) mensaje = data.mensaje;
+  } catch (_) {}
+  mostrarSesionBloqueada({mensaje});
+}).catch(() => {});
+
 // Cerrar dropdown al hacer clic fuera
 document.addEventListener('click', (e) => {
   const tc = $('topbar-condo');
