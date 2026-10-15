@@ -2,7 +2,7 @@
 Última actualización documental: 14/10/2026.
 Responsable del proyecto: Misael.
 Colaboradores: Claude y ChatGPT/Codex.
-Estado: revisión inicial del código realizada; verificación de Supabase y pruebas de uso pendientes.
+Estado: conexión Supabase confirmada; revisión inicial del código realizada; contraste detallado de base y pruebas de uso pendientes.
 
 ## Leer primero al retomar
 Este archivo es la referencia compartida para retomar el proyecto desde cualquiera de las dos IA. No conecta ni sincroniza sus memorias. Cada asistente necesita acceso al repositorio y debe leer la versión actual antes de trabajar.
@@ -210,3 +210,15 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Código, scripts, base y servicios: sin cambios.
 - Validación: búsqueda del directorio completada; ningún SQL ejecutado.
 - Siguiente paso: Misael instala/conecta Supabase y autoriza acceso a la organización/proyecto correspondiente; después comprobar mediante lectura que el proyecto es accesible.
+
+### AXI-CGPT-005 — 14/10/2026 — Conexión Supabase comprobada
+- Responsable: ChatGPT/Codex.
+- Solicitud: habilitar y comprobar acceso a Supabase.
+- Estado: completada para comprobación de conexión; auditoría funcional pendiente.
+- Trabajo: tras la instalación confirmada, consulta de metadatos del proyecto y SELECT de existencia de objetos; lectura de esta referencia compartida.
+- Resultado: acceso al proyecto qfgyftsnwznsqizriggr, nombre axicore, estado ACTIVE_HEALTHY, PostgreSQL 17.11.0.003.
+- Consulta de solo lectura ejecutada: SELECT current_database() AS database_name, to_regclass('public.administradores') IS NOT NULL AS administradores_existe, to_regclass('public.unidad_administradores') IS NOT NULL AS asignaciones_existe, to_regclass('public.glp_llenados') IS NOT NULL AS glp_llenados_existe;
+- Validación: las tres tablas existen. Esto no verifica funciones, políticas, datos, migraciones completas ni comportamiento por rol.
+- Scripts nuevos, código funcional, base y servicios: sin modificaciones.
+- Actualización de estado: las limitaciones de acceso descritas en minutas anteriores quedan superadas por esta comprobación.
+- Siguiente paso: contraste de solo lectura de migraciones, funciones, RLS, MFA, Edge Functions y cron con el repositorio.
