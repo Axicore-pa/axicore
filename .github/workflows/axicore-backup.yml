@@ -1,0 +1,39 @@
+name: Respaldo cifrado de AXICORE
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: axicore-daily-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    # No activar hasta custodiar la clave privada y configurar los secretos.
+    if: vars.AXICORE_BACKUPS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container: postgres:17.11
+    steps:
+      - name: Preparar ejecutor
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git ca-certificates python3-venv rclone
+      - name: Obtener código e historial
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Preparar y probar cifrado
+        run: |
+          python3 -m venv /tmp/axicore-venv
+          /tmp/axicore-venv/bin/pip install --disable-pip-version-check -r backup/requirements.txt
+          /tmp/axicore-venv/bin/python backup/test_secure_archive.py
+      - name: Copiar, cifrar, subir y verificar
+        env:
+          AXICORE_DATABASE_URL: ${{ secrets.AXICORE_DATABASE_URL }}
+          AXICORE_SUPABASE_SERVICE_KEY: ${{ secrets.AXICORE_SUPABASE_SERVICE_KEY }}
+          AXICORE_MANAGEMENT_TOKEN: ${{ secrets.AXICORE_MANAGEMENT_TOKEN }}
+          AXICORE_RCLONE_CONFIG: ${{ secrets.AXICORE_RCLONE_CONFIG }}
+        run: /tmp/axicore-venv/bin/python backup/daily_backup.py

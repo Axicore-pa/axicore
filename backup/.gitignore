@@ -1,0 +1,7 @@
+__pycache__/
+test-tmp/
+*.axibak
+*.dump
+*-private.pem
+rclone.conf
+.env
