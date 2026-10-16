@@ -20,7 +20,7 @@ const root=path.join(__dirname,'..'),out=path.join(root,'../output/circulares');
    if(name==='axi_circular_abrir')return {data:{archivo:'1/test.png',mime:s.circular.mime}};
    if(name==='axi_circular_leida'){s.reads++;s.circular.leido_at=new Date().toISOString();return {data:{comprobante:'comprobante-sintetico',leido_at:s.circular.leido_at}};}
    if(name==='axi_circular_enviar'){s.sends++;s.circular.enviado_at=new Date().toISOString();return {data:3};}
-   if(name==='axi_circular_preparar')return {data:{id:s.circular.id,archivo:'1/test.png'}};
+   if(name==='axi_circular_preparar'){s.codigoRecibido=args.p_codigo;return {data:{id:s.circular.id,archivo:'1/test.png'}};}
    if(name==='axi_circular_publicar'){s.published=true;return {data:null};}
    if(name==='axi_circular_comprobantes')return {data:{lecturas:[],correos:[]}};
    return {data:[]};
@@ -45,8 +45,10 @@ const root=path.join(__dirname,'..'),out=path.join(root,'../output/circulares');
  await page.getByRole('button',{name:'Enviar',exact:true}).click();await page.getByRole('dialog',{name:'Enviar circular'}).waitFor();await page.getByRole('dialog').getByRole('button',{name:'Enviar',exact:true}).click();await page.getByText('3 avisos en cola de envío.').waitFor();assert.equal(await page.evaluate(()=>testState.sends),1);await page.getByRole('dialog').getByRole('button',{name:'Cerrar',exact:true}).last().click();
  await page.screenshot({path:path.join(out,'gestion-ceo.png')});console.log('OK envío individual en cola y botón evita repetición');
  await page.getByRole('button',{name:'Nueva circular',exact:true}).click();await page.locator('#axi-circ-title').fill('Publicación de prueba');
+ assert.equal(await page.locator('#axi-circ-code').evaluate(e=>e.checkValidity()),false);
+ await page.locator('#axi-circ-code').fill('cir-dh2-007-2026');
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=20;return c.toDataURL('image/png').split(',')[1];});
- await page.locator('#axi-circ-file').setInputFiles({name:'circular.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.getByRole('button',{name:'Subir y publicar',exact:true}).click();await page.waitForFunction(()=>testState.upload===1);await page.getByRole('dialog').waitFor({state:'detached'});console.log('OK carga y publicación desde formulario de staff');
+ await page.locator('#axi-circ-file').setInputFiles({name:'circular.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.getByRole('button',{name:'Subir y publicar',exact:true}).click();await page.waitForFunction(()=>testState.upload===1);await page.getByRole('dialog').waitFor({state:'detached'});assert.equal(await page.evaluate(()=>testState.codigoRecibido),'CIR-DH2-007-2026');console.log('OK carga y publicación desde formulario de staff con código manual');
  const streams=['0.1 0.2 0.4 rg 30 650 535 150 re f','0.6 0.4 0.2 rg 30 500 535 150 re f'];
  const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>',
  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << >> /Contents 4 0 R >>',`<< /Length ${streams[0].length} >>\nstream\n${streams[0]}\nendstream`,

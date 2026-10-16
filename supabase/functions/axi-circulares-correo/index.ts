@@ -14,7 +14,7 @@ Deno.serve(async(req:Request)=>{
   try{
    const response=await fetch("https://api.resend.com/emails",{
     method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json","Idempotency-Key":"axi-circular-"+job.id},
-    body:JSON.stringify({from:"AXICORE <invitaciones@axicorepard.com>",to:[job.para],...(job.cc?.length?{cc:job.cc}:{}),subject:job.asunto,text:job.texto}),
+    body:JSON.stringify({from:"AXICORE <Admin@axicorepard.com>",to:[job.para],...(job.cc?.length?{cc:job.cc}:{}),subject:job.asunto,text:job.texto}),
     signal:AbortSignal.timeout(8000),
    });
    const body=await response.json().catch(()=>({}));
