@@ -444,6 +444,7 @@
   .bars .lbl { font-size:.72rem; color:var(--ax-muted); white-space:nowrap; }
 </style>
 <link rel="stylesheet" href="assets/ayuda.css?v=20261015-1">
+<link rel="stylesheet" href="assets/circulares.css?v=20261016-1">
 <link rel="stylesheet" href="assets/login-carrusel.css?v=20261015-1">
 <script defer src="assets/login-carrusel.js?v=20261015-1"></script>
 </head>
@@ -561,6 +562,7 @@
 
       <!-- Menú Principal: módulos colapsables -->
       <div class="section-title">Menú Principal</div>
+<a href="#" onclick="return navegar('circulares')" data-page="circulares"><svg class="sb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h8"/></svg> Informaciones y circulares</a>
 
       <div class="sidebar-module" id="mod-captura">
         <div class="module-header" onclick="toggleModule('mod-captura')">
@@ -635,6 +637,7 @@
     <!-- Sidebar Residente (propietario/inquilino) -->
     <nav class="sidebar" id="sidebar-residente" style="display:none">
       <div class="section-title">Mi Portal</div>
+<a href="#" onclick="return navegar('circulares')" data-page="circulares"><svg class="sb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h8"/></svg> Informaciones y circulares</a>
       <a href="#" onclick="navegar('mi-cuenta')" class="active" data-page="mi-cuenta"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Mi Cuenta</a>
       <a href="#" onclick="navegar('mis-facturas')" data-page="mis-facturas"><svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Mis Facturas</a>
       <a href="#" onclick="navegar('mis-pagos')" data-page="mis-pagos"><svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Mis Pagos</a>
@@ -654,6 +657,11 @@
     </nav>
 
     <div class="main-content">
+      <section id="page-circulares" class="page" aria-labelledby="axi-circ-heading">
+        <div class="axi-circ-head"><h2 id="axi-circ-heading" class="page-title">Informaciones y circulares</h2><div class="axi-circ-actions"><button id="axi-circ-refresh" type="button" class="btn btn-outline">Actualizar</button><button id="axi-circ-new" type="button" class="btn btn-primary" hidden>Nueva circular</button></div></div>
+        <p id="axi-circ-scope" class="axi-circ-meta"></p><p id="axi-circ-intro" class="axi-circ-intro"></p>
+        <div id="axi-circ-list" class="axi-circ-list" aria-live="polite"></div>
+      </section>
       <section id="page-ayuda" class="page axi-help" lang="es" aria-labelledby="ah-title">
         <div class="ah-heading"><h2 id="ah-title" class="page-title">Ayuda</h2><label class="ah-language"><span id="ah-lang-label">Idioma</span><select id="ah-lang"><option value="es">Español</option><option value="en">English</option></select></label></div>
         <div class="ah-hero"><h3 id="ah-heading">¿En qué podemos ayudarte?</h3><p id="ah-intro" class="ah-intro">Consulta respuestas y guías paso a paso para utilizar las funciones de tu cuenta.</p><span id="ah-role" class="ah-role"></span>
@@ -2091,6 +2099,7 @@
 <script src="assets/sesiones.js?v=20261015-2"></script>
 <script src="assets/ayuda-contenido.js?v=20261015-1"></script>
 <script src="assets/ayuda.js?v=20261015-1"></script>
+<script src="assets/circulares.js?v=20261016-1"></script>
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
@@ -2477,6 +2486,7 @@ function entrarAlApp() {
     aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
+  AXICirculares.iniciar({sb, sesion, nombreCondominio: $('topbar-condo-name').textContent, inicio: () => navegar(['CEO','Asistente'].includes(sesion.rol) ? 'dashboard' : 'mi-cuenta')});
 }
 
 // Restricciones por rol residente:
@@ -2505,6 +2515,7 @@ const PAG_SOLO_CEO = ['ecg','cap-usuarios','cap-administradores','automatizacion
 const PAG_EXCLUIDO_ADMIN = ['gastos-condo','comprobantes-condo','fondo-comun','morosidad'];
 function paginaPermitida(page) {
   if (!sesion) return 'dashboard';
+  if (page === 'circulares' && ['CEO','Asistente','Propietario','Inquilino','Administrador'].includes(sesion.rol)) return 'circulares';
   if (page === 'ayuda' && ['CEO','Asistente','Propietario','Inquilino','Administrador'].includes(sesion.rol)) return 'ayuda';
   const rol = sesion.rol;
   if (rol === 'Propietario' || rol === 'Inquilino' || rol === 'Administrador') {
@@ -2614,6 +2625,7 @@ function cambiarCondominio(id, nombre, rol) {
     aplicarRestriccionesResidente();
     navegar('mi-cuenta');
   }
+  AXICirculares.iniciar({sb, sesion, nombreCondominio: $('topbar-condo-name').textContent, inicio: () => navegar(['CEO','Asistente'].includes(sesion.rol) ? 'dashboard' : 'mi-cuenta')});
 }
 
 async function cerrarSesion() {
@@ -2621,6 +2633,7 @@ async function cerrarSesion() {
   if (error) { alert('No se pudo cerrar la sesión. Intente de nuevo: ' + error.message); return; }
   await sb.auth.signOut({scope: 'local'});
   AXISession.clearLocal();
+  AXICirculares.cerrar();
   sesion = null;
   condominiosUsuario = [];
   $('app-shell').style.display = 'none';
@@ -2633,6 +2646,7 @@ async function cerrarSesion() {
 }
 
 function mostrarSesionBloqueada(data) {
+  AXICirculares.cerrar();
   sesion = null;
   $('app-shell').style.display = 'none';
   $('condo-selector').style.display = 'none';
@@ -2699,6 +2713,7 @@ sb.auth.onAuthStateChange((event, session) => {
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !sesion) {
     setTimeout(() => iniciarApp({auto: true}), 0);
   } else if (event === 'SIGNED_OUT') {
+    AXICirculares.cerrar();
     sesion = null;
   }
 });
@@ -2754,6 +2769,7 @@ function navegar(page) {
   // Cargar datos de la página
   const loaders = {
     'ayuda': cargarAyuda,
+    'circulares': () => AXICirculares.mostrar(),
     'dashboard': cargarDashboard,
     'cobros': cargarCobros,
     'ecg': cargarECG,
