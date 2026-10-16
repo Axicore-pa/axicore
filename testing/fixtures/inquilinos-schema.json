@@ -1,0 +1,1943 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "accesos",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "rol",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "usuario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "inquilino_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "activo",
+          "type": "boolean",
+          "default": "true",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nota",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": "auth.uid()",
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "administrador_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "administradores",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "a",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "documento",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "whatsapp",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": "'Activo'::text",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "comprobantes_pago",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "factura_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "inquilino_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "subido_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_pago",
+          "type": "date",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "monto",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "metodo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "banco",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "referencia",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "archivo_ruta",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nota",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": "'Pendiente'::text",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "revisado_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_revision",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "comentario_revision",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "pago_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "condominios",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "rnc",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "calle_numero",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sector",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sector_otro",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "municipio",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "ciudad",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo_postal",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "seccion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "paraje",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "urbanizacion_sector",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "direccion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "banco",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "cuenta_bancaria",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "glp_factor_m3_galon",
+          "type": "numeric",
+          "default": "1.22",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "configuracion_administracion",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nombre_comercial",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "direccion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "banco",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_cuenta",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "numero_cuenta",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "beneficiario",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "referencia_pago",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "logo_ruta",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "facturas",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "no_factura",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "inquilino_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_facturacion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_factura",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "periodo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_factura",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_vencimiento",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "concepto",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "observaciones",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "subtotal",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "descuento",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "mora",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "monto",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "monto_pagado",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "balance_pendiente",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "emitida",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email_enviado",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_enviado",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "es_pago_inmediato",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "afecta_cuota_mantenimiento",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "excluir_estado_condominio",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "es_recurrente",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_recurrencia",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "dia_recurrencia",
+          "type": "integer",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "cantidad_meses_recurrencia",
+          "type": "integer",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "recurrencia_indefinida",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "factura_origen_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_envio",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "pdf_ruta",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "pdf_generado_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado_aprobacion",
+          "type": "text",
+          "default": "'Aprobado'::text",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sometido_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sometido_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "revisado_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "revisado_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "motivo_rechazo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "inquilinos",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "documento",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "whatsapp",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_nombre",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_relacion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "pagos",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "factura_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "inquilino_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_pago",
+          "type": "date",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "monto",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "metodo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "banco",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "referencia",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "recibido_de",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "recibido_por",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "validado",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_validacion",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_aplicacion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "afecta_estado_cuenta",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "afecta_fondo_comun",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "concepto",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "observaciones",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "recibo_pdf_ruta",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "recibo_pdf_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo_movimiento",
+          "type": "text",
+          "default": "'Ingreso recibido'::text",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado_aprobacion",
+          "type": "text",
+          "default": "'Aprobado'::text",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sometido_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "sometido_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "revisado_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "revisado_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "motivo_rechazo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "propietarios",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "documento",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "whatsapp",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "direccion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "unidad_referencia",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_ingreso",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_nombre",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_telefono",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "contacto_emergencia_relacion",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "unidad_administradores",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "a",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "administrador_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_inicio",
+          "type": "date",
+          "default": "CURRENT_DATE",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_fin",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "unidad_inquilinos",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "inquilino_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estatus",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_inicio",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_fin",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "unidad_propietarios",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "unidad_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "principal",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estatus",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_inicio",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "fecha_fin",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "unidades",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "d",
+          "generated": ""
+        },
+        {
+          "name": "condominio_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "propietario_id",
+          "type": "bigint",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "torre",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "nivel",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "tipo",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "cuota_mantenimiento",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "moneda",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "estado_registro",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "observaciones",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "identity": "",
+          "generated": ""
+        }
+      ]
+    }
+  ]
+}

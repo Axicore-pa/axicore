@@ -1,0 +1,66 @@
+{
+  "functions": [
+    {
+      "args": "p_unidad_id bigint",
+      "name": "axi_ec_unidad_resumen",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.axi_ec_unidad_resumen(p_unidad_id bigint)\n RETURNS TABLE(unidad_id bigint, unidad_codigo text, propietario_nombre text, total_facturado numeric, total_pagado numeric, balance_pendiente numeric)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_solo_inq boolean;\nBEGIN\n  v_solo_inq := NOT private.puede_ver_unidad(p_unidad_id);\n  IF v_solo_inq AND NOT (p_unidad_id = ANY (private.unidades_inquilino())) THEN\n    RAISE EXCEPTION 'Sin acceso a esta unidad' USING ERRCODE = '42501'; END IF;\n  RETURN QUERY\n  SELECT u.id, u.codigo, p.nombre, coalesce(sum(f.monto), 0), coalesce(sum(f.monto_pagado), 0), coalesce(sum(f.balance_pendiente), 0)\n    FROM public.unidades u\n    LEFT JOIN public.propietarios p ON p.id = u.propietario_id\n    LEFT JOIN public.facturas f ON f.unidad_id = u.id AND lower(f.estado) <> 'anulada' AND f.estado_aprobacion = 'Aprobado'\n         AND (NOT v_solo_inq OR f.inquilino_id = ANY (private.mis_inquilinos()))\n   WHERE u.id = p_unidad_id\n   GROUP BY u.id, u.codigo, p.nombre;\nEND $function$\n"
+    },
+    {
+      "args": "p_unidad_id bigint",
+      "name": "axi_ec_unidad_movimientos",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.axi_ec_unidad_movimientos(p_unidad_id bigint)\n RETURNS TABLE(fecha date, tipo text, referencia text, concepto text, cargo numeric, abono numeric, balance_ref numeric)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_solo_inq boolean; v_inq bigint[];\nBEGIN\n  v_solo_inq := NOT private.puede_ver_unidad(p_unidad_id);\n  IF v_solo_inq AND NOT (p_unidad_id = ANY (private.unidades_inquilino())) THEN\n    RAISE EXCEPTION 'Sin acceso a esta unidad' USING ERRCODE = '42501'; END IF;\n  v_inq := private.mis_inquilinos();\n  RETURN QUERY\n  SELECT x.fecha, x.tipo, x.referencia, x.concepto, x.cargo, x.abono, x.balance_ref FROM (\n    SELECT f.fecha_factura AS fecha, 'Factura'::text AS tipo, f.no_factura AS referencia, f.concepto,\n           f.monto AS cargo, 0::numeric AS abono, f.balance_pendiente AS balance_ref\n      FROM public.facturas f\n     WHERE f.unidad_id = p_unidad_id AND lower(f.estado) <> 'anulada' AND f.estado_aprobacion = 'Aprobado'\n       AND (NOT v_solo_inq OR f.inquilino_id = ANY (v_inq))\n    UNION ALL\n    SELECT pg.fecha_pago, 'Pago'::text, pg.codigo, pg.concepto, 0::numeric, pg.monto, 0::numeric\n      FROM public.pagos pg JOIN public.facturas f2 ON f2.id = pg.factura_id\n     WHERE f2.unidad_id = p_unidad_id AND pg.estado_aprobacion = 'Aprobado'\n       AND lower(coalesce(pg.estado, '')) NOT IN ('anulado','anulada')\n       AND (NOT v_solo_inq OR f2.inquilino_id = ANY (v_inq))) x\n  ORDER BY x.fecha, x.tipo DESC;\nEND $function$\n"
+    },
+    {
+      "args": "p_nombre text",
+      "name": "puede_ver_comprobante",
+      "schema": "private",
+      "definition": "CREATE OR REPLACE FUNCTION private.puede_ver_comprobante(p_nombre text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT (storage.foldername(p_nombre))[1] = (SELECT auth.uid())::text\n      OR EXISTS (SELECT 1 FROM public.comprobantes_pago c WHERE c.archivo_ruta = p_nombre\n                 AND (private.es_ceo() OR c.condominio_id = ANY (private.staff_condos('Pagos','ver'))\n                      OR c.unidad_id = ANY (private.unidades_propias()))) $function$\n"
+    },
+    {
+      "args": "p_factura_id bigint, p_fecha_pago date, p_monto numeric, p_archivo_ruta text, p_metodo text, p_banco text, p_referencia text, p_nota text",
+      "name": "portal_registrar_comprobante",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.portal_registrar_comprobante(p_factura_id bigint, p_fecha_pago date, p_monto numeric, p_archivo_ruta text, p_metodo text DEFAULT 'Transferencia'::text, p_banco text DEFAULT NULL::text, p_referencia text DEFAULT NULL::text, p_nota text DEFAULT NULL::text)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE f record; es_dueno boolean; cid bigint; inq bigint;\nBEGIN\n  IF NOT private.es_residente() THEN RAISE EXCEPTION 'Solo propietarios e inquilinos' USING ERRCODE = '42501'; END IF;\n  SELECT x.id, x.condominio_id, x.unidad_id, x.propietario_id, x.inquilino_id, x.no_factura INTO f FROM public.facturas x WHERE x.id = p_factura_id;\n  IF f.id IS NULL THEN RAISE EXCEPTION 'Factura no encontrada' USING ERRCODE = '22023'; END IF;\n  es_dueno := coalesce(f.unidad_id = ANY (private.unidades_propias()), false);\n  IF NOT coalesce(es_dueno OR f.inquilino_id = ANY (private.mis_inquilinos()), false) THEN RAISE EXCEPTION 'Esa factura no le pertenece' USING ERRCODE = '42501'; END IF;\n  IF p_monto IS NULL OR p_monto <= 0 OR p_monto > 10000000 THEN RAISE EXCEPTION 'Monto no valido' USING ERRCODE = '22023'; END IF;\n  IF p_fecha_pago IS NULL OR p_fecha_pago > (now() AT TIME ZONE 'America/Santo_Domingo')::date OR p_fecha_pago < date '2020-01-01' THEN\n    RAISE EXCEPTION 'Fecha de pago no valida' USING ERRCODE = '22023'; END IF;\n  IF p_archivo_ruta IS NULL OR (storage.foldername(p_archivo_ruta))[1] IS DISTINCT FROM (SELECT auth.uid())::text\n     OR NOT EXISTS (SELECT 1 FROM storage.objects o WHERE o.bucket_id = 'comprobantes' AND o.name = p_archivo_ruta) THEN\n    RAISE EXCEPTION 'Suba primero el archivo del comprobante' USING ERRCODE = '22023'; END IF;\n  IF EXISTS (SELECT 1 FROM public.comprobantes_pago c WHERE c.archivo_ruta = p_archivo_ruta) THEN\n    RAISE EXCEPTION 'Este comprobante ya fue enviado' USING ERRCODE = '23505'; END IF;\n  IF NOT es_dueno THEN inq := f.inquilino_id; END IF;\n  INSERT INTO public.comprobantes_pago (condominio_id, factura_id, unidad_id, propietario_id, inquilino_id, subido_por, fecha_pago, monto,\n         metodo, banco, referencia, archivo_ruta, nota)\n  VALUES (f.condominio_id, f.id, f.unidad_id, CASE WHEN es_dueno THEN f.propietario_id END, inq, (SELECT auth.uid()), p_fecha_pago, round(p_monto, 2),\n         left(nullif(btrim(p_metodo), ''), 50), left(nullif(btrim(p_banco), ''), 120), left(nullif(btrim(p_referencia), ''), 120),\n         p_archivo_ruta, left(nullif(btrim(p_nota), ''), 1000))\n  RETURNING id INTO cid;\n  PERFORM private.log_portal('Pagos', 'comprobantes_pago', cid, 'factura', NULL, f.no_factura, 'Creación', 'Comprobante de pago enviado desde el portal');\n  RETURN cid;\nEND $function$\n"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT private.es_ceo() AS es_ceo) OR (condominio_id = ANY (( SELECT private.staff_condos('Facturacion'::text, 'ver'::text) AS staff_condos)::bigint[])) OR ((estado_aprobacion = 'Aprobado'::text) AND ((unidad_id = ANY (( SELECT private.unidades_propias() AS unidades_propias)::bigint[])) OR (inquilino_id = ANY (( SELECT private.mis_inquilinos() AS mis_inquilinos)::bigint[])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "facturas",
+      "permissive": "PERMISSIVE",
+      "policyname": "ver",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT private.es_ceo() AS es_ceo) OR (condominio_id = ANY (( SELECT private.staff_condos('Pagos'::text, 'ver'::text) AS staff_condos)::bigint[])) OR ((estado_aprobacion <> 'Rechazado'::text) AND ((unidad_id = ANY (( SELECT private.unidades_propias() AS unidades_propias)::bigint[])) OR (inquilino_id = ANY (( SELECT private.mis_inquilinos() AS mis_inquilinos)::bigint[])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "pagos",
+      "permissive": "PERMISSIVE",
+      "policyname": "ver",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT private.es_ceo() AS es_ceo) OR (condominio_id = ANY (( SELECT private.staff_condos('Pagos'::text, 'ver'::text) AS staff_condos)::bigint[])) OR (unidad_id = ANY (( SELECT private.unidades_propias() AS unidades_propias)::bigint[])) OR (subido_por = ( SELECT auth.uid() AS uid)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "comprobantes_pago",
+      "permissive": "PERMISSIVE",
+      "policyname": "ver",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ]
+}
