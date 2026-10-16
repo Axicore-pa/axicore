@@ -480,10 +480,30 @@
     </form>
     <form id="clave-form" style="display:none" onsubmit="return guardarClaveNueva(event)">
       <p style="font-size:.9rem;margin:0 0 .8rem;text-align:center">Cree su contraseña para entrar a AXICORE. La usará cada vez que inicie sesión.</p>
-      <div class="form-group"><label>Nueva contraseña (mínimo 8 caracteres)</label><input type="password" id="clave-1" required minlength="8" autocomplete="new-password"></div>
-      <div class="form-group"><label>Repetir contraseña</label><input type="password" id="clave-2" required minlength="8" autocomplete="new-password"></div>
-      <button type="submit" class="btn btn-primary" id="clave-btn">Guardar contraseña y entrar</button>
+      <div class="form-group"><label id="clave-label">Nueva contraseña (mínimo 8 caracteres)</label><input type="password" id="clave-1" required minlength="6" autocomplete="new-password" oninput="actualizarRequisitosClave()"></div>
+      <ul id="clave-requisitos" style="display:none;list-style:none;padding:0;margin:-.35rem 0 .8rem;font-size:.8rem;color:var(--ax-muted)"><li id="req-longitud">• Mínimo 6 caracteres</li><li id="req-mayuscula">• Mayúscula</li><li id="req-minuscula">• Minúscula</li><li id="req-numero">• Número</li><li id="req-especial">• Carácter especial</li></ul>
+      <div class="form-group"><label>Repetir contraseña</label><input type="password" id="clave-2" required minlength="6" autocomplete="new-password" oninput="actualizarRequisitosClave()"></div>
+      <p id="clave-coincide" style="display:none;font-size:.8rem;margin:-.4rem 0 .8rem;color:var(--ax-muted)">• Las contraseñas coinciden</p>
+      <button type="submit" class="btn btn-primary" id="clave-btn">Guardar contraseña y continuar</button>
     </form>
+    <form id="registro-invitado-form" style="display:none" onsubmit="return completarRegistroInvitado(event)">
+      <p style="font-size:.9rem;margin:0 0 .8rem;text-align:center">Complete sus datos. Su perfil, rol y unidades provienen del registro de la administración y no se pueden cambiar aquí.</p>
+      <div id="registro-alert" class="alert alert-error"></div>
+      <div class="form-group"><label>Rol asignado</label><input id="registro-rol" readonly required></div>
+      <div class="form-group"><label>Nombre completo</label><input id="registro-nombre" required maxlength="200" oninput="validarFormularioRegistro()"></div>
+      <div class="form-group"><label>Cédula o pasaporte</label><input id="registro-documento" required maxlength="80" oninput="validarFormularioRegistro()"></div>
+      <div class="form-group"><label>Correo verificado por invitación</label><input type="email" id="registro-email" readonly required></div>
+      <div class="form-group"><label>Teléfono</label><input type="tel" id="registro-telefono" required maxlength="50" oninput="validarFormularioRegistro()"></div>
+      <div class="form-group"><label>Teléfono / WhatsApp</label><input type="tel" id="registro-whatsapp" required maxlength="50" oninput="validarFormularioRegistro()"></div>
+      <div class="form-group"><label>Unidad(es) asociada(s)</label><input id="registro-unidades" readonly required></div>
+      <div class="form-group"><label>Nombre de usuario</label><input id="registro-login" required minlength="3" maxlength="60" autocomplete="username" oninput="validarFormularioRegistro()"></div>
+      <button type="submit" class="btn btn-primary" id="registro-btn" disabled>Enviar solicitud de aprobación</button>
+    </form>
+    <div id="registro-pendiente" style="display:none;text-align:center">
+      <h3 style="color:var(--ax-navy)">Solicitud pendiente de aprobación</h3>
+      <p>La administración revisará su solicitud. Recibirá un correo cuando se apruebe; hasta entonces no podrá ingresar.</p>
+      <button type="button" class="btn btn-outline" onclick="salirRegistroPendiente()">Volver a iniciar sesión</button>
+    </div>
     <form id="mfa-form" style="display:none" onsubmit="return mfaVerificar(event)">
       <div id="mfa-alta" style="display:none;text-align:center">
         <p style="font-size:.95rem;margin:0 0 .4rem;font-weight:600;color:var(--ax-navy)">Active la verificación en 2 pasos</p>
@@ -1409,6 +1429,10 @@
           <button class="btn btn-outline btn-sm" onclick="abrirSesionesActivas()">Sesiones activas</button>
           <button class="btn btn-success btn-sm" onclick="abrirModalCapUsuario()">+ Nuevo Usuario</button>
         </div>
+        <div class="card" id="card-registro-aprobaciones" style="margin-bottom:1rem">
+          <div class="card-header">Solicitudes de registro pendientes</div>
+          <div class="card-body" id="registro-aprobaciones-lista"><div class="loading">Cargando solicitudes...</div></div>
+        </div>
         <div class="card">
           <div class="card-body" id="cap-usuarios-lista">
             <div class="loading">Cargando...</div>
@@ -2089,6 +2113,7 @@ const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmZ3lmdHNud3puc3FpenJpZ2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDgxODgsImV4cCI6MjEwNjk4NDE4OH0.i-icCG4lJ7Vjkp6c_j_a4Mrwt2w5Ig2GYUcfgWoIugQ';
 
 // Enlace de invitacion o de recuperacion: el usuario debe crear su contrasena antes de entrar
+let registroPorInvitacion = /type=invite/.test(location.hash + location.search);
 let debeCrearClave = /type=(invite|recovery)/.test(location.hash + location.search);
 let sb;
 try {
@@ -2206,13 +2231,67 @@ function mostrarCrearClave() {
   $('login-screen').style.display = 'flex';
   $('app-shell').style.display = 'none';
   $('login-form').style.display = 'none';
+  $('registro-invitado-form').style.display = 'none'; $('registro-pendiente').style.display = 'none';
+  $('clave-label').textContent = registroPorInvitacion ? 'Nueva contraseña (mínimo 6 caracteres)' : 'Nueva contraseña (mínimo 8 caracteres)';
+  $('clave-requisitos').style.display = registroPorInvitacion ? 'block' : 'none'; $('clave-coincide').style.display = registroPorInvitacion ? 'block' : 'none';
+  $('clave-1').minLength = registroPorInvitacion ? 6 : 8; $('clave-2').minLength = registroPorInvitacion ? 6 : 8;
+  $('clave-btn').textContent = registroPorInvitacion ? 'Guardar contraseña y continuar' : 'Guardar contraseña y entrar';
   $('clave-form').style.display = 'block';
+  actualizarRequisitosClave();
+}
+function actualizarRequisitosClave() {
+  const c1 = $('clave-1')?.value || '', c2 = $('clave-2')?.value || '';
+  const reglas = {longitud:c1.length>=6,mayuscula:/[A-ZÁÉÍÓÚÜÑ]/.test(c1),minuscula:/[a-záéíóúüñ]/.test(c1),numero:/[0-9]/.test(c1),especial:/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(c1)};
+  for (const [k,ok] of Object.entries(reglas)) { const el=$('req-'+k); if(el) el.style.color=ok?'#15803d':'var(--ax-muted)'; }
+  const coincide = c1.length>0 && c1===c2;
+  const marca=$('clave-coincide'); if(marca) marca.style.color=coincide?'#15803d':'var(--ax-muted)';
+  const btn=$('clave-btn'); if(btn && registroPorInvitacion) btn.disabled=!Object.values(reglas).every(Boolean)||!coincide;
+}
+async function mostrarRegistroInvitado(ctx=null) {
+  if (!ctx) { const {data,error}=await sb.rpc('axi_registro_contexto'); if(error||!data) return false; ctx=data; }
+  $('login-screen').style.display='flex'; $('app-shell').style.display='none';
+  $('login-form').style.display='none'; $('clave-form').style.display='none'; $('mfa-form').style.display='none';
+  if (ctx.estado==='Pendiente') { $('registro-invitado-form').style.display='none'; $('registro-pendiente').style.display='block'; return true; }
+  if (ctx.estado!=='Invitado') return false;
+  $('registro-pendiente').style.display='none'; $('registro-alert').style.display='none';
+  $('registro-rol').value=ctx.rol||''; $('registro-email').value=ctx.correo||'';
+  $('registro-nombre').value=ctx.nombre||''; $('registro-documento').value=ctx.documento||'';
+  $('registro-telefono').value=ctx.telefono||''; $('registro-whatsapp').value=ctx.whatsapp||'';
+  $('registro-unidades').value=(ctx.unidades_codigos||[]).join(', ');
+  $('registro-login').value=''; $('registro-btn').disabled=true;
+  $('registro-invitado-form').style.display='block'; validarFormularioRegistro(); return true;
+}
+function validarFormularioRegistro() {
+  const form=$('registro-invitado-form'),btn=$('registro-btn');
+  if(form&&btn) btn.disabled=!form.checkValidity()||!$('registro-unidades').value||!$('registro-rol').value||!$('registro-email').value;
+}
+async function completarRegistroInvitado(e) {
+  e.preventDefault(); const btn=$('registro-btn'), alert=$('registro-alert'); alert.style.display='none';
+  const unidadesTexto=$('registro-unidades').value;
+  if (!unidadesTexto) { alert.textContent='La administración todavía no ha asociado una unidad a su perfil.'; alert.style.display='block'; return false; }
+  btn.disabled=true; btn.textContent='Enviando...';
+  try {
+    const {data:ctx,error:ctxError}=await sb.rpc('axi_registro_contexto'); if(ctxError) throw ctxError;
+    const {error}=await sb.rpc('axi_registro_completar',{
+      p_nombre:$('registro-nombre').value.trim(),p_documento:$('registro-documento').value.trim(),
+      p_telefono:$('registro-telefono').value.trim(),p_whatsapp:$('registro-whatsapp').value.trim(),
+      p_usuario_login:$('registro-login').value.trim(),p_unidades_ids:ctx.unidades||[]
+    }); if(error) throw error;
+    $('registro-invitado-form').style.display='none'; $('registro-pendiente').style.display='block';
+    await sb.auth.signOut(); AXISession.clearLocal();
+  } catch(err) { alert.textContent=err.message||'No se pudo enviar la solicitud.'; alert.style.display='block'; btn.disabled=false; }
+  finally { btn.textContent='Enviar solicitud de aprobación'; }
+  return false;
+}
+async function salirRegistroPendiente() {
+  await sb.auth.signOut(); AXISession.clearLocal(); $('registro-pendiente').style.display='none'; $('login-form').style.display='block';
 }
 async function guardarClaveNueva(e) {
   e.preventDefault();
   const c1 = $('clave-1').value, c2 = $('clave-2').value, btn = $('clave-btn');
   $('login-alert').style.display = 'none';
-  if (c1.length < 8) { showAlert('La contraseña debe tener al menos 8 caracteres.'); return false; }
+  if (registroPorInvitacion && !(/[A-ZÁÉÍÓÚÜÑ]/.test(c1)&&/[a-záéíóúüñ]/.test(c1)&&/[0-9]/.test(c1)&&/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(c1)&&c1.length>=6)) { showAlert('La contraseña debe cumplir cada uno de los requisitos indicados.'); return false; }
+  if (!registroPorInvitacion && c1.length < 8) { showAlert('La contraseña debe tener al menos 8 caracteres.'); return false; }
   if (c1 !== c2) { showAlert('Las contraseñas no coinciden.'); return false; }
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
@@ -2221,7 +2300,8 @@ async function guardarClaveNueva(e) {
     debeCrearClave = false;
     history.replaceState(null, '', location.pathname);
     $('clave-form').style.display = 'none'; $('login-form').style.display = 'block';
-    await iniciarApp();
+    if (registroPorInvitacion) { registroPorInvitacion=false; if(!await mostrarRegistroInvitado()) throw new Error('No se pudo validar la invitación. Solicite a la administración que revise el correo y el perfil asociado.'); }
+    else await iniciarApp();
   } catch (err) {
     showAlert(/expired|invalid|session/i.test(err.message)
       ? 'El enlace venció o ya fue usado. Pida a la administración una nueva invitación o use "¿Olvidó su contraseña?".'
@@ -2256,6 +2336,7 @@ async function iniciarApp(opc = {}) {
     // No revocar Auth aquí: una pestaña duplicada puede tener el mismo session_id.
     AXISession.clearLocal();
     if (opc.auto && vieja) return;   // al abrir la pagina: solo mostrar el login limpio
+    if (/no tiene acceso/i.test(error.message) && await mostrarRegistroInvitado()) return;
     showAlert(/no tiene acceso/i.test(error.message)
       ? 'Su cuenta está creada, pero la administración aún no la ha enlazado a su unidad. Intente más tarde.'
       : 'Error de acceso: ' + error.message);
@@ -6153,18 +6234,51 @@ async function guardarCapUnidad(e) {
   } finally { btn.textContent='Guardar'; btn.disabled=false; }
 }
 
+function escaparRegistroHtml(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+async function enviarInvitacionRegistro(tipo, perfilId, boton) {
+  if (sesion.rol!=='CEO') { alert('Solo el CEO puede enviar invitaciones de registro.'); return; }
+  if (!confirm('Se enviará una invitación al correo guardado en el perfil. El sistema asignará automáticamente el rol y las unidades de ese registro. ¿Continuar?')) return;
+  const original=boton?.textContent; if(boton){boton.disabled=true;boton.textContent='Enviando…';}
+  try {
+    const {data,error}=await sb.functions.invoke('axi-registro-invitacion',{body:{tipo,perfil_id:Number(perfilId)}});
+    if(error||data?.error) throw new Error(data?.error||error.message);
+    alert(`Invitación enviada a ${data.correo}. Perfil asignado automáticamente: ${data.rol}.`);
+  } catch(e) { alert('No se pudo enviar la invitación: '+(e.message||e)); }
+  finally { if(boton){boton.disabled=false;boton.textContent=original||'Invitar';} }
+}
+
+async function cargarRegistroAprobaciones() {
+  const el=$('registro-aprobaciones-lista');
+  const {data,error}=await sb.rpc('axi_registro_aprobaciones');
+  if(error){el.innerHTML='<div class="alert alert-error" style="display:block">'+escaparRegistroHtml(error.message)+'</div>';return;}
+  if(!data?.length){el.innerHTML='<div class="empty">No hay solicitudes de registro pendientes.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Nombre</th><th>Rol del perfil</th><th>Correo</th><th>Documento</th><th>Unidad(es)</th><th>Teléfono</th><th>Usuario</th><th></th></tr></thead><tbody>${data.map(r=>`<tr>
+    <td><strong>${escaparRegistroHtml(r.nombre)}</strong></td><td>${escaparRegistroHtml(r.tipo)}</td><td>${escaparRegistroHtml(r.correo)}</td>
+    <td>${escaparRegistroHtml(r.documento)}</td><td>${(r.unidades||[]).map(x=>escaparRegistroHtml(x)).join(', ')}</td>
+    <td>${escaparRegistroHtml(r.telefono)}</td><td>${escaparRegistroHtml(r.usuario_login)}</td>
+    <td><button class="btn btn-sm btn-success" onclick="aprobarRegistro('${r.id}',this)">Aprobar</button></td></tr>`).join('')}</tbody></table>`;
+}
+async function aprobarRegistro(id,boton) {
+  if(sesion.rol!=='CEO'||!confirm('¿Aprobar este registro y habilitar el acceso con el rol y las unidades del perfil asociado? Se enviará un correo de confirmación.'))return;
+  boton.disabled=true;boton.textContent='Aprobando…';
+  try { const {data,error}=await sb.rpc('axi_registro_aprobar',{p_id:id}); if(error)throw error;
+    await cargarRegistroAprobaciones(); alert(`Acceso aprobado para ${data.correo}. El correo de confirmación quedó en la cola de envío.`);
+  } catch(e){alert('No se pudo aprobar: '+e.message);boton.disabled=false;boton.textContent='Aprobar';}
+}
 // ==================== CAPTURA: PROPIETARIOS ====================
 async function cargarCapPropietarios() {
   const {data, error} = await sb.from('propietarios').select('*').eq('condominio_id', sesion.condominio_id).order('nombre');
   if (error) { $('cap-propietarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
   if (!data?.length) { $('cap-propietarios-lista').innerHTML='<div class="empty">Sin propietarios registrados</div>'; return; }
+  const {data: accesosProp}=await sb.from('accesos').select('propietario_id').eq('activo',true);
+  const conAcceso=new Set((accesosProp||[]).map(x=>x.propietario_id));
   $('cap-propietarios-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Email</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
       <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
       <td>${r.documento||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
       <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
-      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapPropietario(${r.id})">✏️</button></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapPropietario(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!conAcceso.has(r.id)&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Propietario',${r.id},this)">Invitar</button>`:''}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 
@@ -6224,13 +6338,15 @@ async function cargarCapInquilinos() {
     .select('*, unidades(codigo), propietarios(nombre)').eq('condominio_id', sesion.condominio_id).order('nombre');
   if (error) { $('cap-inquilinos-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
   if (!data?.length) { $('cap-inquilinos-lista').innerHTML='<div class="empty">Sin inquilinos registrados</div>'; return; }
+  const {data: accesosInq}=await sb.from('accesos').select('inquilino_id').eq('activo',true);
+  const conAcceso=new Set((accesosInq||[]).map(x=>x.inquilino_id));
   $('cap-inquilinos-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Nombre</th><th>Unidad</th><th>Propietario</th><th>Teléfono</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
       <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
       <td>${r.unidades?.codigo||'—'}</td><td>${r.propietarios?.nombre||'—'}</td><td>${r.telefono||'—'}</td>
       <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
-      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapInquilino(${r.id})">✏️</button></td>
+      <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapInquilino(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!conAcceso.has(r.id)&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Inquilino',${r.id},this)">Invitar</button>`:''}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 
@@ -6389,6 +6505,8 @@ async function guardarCapProveedor(e) {
 
 // ==================== CAPTURA: USUARIOS ====================
 async function cargarCapUsuarios() {
+  if (sesion.rol==='CEO') { $('card-registro-aprobaciones').style.display=''; await cargarRegistroAprobaciones(); }
+  else $('card-registro-aprobaciones').style.display='none';
   const {data, error} = await sb.from('usuarios').select('*').order('nombre_completo');
   if (error) { $('cap-usuarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
   if (!data?.length) { $('cap-usuarios-lista').innerHTML='<div class="empty">Sin usuarios registrados</div>'; return; }
@@ -6460,7 +6578,7 @@ async function cargarCapAdministradores() {
         <td>${(r.unidades||[]).map(u => '<span class="badge badge-info" style="margin:.1rem">'+u.codigo+'</span>').join('') || '—'}</td>
         <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
         <td class="text-center">${r.con_acceso ? '<span class="badge badge-success">Sí</span>' : '<span class="badge" style="background:#ccc">No</span>'}</td>
-        <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapAdmin(${r.id})">✏️</button></td>
+        <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapAdmin(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!r.con_acceso&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Administrador',${r.id},this)">Invitar</button>`:''}</td>
       </tr>`).join('')}</tbody></table>`;
   } catch(e) { el.innerHTML='<div class="alert alert-error" style="display:block">'+e.message+'</div>'; }
 }
@@ -6553,3 +6671,4 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+

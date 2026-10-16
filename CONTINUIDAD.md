@@ -1,8 +1,8 @@
 # AXICORE — Punto compartido de continuidad
-Última actualización documental: 14/10/2026.
+Última actualización documental: 16/10/2026.
 Responsable del proyecto: Misael.
 Colaboradores: Claude y ChatGPT/Codex.
-Estado: SQL 25–27 contrastados con Supabase; correcciones de fecha de inicio y aprobación GLP aplicadas (AXI-CGPT-008); pruebas con usuarios reales pendientes.
+Estado: SQL 25–27 contrastados con Supabase; registro por invitación y aprobación administrativa implementado en Supabase (AXI-CGPT-014); pruebas con usuarios reales pendientes.
 
 ## Leer primero al retomar
 Este archivo es la referencia compartida para retomar el proyecto desde cualquiera de las dos IA. No conecta ni sincroniza sus memorias. Cada asistente necesita acceso al repositorio y debe leer la versión actual antes de trabajar.
@@ -273,7 +273,7 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Siguiente paso: Misael decide si alguno de los tres puntos requiere corrección; cualquier cambio se propone antes de aplicar.
 
 
-### AXI-CGPT-007 — 14/10/2026 — Precisión del punto 1 para verificación de Claude
+### AXI-CGPT-014 — 14/10/2026 — Precisión del punto 1 para verificación de Claude
 - Responsable: ChatGPT/Codex.
 - Solicitud y autorización de Misael: actualizar la bitácora para que Claude verifique la precisión sobre roles acumulados; avanzar sin bloquear los puntos coincidentes.
 - Estado: precisión documental; verificación independiente pendiente.
@@ -412,3 +412,18 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 
 
 - Cierre verificado AXI-CGPT-013: [implementación 0f6c596](https://github.com/Axicore-pa/axicore/commit/0f6c596a9c3a2b1bed3e9338b7f827dd6d5b9d6b); [GitHub Pages completado con success](https://github.com/Axicore-pa/axicore/actions/runs/38844150716). Sitio público abierto en Chrome limpio sin iniciar sesión: cuatro escenas y logo cargados, controles operativos, siete assets públicos idénticos a los preparados y cero errores JavaScript. Revisión de escritorio y móvil realizada localmente; pruebas de sesión con servicios simulados. Para ver el cambio en una página antigua, Ctrl+F5.
+
+
+### AXI-CGPT-014 — 16/10/2026 — Registro por invitación y aprobación administrativa
+- Responsable: ChatGPT/Codex.
+- Solicitud y autorización: Misael confirmó mantener la invitación y completar el registro para Inquilinos, Propietarios y Administradores; cada solicitud queda pendiente hasta aprobación del CEO, y al aprobar se envía confirmación por correo. Confirmó además que rol y alcance deben venir del perfil ya existente.
+- Estado: implementado en Supabase y preparado para publicar el código del portal en este commit. No se enviaron invitaciones ni se generaron solicitudes reales durante la implementación.
+- Punto de partida: rama main, commit de código cc6d268260335239baee75b9562294b267e11a99; Supabase qfgyftsnwznsqizriggr activo.
+- Hallazgo de asignación: 16 correos de perfil revisados; ninguno coincide entre roles. El backend identifica el perfil por el correo y exige coincidencia única; el invitado no puede escoger su rol ni alterar las unidades asignadas. Inquilinos usan unidad principal y enlaces activos de unidad_inquilinos; Propietarios usan propietario directo y enlaces activos; Administradores usan unidad_administradores vigentes.
+- Trabajo: formularios de contraseña/información solo desde enlace de invitación; controles visibles para mínimo 6 caracteres, mayúscula, minúscula, número y carácter especial, repetición coincidente; invitaciones se inician desde los registros de persona; aprobación CEO con MFA crea usuarios/accesos del rol del perfil y encola correo de confirmación.
+- Lógica de seguridad: la solicitud pendiente no recibe fila activa en accesos; el acceso se crea únicamente al aprobar. La Edge Function requiere JWT de CEO con AAL2. El usuario solo completa la solicitud ligada a su auth.uid y correo confirmado. Los cambios de contacto se aplican al aprobar; rol, condominio y unidades no se aceptan del cliente.
+- Archivos preparados: index.html; supabase/migrations/20261016043221_axicore_registro_invitacion_aprobacion.sql; supabase/migrations/20261016043436_axicore_registro_unidades_inquilino.sql; supabase/functions/axi-registro-invitacion/index.ts.
+- Base y servicios: migraciones aplicadas (20261016043221 y 20261016043436); Edge Function axi-registro-invitacion activa, versión 1, verify_jwt=true. Ningún registro de solicitud creado. Accesos activos permanecieron en 1.
+- Validación: SQL ejecutado en transacción y revertido antes de aplicar; migraciones verificadas en Supabase; permisos comprobaron anon=false y service_role-only para RPCs de invitación/perfil; RLS habilitado en la tabla privada; el HTML/JS pasó node --check; Edge Function desplegada con compilación aceptada. El asesor de seguridad muestra las advertencias preexistentes del proyecto y las funciones SECDEF de registro que tienen controles de auth.uid/CEO+AAL2 revisados.
+- Límites: no se probó el envío real de invitación ni el correo de aprobación para evitar crear cuentas o enviar mensajes reales. La entrega del mensaje final depende del procesador de correos existente.
+- Siguiente paso: Misael puede invitar desde el registro de la persona y probar con una cuenta controlada; luego verificar que el CEO vea la solicitud, apruebe y el usuario reciba el correo antes de acceder.
