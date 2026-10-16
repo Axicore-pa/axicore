@@ -444,15 +444,27 @@
   .bars .lbl { font-size:.72rem; color:var(--ax-muted); white-space:nowrap; }
 </style>
 <link rel="stylesheet" href="assets/ayuda.css?v=20261015-1">
+<link rel="stylesheet" href="assets/login-carrusel.css?v=20261015-1">
+<script defer src="assets/login-carrusel.js?v=20261015-1"></script>
 </head>
 <body>
 
 <!-- ==================== LOGIN ==================== -->
 <div id="login-screen">
+  <div class="axi-login-scenes" aria-hidden="true"><img src="assets/login/comunidad.webp" alt="" class="active" fetchpriority="high"><img src="assets/login/cuentas.webp" alt="" decoding="async"><img src="assets/login/reservas.webp" alt="" decoding="async"><img src="assets/login/ayuda.webp" alt="" decoding="async"></div>
+  <div class="axi-login-shade" aria-hidden="true"></div>
+  <p class="axi-login-top">PORTAL DE ADMINISTRACIÓN DE CONDOMINIOS</p>
+  <section class="axi-login-copy" aria-label="Servicios del portal"><small>COMUNICACIÓN</small><h2>Tu comunidad, conectada.</h2><p>Consulta los avisos y circulares de tu comunidad en un solo lugar.</p></section>
+  <div class="axi-login-controls" role="group" aria-label="Carrusel de servicios">
+    <button type="button" id="axi-login-prev" aria-label="Imagen anterior">‹</button>
+    <button type="button" class="axi-login-dot" aria-label="Mostrar Comunicación" aria-current="true"></button><button type="button" class="axi-login-dot" aria-label="Mostrar Facturas y pagos" aria-current="false"></button><button type="button" class="axi-login-dot" aria-label="Mostrar Áreas comunes" aria-current="false"></button><button type="button" class="axi-login-dot" aria-label="Mostrar Reportes y ayuda" aria-current="false"></button>
+    <button type="button" id="axi-login-pause" aria-label="Pausar carrusel">Ⅱ</button><button type="button" id="axi-login-next" aria-label="Imagen siguiente">›</button><span class="axi-login-count">01 / 04</span>
+  </div>
+  <p class="axi-login-tags">COMUNIDAD · GESTIÓN · SERVICIO</p>
   <div class="login-box">
-    <div class="logo" style="font-size:1rem"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--ax-navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/></svg></div>
-    <h1>AXICORE</h1>
-    <p class="sub">Property Administration</p>
+    <img class="axi-login-logo" src="assets/login/logo-original.png" alt="AXICORE Property Administration" width="1200" height="291">
+    <h1>Bienvenido a tu portal</h1>
+    <p class="sub">Accede a la información de tu comunidad.</p>
     <div id="login-alert" class="alert alert-error"></div>
     <form id="login-form">
       <div class="form-group">
@@ -6541,5 +6553,3 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
-
-

@@ -1,0 +1,32 @@
+/* Pantalla de acceso residencial aprobada por Misael. */
+#login-screen{position:relative;isolation:isolate;overflow:hidden;padding:80px 24px 110px;min-height:100vh;min-height:100svh;background:#12203b;flex-direction:column}
+#login-screen .axi-login-scenes,#login-screen .axi-login-shade{position:absolute;inset:0;z-index:-2;pointer-events:none}
+#login-screen .axi-login-scenes img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;transition:opacity .8s ease}
+#login-screen .axi-login-scenes img.active{opacity:1}
+#login-screen .axi-login-shade{z-index:-1;background:linear-gradient(0deg,#08152bea,transparent 75%),linear-gradient(90deg,#12203b55,transparent 65%)}
+#login-screen .axi-login-top{position:absolute;top:30px;left:3%;color:white;font-size:12px;letter-spacing:2px;text-shadow:0 1px 5px #12203b}
+#login-screen .login-box{flex-shrink:0;max-width:460px;padding:40px;background:#f6f5f0;border-top:4px solid #c08838;box-shadow:0 20px 70px #07101f66}
+#login-screen .axi-login-logo{width:100%;height:auto;display:block;margin-bottom:35px}
+#login-screen .login-box h1{font-size:21px;letter-spacing:0;margin-bottom:7px;font-weight:600}
+#login-screen .login-box p.sub{font-size:14px;margin-bottom:28px}
+#login-screen .form-group{margin-bottom:20px}
+#login-screen .form-group label{text-transform:none;letter-spacing:0;color:#1b2a49;font-size:14px;margin-bottom:8px}
+#login-screen .form-group input{min-height:48px;background:white}
+#login-screen .btn-primary{min-height:49px;background:#1b2a49;margin-top:8px}
+#login-screen .btn-primary:hover{background:#293e65}
+#login-screen .axi-login-copy{position:absolute;left:3%;bottom:105px;width:calc((100% - 460px)/2 - 75px);max-width:420px;color:white}
+#login-screen .axi-login-copy small{color:#e5bb78;font-size:12px;letter-spacing:2px;font-weight:600}
+#login-screen .axi-login-copy h2{font-size:clamp(26px,2.4vw,37px);line-height:1.12;margin:15px 0}
+#login-screen .axi-login-copy p{font-size:17px;line-height:1.55;color:#f0f1f4}
+#login-screen .axi-login-controls{position:absolute;bottom:35px;left:3%;display:flex;align-items:center;gap:12px;color:white}
+#login-screen .axi-login-controls button{display:inline-flex;align-items:center;justify-content:center;border:1px solid #ffffff88;background:#12203b88;color:white;width:40px;height:40px;border-radius:50%;cursor:pointer;font:20px 'Segoe UI',sans-serif}
+#login-screen .axi-login-controls button:focus-visible{outline:3px solid #e5bb78;outline-offset:3px}
+#login-screen .axi-login-controls .axi-login-dot{width:28px;height:40px;border:0;background:transparent}
+#login-screen .axi-login-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:#ffffff88}
+#login-screen .axi-login-dot[aria-current=true]::after{background:#d4a85a}
+#login-screen .axi-login-count{font-size:12px;white-space:nowrap}
+#login-screen .axi-login-tags{position:absolute;right:3%;bottom:45px;font-size:12px;letter-spacing:1px;color:#e0e3e9}
+@media(max-width:1150px){#login-screen{padding:65px 20px 95px;gap:28px}#login-screen .axi-login-copy{position:static;width:100%;max-width:460px}#login-screen .axi-login-copy h2{font-size:27px;margin:10px 0}#login-screen .axi-login-copy p{font-size:15px}#login-screen .axi-login-controls{left:50%;transform:translateX(-50%);bottom:25px;gap:8px}#login-screen .axi-login-tags{display:none}#login-screen .axi-login-top{left:0;width:100%;text-align:center;font-size:10px;letter-spacing:1px;top:22px}#login-screen .axi-login-shade{background:linear-gradient(0deg,#08152bf2,#12203b55)}#login-screen .axi-login-scenes img{object-position:35% center}}
+@media(max-width:480px){#login-screen{padding-left:16px;padding-right:16px}#login-screen .login-box{padding:28px 24px}#login-screen .axi-login-logo{margin-bottom:26px}#login-screen .axi-login-copy h2 br{display:none}#login-screen .axi-login-copy h2 br::after{content:' '}}
+@media(max-width:1150px){#login-screen .axi-login-copy{order:1}}
+@media(prefers-reduced-motion:reduce){#login-screen .axi-login-scenes img{transition:none}}
