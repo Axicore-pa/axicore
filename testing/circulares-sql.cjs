@@ -1,0 +1,94 @@
+const {PGlite}=require('@electric-sql/pglite');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'..');
+(async()=>{
+ const db=new PGlite();let checks=0;
+ await db.exec(`
+ CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+ CREATE SCHEMA auth;CREATE SCHEMA private;CREATE SCHEMA storage;
+ GRANT USAGE ON SCHEMA auth,private,storage TO authenticated,service_role,anon;
+ CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
+ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT (auth.jwt()->>'sub')::uuid$$;
+ CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS $$SELECT auth.jwt()->>'role'$$;
+ CREATE FUNCTION private.axi_sesion_valida() RETURNS boolean LANGUAGE sql STABLE AS $$SELECT coalesce((auth.jwt()->>'valid')::boolean,false)$$;
+ CREATE FUNCTION private.aal2_ok() RETURNS boolean LANGUAGE sql STABLE AS $$SELECT auth.jwt()->>'aal'='aal2'$$;
+ CREATE TABLE auth.users(id uuid PRIMARY KEY,email text);
+ CREATE TABLE public.condominios(id bigint PRIMARY KEY,nombre text);
+ CREATE TABLE public.accesos(id bigint PRIMARY KEY,auth_user_id uuid,rol text,condominio_id bigint,propietario_id bigint,inquilino_id bigint,administrador_id bigint,activo boolean DEFAULT true);
+ CREATE TABLE public.propietarios(id bigint PRIMARY KEY,condominio_id bigint,nombre text,email text,estado text);
+ CREATE TABLE public.inquilinos(id bigint PRIMARY KEY,condominio_id bigint,nombre text,email text,estado text,unidad_id bigint);
+ CREATE TABLE public.administradores(id bigint PRIMARY KEY,condominio_id bigint,nombre text,email text,estado text);
+ CREATE TABLE public.unidades(id bigint PRIMARY KEY,condominio_id bigint,codigo text,propietario_id bigint);
+ CREATE TABLE public.unidad_propietarios(unidad_id bigint,propietario_id bigint,fecha_fin timestamptz,fecha_inicio timestamptz);
+ CREATE TABLE public.unidad_administradores(unidad_id bigint,administrador_id bigint,fecha_fin date,fecha_inicio date);
+ CREATE FUNCTION private.condos_residente() RETURNS bigint[] LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT coalesce(array_agg(condominio_id),'{}') FROM public.accesos WHERE auth_user_id=auth.uid() AND activo AND rol IN ('Propietario','Inquilino','Administrador') AND (rol<>'Administrador' OR private.aal2_ok()) $$;
+ CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ CREATE TABLE storage.objects(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text,name text,metadata jsonb,UNIQUE(bucket_id,name));
+ ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+ GRANT SELECT,INSERT,DELETE ON storage.objects TO authenticated;
+ INSERT INTO public.condominios VALUES(1,'Condominio Uno'),(2,'Condominio Dos');
+ INSERT INTO auth.users SELECT ('00000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,'cuenta'||i||'@example.test' FROM generate_series(1,6)i;
+ INSERT INTO public.accesos VALUES
+ (1,'00000000-0000-0000-0000-000000000001','CEO',NULL,NULL,NULL,NULL,true),
+ (2,'00000000-0000-0000-0000-000000000002','Asistente',1,NULL,NULL,NULL,true),
+ (3,'00000000-0000-0000-0000-000000000003','Propietario',1,1,NULL,NULL,true),
+ (4,'00000000-0000-0000-0000-000000000004','Inquilino',1,NULL,2,NULL,true),
+ (5,'00000000-0000-0000-0000-000000000005','Propietario',2,5,NULL,NULL,true),
+ (6,'00000000-0000-0000-0000-000000000006','Administrador',1,NULL,NULL,3,true);
+ INSERT INTO public.propietarios VALUES(1,1,'Ana Prueba','ana@example.test','Activo'),(4,1,'Inactivo','inactivo@example.test','Inactivo'),(5,2,'Otro Condo','otro@example.test','Activo');
+ INSERT INTO public.inquilinos VALUES(2,1,'Inquilino Prueba',' ANA@example.test ','Activo',1),(6,1,'Sin correo','','Activo',1);
+ INSERT INTO public.administradores VALUES(3,1,'Admin Prueba','admin@example.test','Activo');
+ INSERT INTO public.unidades VALUES(1,1,'A-101',1),(2,2,'B-201',5);
+ INSERT INTO public.unidad_administradores VALUES(1,3,NULL,'2020-01-01');
+ `);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261016063556_axicore_circulares_confirmacion.sql'),'utf8'));
+ const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
+ const val=async(sql,args=[])=>(await q(sql,args))[0]?.v;
+ const check=(ok,label)=>{assert(ok,label);console.log('OK '+label);checks++;};
+ const denied=async(fn,label)=>{let failure=false;try{await fn();}catch(_){failure=true;}check(failure,label);};
+ const ctx=async(id,role='authenticated',aal='aal1',valid=true)=>{await db.exec('RESET ROLE');await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:id?'00000000-0000-0000-0000-'+String(id).padStart(12,'0'):null,role,aal,valid})]);await db.exec('SET ROLE '+role);};
+ await ctx(3);
+ await denied(()=>q("select public.axi_circular_preparar(1,'No autorizado','','application/pdf',99)"),'residente no crea');
+ await ctx(2,'authenticated','aal1');await denied(()=>q("select public.axi_circular_preparar(1,'Sin MFA','','application/pdf',99)"),'Asistente requiere MFA');
+ await ctx(2,'authenticated','aal2');await denied(()=>q("select public.axi_circular_preparar(2,'Otro condo','','application/pdf',99)"),'Asistente limitado al condominio asignado');
+ await ctx(1,'authenticated','aal2',false);await denied(()=>q("select public.axi_circular_preparar(1,'Sesión inválida','','application/pdf',99)"),'sesión revocada no crea');
+ await ctx(1,'authenticated','aal2');
+ const draft=await val("select public.axi_circular_preparar(1,'Circular de prueba','Información sintética','application/pdf',99) v");const cid=draft.id;
+ check(draft.archivo.startsWith('1/'),'ruta generada por servidor');
+ await denied(()=>q('select public.axi_circular_publicar($1)',[cid]),'no publica sin archivo');
+ await denied(()=>q("select public.axi_circular_preparar(1,'HTML','','text/html',99)"),'rechaza contenido HTML');
+ await denied(()=>q("select public.axi_circular_preparar(1,'Grande','','application/pdf',10485761)"),'límite de tamaño');
+ await ctx(3);const before=await val("select public.axi_circulares_listar(1,'Propietario') v");check(before.circulares.length===0,'borrador invisible al residente');
+ await denied(()=>q("insert into storage.objects(bucket_id,name,metadata) values('circulares',$1,'{}')",[draft.archivo]),'residente no carga por Storage');
+ await ctx(1,'authenticated','aal2');await q("insert into storage.objects(bucket_id,name,metadata) values('circulares',$1,'{\"size\":99,\"mimetype\":\"application/pdf\"}')",[draft.archivo]);
+ await q('select public.axi_circular_publicar($1)',[cid]);
+ await denied(()=>q("insert into storage.objects(bucket_id,name,metadata) values('circulares','2/falso.pdf','{}')"),'staff no sube rutas no reservadas');
+ await ctx(3);let list=await val("select public.axi_circulares_listar(1,'Propietario') v");check(list.circulares.length===1&&!list.staff,'residente ve circular publicada');
+ check((await q("select * from storage.objects where bucket_id='circulares'")).length===1,'Storage permite leer su circular');
+ await denied(()=>q('select public.axi_circular_enviar($1)',[cid]),'residente no envía');
+ await denied(()=>q('select public.axi_circular_comprobantes($1)',[cid]),'residente no consulta datos ajenos');
+ await denied(()=>q("select public.axi_circulares_listar(2,'Propietario')"),'residente no lista otro condominio');
+ await denied(()=>q("select public.axi_circular_leida($1,'Inquilino')",[cid]),'no falsifica rol');
+ await ctx(5);check((await q("select * from storage.objects where bucket_id='circulares'")).length===0,'Storage impide leer otro condominio');
+ await denied(()=>q("select public.axi_circular_abrir($1,'Propietario')",[cid]),'RPC no abre otra comunidad');
+ await ctx(3);const read=await val("select public.axi_circular_leida($1,'Propietario') v",[cid]);
+ const read2=await val("select public.axi_circular_leida($1,'Propietario') v",[cid]);check(read.comprobante===read2.comprobante,'Leída idempotente');
+ list=await val("select public.axi_circulares_listar(1,'Propietario') v");check(!!list.circulares[0].leido_at,'acuse elimina aviso en próximos inicios');
+ await ctx(4);await q("select public.axi_circular_abrir($1,'Inquilino')",[cid]);list=await val("select public.axi_circulares_listar(1,'Inquilino') v");check(!list.circulares[0].leido_at,'abrir metadatos sin render no confirma (frontend confirma después)');
+ await q("select public.axi_circular_leida($1,'Inquilino')",[cid]);
+ await ctx(6);await denied(()=>q("select public.axi_circular_leida($1,'Administrador')",[cid]),'administrador requiere AAL2');
+ await ctx(1,'authenticated','aal2');check(await val('select public.axi_circular_enviar($1) v',[cid])===2,'deduplica emails, filtra inactivos y otro condominio');
+ check(await val('select public.axi_circular_enviar($1) v',[cid])===2,'doble envío no duplica lote');
+ const report=await val('select public.axi_circular_comprobantes($1) v',[cid]);check(report.lecturas.length===2&&report.correos.length===4,'dos avisos y dos comprobantes');
+ check(report.lecturas.every(r=>r.perfil.condominio==='Condominio Uno'&&r.perfil.unidades==='A-101'),'comprobante contiene perfil, unidad y condominio');
+ await denied(()=>q('select * from private.axi_circular_correos'),'sin lectura directa de cola');
+ await denied(()=>q('select public.axi_circular_cola_tomar()'),'usuario no procesa correos');
+ await ctx(null,'service_role');let jobs=await val('select public.axi_circular_cola_tomar() v');check(jobs.length===4,'servicio toma trabajos autorizados');
+ check(jobs.filter(j=>j.cc).every(j=>j.cc.length===1&&j.cc[0]==='axispard@gmail.com'),'cada aviso tiene CC solo al CEO');
+ check((await val('select public.axi_circular_cola_tomar() v')).length===0,'lote concurrente bloqueado');
+ await denied(()=>q("select public.axi_circular_cola_finalizar($1,'00000000-0000-0000-0000-000000000000','id',NULL)",[jobs[0].id]),'no finaliza lote ajeno');
+ for(const j of jobs)await q('select public.axi_circular_cola_finalizar($1,$2,$3,NULL)',[j.id,j.lote,'resend-simulado']);
+ check((await val('select public.axi_circular_cola_tomar() v')).length===0,'trabajos enviados no se repiten');
+ await ctx(null,'anon');await denied(()=>q("select public.axi_circulares_listar(1,'Propietario')"),'anónimo sin RPC');
+ await db.close();console.log(`${checks} comprobaciones SQL completadas sin envíos reales.`);
+})().catch(e=>{console.error(e);process.exit(1);});
