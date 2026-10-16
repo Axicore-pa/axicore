@@ -936,7 +936,7 @@
                 <label>Concepto:</label><select id="gd-conc" data-trab><option>Deposito inicial</option><option>Deposito extraordinario</option></select>
                 <label class="gx-lv">Monto RD$:</label><input type="number" id="gd-monto" step="0.01" min="0.01" data-trab>
               </div>
-              <div class="gx-foto"><label>Foto:</label><input id="gd-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gd')">Examinar...</button><input type="file" id="gd-file" accept="image/*" hidden onchange="glpFotoElegida('gd')"></div>
+              <div class="gx-foto"><label>Foto:</label><input id="gd-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gd')">Examinar...</button><input type="file" id="gd-file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden onchange="glpFotoElegida('gd')"></div>
               <div class="gx-act"><button class="gx-btn gx-wide" id="gd-btn" onclick="glpDeposito()">Registrar deposito</button></div>
             </div>
             <div>
@@ -951,7 +951,7 @@
                 <label class="gx-lr">Precio galon RD$:</label><input type="number" id="gc-precio" step="0.01" min="0.01" data-trab oninput="glpCalcular()">
                 <label class="gx-lr">Monto consumo RD$:</label><input id="gc-monto" readonly tabindex="-1">
               </div>
-              <div class="gx-foto"><label>Foto:</label><input id="gc-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gc')">Examinar...</button><input type="file" id="gc-file" accept="image/*" hidden onchange="glpFotoElegida('gc')"></div>
+              <div class="gx-foto"><label>Foto:</label><input id="gc-fnom" readonly tabindex="-1"><button class="gx-btn" data-trab onclick="glpExaminar('gc')">Examinar...</button><input type="file" id="gc-file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden onchange="glpFotoElegida('gc')"></div>
               <div class="gx-act" style="text-align:center"><button class="gx-btn gx-wide" id="gc-btn" onclick="glpConsumo()">Registrar consumo</button></div>
             </div>
           </div>
@@ -1249,25 +1249,9 @@
 
       <!-- ===== ENVIAR COMPROBANTE (Residente) ===== -->
       <div id="page-enviar-comprobante" class="page">
-        <h2 class="page-title">Enviar Comprobante de Pago</h2>
+        <h2 class="page-title">Comprobantes de Pago</h2>
         <p style="font-size:.85rem;margin:-.4rem 0 1rem;color:var(--ax-text-muted,#666)">La administración revisa cada comprobante. El pago se refleja en su cuenta cuando es validado.</p>
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header">Nuevo comprobante</div>
-          <div class="card-body">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem">
-              <div style="grid-column:1/-1"><label>Factura que paga</label><select id="ec-factura"><option value="">Cargando...</option></select></div>
-              <div><label>Fecha del pago</label><input type="date" id="ec-fecha"></div>
-              <div><label>Monto (RD$)</label><input type="number" id="ec-monto" step="0.01" min="0.01"></div>
-              <div><label>Método</label><select id="ec-metodo"><option>Transferencia</option><option>Depósito</option><option>Cheque</option><option>Efectivo</option></select></div>
-              <div><label>Banco</label><input type="text" id="ec-banco" maxlength="120" placeholder="Ej: BHD, Popular"></div>
-              <div><label>Referencia</label><input type="text" id="ec-referencia" maxlength="120" placeholder="No. de transferencia"></div>
-              <div><label>Archivo (PDF o foto, máx. 10 MB)</label><input type="file" id="ec-archivo" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"></div>
-            </div>
-            <div style="margin-top:.8rem"><label>Nota (opcional)</label><textarea id="ec-nota" rows="2" maxlength="1000" style="width:100%"></textarea></div>
-            <div id="ec-alert" class="alert" style="display:none;margin-top:.6rem"></div>
-            <button class="btn btn-primary" id="ec-btn" style="margin-top:.8rem" onclick="enviarComprobante()">Enviar comprobante</button>
-          </div>
-        </div>
+        <div class="card" style="margin-bottom:1rem"><div class="card-body" style="font-size:.9rem;color:var(--ax-muted)">El envío de nuevos comprobantes desde el portal está deshabilitado. Aquí puede consultar los que ya había enviado.</div></div>
         <div class="card">
           <div class="card-header">Mis comprobantes</div>
           <div class="card-body" id="ec-lista"><div class="loading">Cargando...</div></div>
@@ -1464,7 +1448,7 @@
     <div class="form-group"><label>Prioridad *</label>
       <div style="font-size:.78rem;color:var(--ax-muted);margin-bottom:.3rem">Baja = sin urgencia · Media = requiere atención · Alta = urgente · Crítica = riesgo inmediato</div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap"><label class="rv-check"><input type="radio" name="rpt-pri" value="Baja"> Baja</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Media"> Media</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Alta"> Alta</label><label class="rv-check"><input type="radio" name="rpt-pri" value="Crítica"> Crítica</label></div></div>
-    <div class="form-group"><label>Evidencia fotográfica</label><input type="file" id="rpt-fotos" accept="image/*" multiple>
+    <div class="form-group"><label>Evidencia fotográfica</label><input type="file" id="rpt-fotos" accept=".png,.jpg,.jpeg,image/png,image/jpeg" multiple>
       <small style="color:var(--ax-muted)">Máx. 3 fotos, 10 MB cada una.</small></div>
     <p style="font-size:.78rem;color:var(--ax-muted)">Se registra con número AXI-RPT-AAAA-W####. Se envía el PDF a la administración (con el evento de calendario según la prioridad) y una copia al residente si tiene correo.</p>
     <div class="modal-actions">
@@ -2090,7 +2074,7 @@
       <div class="form-group"><label>Referencia / No. Comprobante</label><input type="text" id="pg-referencia" placeholder="No. transferencia, cheque..."></div>
       <div class="form-group">
         <label>Comprobante(s) de pago (PDF o fotos)</label>
-        <input type="file" id="pg-comprobante-file" accept=".pdf,image/*" multiple>
+        <input type="file" id="pg-comprobante-file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple>
         <small style="color:#4d4742">Puedes seleccionar varias fotos/PDF a la vez (ej. 2 facturas). O pega un enlace si ya está en Drive/Photos:</small>
         <textarea id="pg-comprobante-url" rows="2" placeholder="https://...  (uno por línea si son varios)" style="margin-top:.3rem"></textarea>
       </div>
@@ -4164,17 +4148,6 @@ async function verArchivoComprobante(ruta) {
   window.open(data.signedUrl, '_blank', 'noopener');
 }
 async function cargarEnviarComprobante() {
-  $('ec-fecha').value = new Date().toISOString().split('T')[0];
-  const sel = $('ec-factura');
-  const {data: facts, error} = await sb.from('facturas').select('id, no_factura, concepto, periodo, balance_pendiente')
-    .eq('estado_aprobacion', 'Aprobado').gt('balance_pendiente', 0).neq('estado', 'Anulada').order('fecha_vencimiento');
-  if (error) sel.innerHTML = '<option value="">' + error.message + '</option>';
-  else if (!facts?.length) sel.innerHTML = '<option value="">No tiene facturas pendientes</option>';
-  else {
-    sel.innerHTML = '<option value="">— Seleccione factura —</option>' + facts.map(f =>
-      `<option value="${f.id}" data-balance="${f.balance_pendiente}">${f.no_factura} — ${f.periodo || ''} ${f.concepto || ''} (Pend: RD$ ${fmt(f.balance_pendiente)})</option>`).join('');
-    sel.onchange = () => { const o = sel.selectedOptions[0]; if (o?.dataset.balance) $('ec-monto').value = o.dataset.balance; };
-  }
   const {data: comps, error: e2} = await sb.from('comprobantes_pago')
     .select('id, fecha_pago, monto, metodo, referencia, archivo_ruta, estado, comentario_revision, created_at, facturas(no_factura)')
     .order('created_at', {ascending: false}).limit(50);
@@ -4188,33 +4161,6 @@ async function cargarEnviarComprobante() {
       <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${r.estado || ''}</span></td>
       <td style="font-size:.8rem">${r.comentario_revision || ''}</td>
       <td><button class="btn btn-sm" onclick="verArchivoComprobante('${r.archivo_ruta}')">📄 Ver</button></td></tr>`).join('')}</tbody></table>`;
-}
-async function enviarComprobante() {
-  const al = $('ec-alert'), btn = $('ec-btn');
-  const aviso = (msg, ok) => { al.className = 'alert ' + (ok ? 'alert-success' : 'alert-error'); al.textContent = msg; al.style.display = 'block'; };
-  const facturaId = $('ec-factura').value, monto = parseFloat($('ec-monto').value), fecha = $('ec-fecha').value;
-  const archivo = $('ec-archivo').files[0];
-  if (!facturaId) return aviso('Seleccione la factura.');
-  if (!(monto > 0)) return aviso('Indique un monto válido.');
-  if (!fecha) return aviso('Indique la fecha del pago.');
-  if (!archivo) return aviso('Adjunte el comprobante (PDF o foto).');
-  if (archivo.size > 10 * 1024 * 1024) return aviso('El archivo excede 10 MB.');
-  btn.disabled = true; btn.textContent = 'Enviando...';
-  try {
-    const {data: {user}} = await sb.auth.getUser();
-    const ext = (archivo.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const ruta = `${user.id}/${Date.now()}.${ext}`;
-    const up = await sb.storage.from('comprobantes').upload(ruta, archivo, {contentType: archivo.type, upsert: false});
-    if (up.error) return aviso('No se pudo subir el archivo: ' + up.error.message);
-    const {error} = await sb.rpc('portal_registrar_comprobante', {
-      p_factura_id: parseInt(facturaId), p_fecha_pago: fecha, p_monto: monto, p_archivo_ruta: ruta,
-      p_metodo: $('ec-metodo').value, p_banco: $('ec-banco').value || null,
-      p_referencia: $('ec-referencia').value || null, p_nota: $('ec-nota').value || null });
-    if (error) return aviso(error.message);
-    aviso('Comprobante enviado. Queda pendiente de validación de la administración.', true);
-    ['ec-monto','ec-banco','ec-referencia','ec-nota','ec-archivo'].forEach(id => $(id).value = '');
-    cargarEnviarComprobante();
-  } finally { btn.disabled = false; btn.textContent = 'Enviar comprobante'; }
 }
 
 // ==================== CEO: COMPROBANTES DE RESIDENTES ====================
