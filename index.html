@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -2101,6 +2102,18 @@
 <script src="assets/ayuda.js?v=20261015-1"></script>
 <script src="assets/circulares.js?v=20261016-1"></script>
 <script>
+// Texto de base de datos y errores nunca se interpretan como etiquetas HTML.
+function axiEscapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Un argumento de texto dentro de un controlador HTML tiene dos contextos.
+function axiJSString(value) {
+  const special = new Set([92, 39, 34, 60, 62, 38, 13, 10, 8232, 8233]);
+  return Array.from(String(value ?? '')).map(c => special.has(c.charCodeAt(0)) ? String.fromCharCode(92) + 'u' + c.charCodeAt(0).toString(16).padStart(4, '0') : c).join('');
+}
+function axiWebURL(value) {
+  try { const u = new URL(String(value)); return /^https?:$/.test(u.protocol) ? u.href : '#'; } catch (_) { return '#'; }
+}
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://qfgyftsnwznsqizriggr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmZ3lmdHNud3puc3FpenJpZ2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDgxODgsImV4cCI6MjEwNjk4NDE4OH0.i-icCG4lJ7Vjkp6c_j_a4Mrwt2w5Ig2GYUcfgWoIugQ';
@@ -2112,7 +2125,7 @@ let sb;
 try {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, AXISession.options);
 } catch(e) {
-  document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + e.message + '</div>';
+  document.body.innerHTML = '<div style="padding:2rem;color:red;font-size:1.2rem">Error al inicializar Supabase: ' + axiEscapeHTML(e.message) + '</div>';
 }
 let sesion = null; // {rol, usuario_id, nombre, condominio_id}
 let pgEdit = null; // pago a proveedor en edicion (pagos_gastos row) o null
@@ -2125,7 +2138,7 @@ const $ = id => document.getElementById(id);
 // Ver comprobante: enlace http abre directo; ruta de Storage privada abre con URL firmada
 function btnComprobante(url) {
   if (!url) return '—';
-  const safe = String(url).replace(/'/g, "\\'");
+  const safe = axiJSString(url);
   return `<button class="btn btn-sm btn-outline" onclick="verComprobante('${safe}')">📄 Ver</button>`;
 }
 async function verComprobante(url) {
@@ -2144,7 +2157,7 @@ function btnComprobantesRow(row) {
   if (!lista.length) return '—';
   if (lista.length === 1) return btnComprobante(lista[0]);
   return lista.map((u, i) => {
-    const safe = String(u).replace(/'/g, "\\'");
+    const safe = axiJSString(u);
     return `<button class="btn btn-sm btn-outline" style="margin:1px" onclick="verComprobante('${safe}')">📄 ${i+1}</button>`;
   }).join(' ');
 }
@@ -2153,7 +2166,7 @@ function btnComprobantesRow(row) {
 function badgeAprob(ea) {
   if (!ea || ea === 'Aprobado') return '';
   const cls = {'Sometido':'badge-warning','En proceso':'badge-info','Rechazado':'badge-danger'}[ea] || 'badge-warning';
-  return ` <span class="badge ${cls}" title="Estado de aprobación">${ea}</span>`;
+  return ` <span class="badge ${cls}" title="Estado de aprobación">${axiEscapeHTML(ea)}</span>`;
 }
 
 // Boton de anulacion segun rol: CEO anula directo; Asistente somete solicitud
@@ -2162,7 +2175,7 @@ function accionAnular(tabla, id, estado, ea) {
   if (anulado || ea !== 'Aprobado') return '';
   const esCEO = sesion.rol === 'CEO';
   const label = esCEO ? 'Anular' : 'Solicitar anulación';
-  return `<button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="anularRegistro('${tabla}',${id})">${label}</button>`;
+  return `<button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="anularRegistro('${tabla}',${id})">${axiEscapeHTML(label)}</button>`;
 }
 
 async function anularRegistro(tabla, id) {
@@ -2434,7 +2447,7 @@ function mostrarSelectorCondominio() {
   condominiosUsuario.forEach(c => {
     const li = document.createElement('li');
     li.onclick = () => seleccionarCondominio(c.condominio_id, c.nombre, c.rol);
-    li.innerHTML = `<span class="condo-name">🏢 ${c.nombre}</span><span class="condo-rol">${c.rol}</span>`;
+    li.innerHTML = `<span class="condo-name">🏢 ${axiEscapeHTML(c.nombre)}</span><span class="condo-rol">${axiEscapeHTML(c.rol)}</span>`;
     lista.appendChild(li);
   });
 }
@@ -2576,7 +2589,7 @@ function renderCondoDropdown() {
     const a = document.createElement('a');
     a.href = '#';
     a.className = c.condominio_id === sesion.condominio_id ? 'active-condo' : '';
-    a.innerHTML = `<span>${c.nombre}</span><span class="dd-rol">${c.rol}</span>`;
+    a.innerHTML = `<span>${axiEscapeHTML(c.nombre)}</span><span class="dd-rol">${axiEscapeHTML(c.rol)}</span>`;
     a.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -2854,8 +2867,8 @@ async function cargarDashboard() {
   // Asistente: sin fondo comun ni ingresos/egresos (no accede al ECG)
   if (!esCEOdash) {
     $('dash-stats').innerHTML = `
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Facturas</div><div class="value">${facturas.count || 0}</div></div>
-    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Pagos</div><div class="value">${pagosCount.count || 0}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Facturas</div><div class="value">${axiEscapeHTML(facturas.count || 0)}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Pagos</div><div class="value">${axiEscapeHTML(pagosCount.count || 0)}</div></div>
     <div class="stat-card"><div class="accent-bar red"></div><div class="label">Gastos por pagar</div><div class="value">${gastosPend}</div></div>
     <div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Cobros pendientes</div><div class="value" style="color:${pendientes > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${pendientes}</div></div>`;
   } else
@@ -2863,17 +2876,17 @@ async function cargarDashboard() {
     <div class="stat-card">
       <div class="accent-bar green"></div>
       <div class="label">Ingresos</div>
-      <div class="value green money">${fmtMoney(e.total_ingresos)}</div>
+      <div class="value green money">${axiEscapeHTML(fmtMoney(e.total_ingresos))}</div>
     </div>
     <div class="stat-card">
       <div class="accent-bar red"></div>
       <div class="label">Egresos</div>
-      <div class="value red money">${fmtMoney(e.total_egresos)}</div>
+      <div class="value red money">${axiEscapeHTML(fmtMoney(e.total_egresos))}</div>
     </div>
     <div class="stat-card">
       <div class="accent-bar blue"></div>
       <div class="label">Fondo común</div>
-      <div class="value money" style="color:var(--ax-gold)">${fmtMoney(e.balance)}</div>
+      <div class="value money" style="color:var(--ax-gold)">${axiEscapeHTML(fmtMoney(e.balance))}</div>
     </div>
     <div class="stat-card">
       <div class="accent-bar yellow"></div>
@@ -2974,7 +2987,7 @@ async function cargarDashboard() {
     console.error('Dashboard error:', err);
     const el = $('dash-stats');
     if (el && el.querySelector('.loading')) {
-      el.innerHTML = `<div class="alert alert-error" style="display:block">Error cargando dashboard: ${err.message || 'Error desconocido'}. <a href="#" onclick="cargarDashboard();return false">Reintentar</a></div>`;
+      el.innerHTML = `<div class="alert alert-error" style="display:block">Error cargando dashboard: ${axiEscapeHTML(err.message || 'Error desconocido')}. <a href="#" onclick="cargarDashboard();return false">Reintentar</a></div>`;
     }
     const cf = $('dash-chart-flujo');
     if (cf && cf.querySelector('.loading')) cf.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--ax-muted)">No se pudo cargar</div>';
@@ -2989,7 +3002,7 @@ async function cargarCobros() {
     .select('*').eq('condominio_id', sesion.condominio_id)
     .order('fecha_vencimiento');
 
-  if (error) { $('cobros-tabla').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cobros-tabla').innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cobros-tabla').innerHTML = '<div class="empty">No hay cobros pendientes</div>'; return; }
 
   $('cobros-tabla').innerHTML = renderTablaCobros(data);
@@ -3000,12 +3013,12 @@ function renderTablaCobros(rows) {
     <thead><tr><th>Unidad</th><th>Propietario</th><th>Período</th><th class="text-right">Monto</th><th class="text-right">Balance</th><th class="text-center">Atraso</th></tr></thead>
     <tbody>${rows.map(r => `
       <tr>
-        <td><strong>${r.unidad_codigo}</strong></td>
-        <td>${r.propietario_nombre}</td>
-        <td>${r.periodo}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.balance_pendiente)}</td>
-        <td class="text-center"><span class="badge ${r.dias_atraso > 15 ? 'badge-danger' : 'badge-warning'}">${r.dias_atraso}d</span></td>
+        <td><strong>${axiEscapeHTML(r.unidad_codigo)}</strong></td>
+        <td>${axiEscapeHTML(r.propietario_nombre)}</td>
+        <td>${axiEscapeHTML(r.periodo)}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(fmt(r.balance_pendiente))}</td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(r.dias_atraso > 15 ? 'badge-danger' : 'badge-warning')}">${axiEscapeHTML(r.dias_atraso)}d</span></td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -3068,11 +3081,11 @@ async function cargarECG() {
     <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-right">Entrada</th><th class="text-right">Salida</th></tr></thead>
     <tbody>${rows.map(r => `
       <tr>
-        <td>${r.fecha}</td>
-        <td><span class="badge ${r.tipo_movimiento.includes('Ingreso') ? 'badge-success' : 'badge-danger'}">${r.tipo_movimiento}</span></td>
-        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
-        <td class="text-right money" style="color:var(--ax-success)">${r.entrada > 0 ? fmt(r.entrada) : ''}</td>
-        <td class="text-right money" style="color:var(--ax-danger)">${r.salida > 0 ? fmt(r.salida) : ''}</td>
+        <td>${axiEscapeHTML(r.fecha)}</td>
+        <td><span class="badge ${r.tipo_movimiento.includes('Ingreso') ? 'badge-success' : 'badge-danger'}">${axiEscapeHTML(r.tipo_movimiento)}</span></td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(r.concepto || '')}</td>
+        <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(r.entrada > 0 ? fmt(r.entrada) : '')}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(r.salida > 0 ? fmt(r.salida) : '')}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -3095,10 +3108,10 @@ async function cargarUnidades() {
       const d = r.data?.[0] || {};
       const bal = parseFloat(d.balance_pendiente || 0);
       return `<tr>
-        <td><strong>${d.unidad_codigo || data[i].codigo}</strong></td>
-        <td>${d.propietario_nombre || ''}</td>
-        <td class="text-right money">${fmt(d.total_facturado)}</td>
-        <td class="text-right money">${fmt(d.total_pagado)}</td>
+        <td><strong>${axiEscapeHTML(d.unidad_codigo || data[i].codigo)}</strong></td>
+        <td>${axiEscapeHTML(d.propietario_nombre || '')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(d.total_facturado))}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(d.total_pagado))}</td>
         <td class="text-right money" style="color:${bal > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${fmt(bal)}</td>
       </tr>`;
     }).join('')}
@@ -3110,7 +3123,7 @@ async function cargarUnidades() {
 const repData = {};  // guarda {headers, rows} del último render para exportar
 
 function repCard(label, value, cls) {
-  return `<div class="stat-card"><div class="accent-bar ${cls||'blue'}"></div><div class="label">${label}</div><div class="value ${cls||'blue'}">${value}</div></div>`;
+  return `<div class="stat-card"><div class="accent-bar ${cls||'blue'}"></div><div class="label">${axiEscapeHTML(label)}</div><div class="value ${cls||'blue'}">${value}</div></div>`;
 }
 function repRango(pfx) {
   const d = ($(pfx + '-desde') || {}).value || null;
@@ -3296,7 +3309,7 @@ async function emailReporte(tipo) {
 
 async function cargarRepMorosidad() {
   const { data, error } = await sb.rpc('fn_reporte_morosidad', { p_condominio_id: sesion.condominio_id });
-  if (error) { $('rmor-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rmor-lista').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const tot = rows.reduce((a, r) => a + Number(r.balance || 0), 0);
   const t90 = rows.reduce((a, r) => a + Number(r.d90_mas || 0), 0);
@@ -3307,15 +3320,15 @@ async function cargarRepMorosidad() {
   $('rmor-lista').innerHTML = `<table>
     <thead><tr><th>Unidad</th><th>Propietario</th><th class="text-right">Facturado</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th class="text-right">Corriente</th><th class="text-right">1-30</th><th class="text-right">31-60</th><th class="text-right">61-90</th><th class="text-right">+90</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${r.unidad_codigo || ''}</td><td>${r.propietario_nombre || ''}</td>
-      <td class="text-right money">${fmt(r.total_facturado)}</td>
-      <td class="text-right money">${fmt(r.total_pagado)}</td>
-      <td class="text-right money" style="color:var(--ax-danger);font-weight:600">${fmt(r.balance)}</td>
-      <td class="text-right money">${fmt(r.corriente)}</td>
-      <td class="text-right money">${fmt(r.d1_30)}</td>
-      <td class="text-right money">${fmt(r.d31_60)}</td>
-      <td class="text-right money">${fmt(r.d61_90)}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.d90_mas)}</td>
+      <td>${axiEscapeHTML(r.unidad_codigo || '')}</td><td>${axiEscapeHTML(r.propietario_nombre || '')}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.total_facturado))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.total_pagado))}</td>
+      <td class="text-right money" style="color:var(--ax-danger);font-weight:600">${axiEscapeHTML(fmt(r.balance))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.corriente))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.d1_30))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.d31_60))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.d61_90))}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(fmt(r.d90_mas))}</td>
     </tr>`).join('')}</tbody></table>`;
   repData.morosidad = {
     titulo: 'Reporte General de Cobros Pendientes', subtitulo: 'Fecha de corte: ' + new Date().toLocaleDateString('es-DO'), orientacion: 'l',
@@ -3332,7 +3345,7 @@ async function cargarRepFlujo() {
   const f = $('rflujo-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rflujo', 'cargarRepFlujo', 'ingresos_egresos');
   const { desde, hasta } = repRango('rflujo');
   const { data, error } = await sb.rpc('fn_reporte_flujo_mensual', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
-  if (error) { $('rflujo-tabla').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rflujo-tabla').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const ti = rows.reduce((a, r) => a + Number(r.ingresos || 0), 0);
   const te = rows.reduce((a, r) => a + Number(r.egresos || 0), 0);
@@ -3341,16 +3354,16 @@ async function cargarRepFlujo() {
   const max = Math.max(...rows.map(r => Math.max(Number(r.ingresos), Number(r.egresos))), 1);
   $('rflujo-chart').innerHTML = `<div style="font-size:.72rem;color:var(--ax-muted);margin-bottom:.5rem">
       <span style="color:var(--ax-success)">■</span> Ingresos &nbsp; <span style="color:var(--ax-danger)">■</span> Egresos</div>
-    <div class="bars">${rows.map(r => `<div class="row"><span class="lbl">${r.mes}</span><div>
-      <div class="track" style="margin-bottom:3px"><div class="seg ing" style="width:${Number(r.ingresos) / max * 100}%"></div></div>
-      <div class="track"><div class="seg egr" style="width:${Number(r.egresos) / max * 100}%"></div></div>
+    <div class="bars">${rows.map(r => `<div class="row"><span class="lbl">${axiEscapeHTML(r.mes)}</span><div>
+      <div class="track" style="margin-bottom:3px"><div class="seg ing" style="width:${axiEscapeHTML(Number(r.ingresos) / max * 100)}%"></div></div>
+      <div class="track"><div class="seg egr" style="width:${axiEscapeHTML(Number(r.egresos) / max * 100)}%"></div></div>
     </div></div>`).join('')}</div>`;
   $('rflujo-tabla').innerHTML = `<table>
     <thead><tr><th>Mes</th><th class="text-right">Ingresos</th><th class="text-right">Egresos</th><th class="text-right">Neto</th></tr></thead>
-    <tbody>${rows.map(r => `<tr><td>${r.mes}</td>
-      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.ingresos)}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.egresos)}</td>
-      <td class="text-right money">${fmt(r.neto)}</td></tr>`).join('')}
+    <tbody>${rows.map(r => `<tr><td>${axiEscapeHTML(r.mes)}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(fmt(r.ingresos))}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(fmt(r.egresos))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.neto))}</td></tr>`).join('')}
       <tr style="font-weight:700;border-top:2px solid var(--ax-border)"><td>Total</td>
       <td class="text-right money">${fmt(ti)}</td><td class="text-right money">${fmt(te)}</td><td class="text-right money">${fmt(ti - te)}</td></tr>
     </tbody></table>`;
@@ -3366,7 +3379,7 @@ async function cargarRepFacturacion() {
   const f = $('rfac-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rfac', 'cargarRepFacturacion', 'facturacion');
   const { desde, hasta } = repRango('rfac');
   const { data, error } = await sb.rpc('fn_reporte_facturacion', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
-  if (error) { $('rfac-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rfac-lista').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
   const tb = rows.reduce((a, r) => a + Number(r.balance_pendiente || 0), 0);
@@ -3375,10 +3388,10 @@ async function cargarRepFacturacion() {
   $('rfac-lista').innerHTML = `<table>
     <thead><tr><th>No. Factura</th><th>Fecha</th><th>Vence</th><th>Unidad</th><th>Propietario</th><th>Tipo</th><th class="text-right">Monto</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th>Estado</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${r.no_factura || ''}</td><td>${r.fecha_factura || ''}</td><td>${r.fecha_vencimiento || ''}</td>
-      <td>${r.unidad_codigo || ''}</td><td>${r.propietario_nombre || ''}</td><td>${r.tipo_factura || ''}</td>
-      <td class="text-right money">${fmt(r.monto)}</td><td class="text-right money">${fmt(r.monto_pagado)}</td>
-      <td class="text-right money">${fmt(r.balance_pendiente)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(r.no_factura || '')}</td><td>${axiEscapeHTML(r.fecha_factura || '')}</td><td>${axiEscapeHTML(r.fecha_vencimiento || '')}</td>
+      <td>${axiEscapeHTML(r.unidad_codigo || '')}</td><td>${axiEscapeHTML(r.propietario_nombre || '')}</td><td>${axiEscapeHTML(r.tipo_factura || '')}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td><td class="text-right money">${axiEscapeHTML(fmt(r.monto_pagado))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.balance_pendiente))}</td><td>${axiEscapeHTML(r.estado || '')}</td></tr>`).join('')}</tbody></table>`;
   repData.facturacion = {
     titulo: 'Reporte de Facturación del Período', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
     kpis: [{ label: 'Facturas', value: rows.length }, { label: 'Total facturado', value: fmtMoney(tm) }, { label: 'Balance pendiente', value: fmtMoney(tb) }],
@@ -3392,7 +3405,7 @@ async function cargarRepCobros() {
   const f = $('rcob-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rcob', 'cargarRepCobros', 'cobros');
   const { desde, hasta } = repRango('rcob');
   const { data, error } = await sb.rpc('fn_reporte_cobros', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
-  if (error) { $('rcob-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rcob-lista').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
   $('rcob-stats').innerHTML = repCard('Pagos', rows.length, 'blue') + repCard('Total cobrado', fmtMoney(tm), 'green');
@@ -3400,10 +3413,10 @@ async function cargarRepCobros() {
   $('rcob-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Fecha</th><th>Unidad</th><th>Recibido de</th><th>Método</th><th>Banco</th><th>Referencia</th><th>Tipo mov.</th><th class="text-right">Monto</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${r.codigo || ''}</td><td>${r.fecha_pago || ''}</td><td>${r.unidad_codigo || ''}</td>
-      <td>${r.recibido_de || ''}</td><td>${r.metodo || ''}</td><td>${r.banco || ''}</td>
-      <td>${r.referencia || ''}</td><td>${r.tipo_movimiento || ''}</td>
-      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(r.codigo || '')}</td><td>${axiEscapeHTML(r.fecha_pago || '')}</td><td>${axiEscapeHTML(r.unidad_codigo || '')}</td>
+      <td>${axiEscapeHTML(r.recibido_de || '')}</td><td>${axiEscapeHTML(r.metodo || '')}</td><td>${axiEscapeHTML(r.banco || '')}</td>
+      <td>${axiEscapeHTML(r.referencia || '')}</td><td>${axiEscapeHTML(r.tipo_movimiento || '')}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(fmt(r.monto))}</td></tr>`).join('')}</tbody></table>`;
   repData.cobros = {
     titulo: 'Reporte de Cobros del Período', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
     kpis: [{ label: 'Pagos', value: rows.length }, { label: 'Total cobrado', value: fmtMoney(tm) }],
@@ -3417,7 +3430,7 @@ async function cargarRepGastos() {
   const f = $('rgas-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rgas', 'cargarRepGastos', 'gastos');
   const { desde, hasta } = repRango('rgas');
   const { data, error } = await sb.rpc('fn_reporte_gastos', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
-  if (error) { $('rgas-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rgas-lista').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const tm = rows.reduce((a, r) => a + Number(r.monto || 0), 0);
   const tfc = rows.filter(r => r.afecta_fondo_comun).reduce((a, r) => a + Number(r.monto || 0), 0);
@@ -3426,11 +3439,11 @@ async function cargarRepGastos() {
   $('rgas-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th class="text-center">Fondo común</th><th class="text-right">Monto</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${r.codigo || ''}</td><td>${r.fecha || ''}</td><td>${r.proveedor_nombre || ''}</td>
-      <td>${r.categoria || ''}</td>
-      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || ''}</td>
-      <td>${r.estado || ''}</td><td class="text-center">${r.afecta_fondo_comun ? 'Sí' : 'No'}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.monto)}</td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(r.codigo || '')}</td><td>${axiEscapeHTML(r.fecha || '')}</td><td>${axiEscapeHTML(r.proveedor_nombre || '')}</td>
+      <td>${axiEscapeHTML(r.categoria || '')}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(r.descripcion || '')}</td>
+      <td>${axiEscapeHTML(r.estado || '')}</td><td class="text-center">${axiEscapeHTML(r.afecta_fondo_comun ? 'Sí' : 'No')}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(fmt(r.monto))}</td></tr>`).join('')}</tbody></table>`;
   repData.gastos = {
     titulo: 'Reporte de Gastos', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
     kpis: [{ label: 'Gastos', value: rows.length }, { label: 'Total gastos', value: fmtMoney(tm) }, { label: 'Afectan fondo común', value: fmtMoney(tfc) }],
@@ -3462,14 +3475,14 @@ function tanqueGlpHTML(t) {
         <line x1="80" y1="34" x2="80" y2="118" stroke="#1B2A4A" stroke-opacity=".15"/><line x1="220" y1="34" x2="220" y2="118" stroke="#1B2A4A" stroke-opacity=".15"/>
         <rect x="60" y="122" width="14" height="18" fill="#5F5E5A"/><rect x="226" y="122" width="14" height="18" fill="#5F5E5A"/>
         <rect x="48" y="138" width="38" height="5" rx="2" fill="#5F5E5A"/><rect x="214" y="138" width="38" height="5" rx="2" fill="#5F5E5A"/>
-        <text x="150" y="98" text-anchor="middle" font-size="26" font-weight="700" ${tx}>${pct.toFixed(1)}%</text>
-        <text x="150" y="116" text-anchor="middle" font-size="12" font-weight="600" ${tx}>${fmt(t.balance)} gls restantes</text>
+        <text x="150" y="98" text-anchor="middle" font-size="26" font-weight="700" ${tx}>${axiEscapeHTML(pct.toFixed(1))}%</text>
+        <text x="150" y="116" text-anchor="middle" font-size="12" font-weight="600" ${tx}>${axiEscapeHTML(fmt(t.balance))} gls restantes</text>
       </svg>
       <div style="font-size:.85rem;margin-top:.6rem">
-        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Capacidad del tanque</span><strong style="margin-left:auto">${fmt(t.capacidad)} gls</strong></div>
-        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Consumo al corte ${fechaTanque(t.corte)}</span><strong style="margin-left:auto">${fmt(t.consumo)} gls</strong></div>
-        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0"><span style="color:var(--ax-muted)">Balance</span><strong style="margin-left:auto;color:${col}">${fmt(t.balance)} gls</strong></div>
-        <div style="font-size:.72rem;color:var(--ax-muted);margin-top:.3rem">Último llenado: ${fechaTanque(t.fecha_llenado)} · ${fmt(t.galones_llenado)} gls</div>
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Capacidad del tanque</span><strong style="margin-left:auto">${axiEscapeHTML(fmt(t.capacidad))} gls</strong></div>
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--ax-border)"><span style="color:var(--ax-muted)">Consumo al corte ${fechaTanque(t.corte)}</span><strong style="margin-left:auto">${axiEscapeHTML(fmt(t.consumo))} gls</strong></div>
+        <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.35rem 0"><span style="color:var(--ax-muted)">Balance</span><strong style="margin-left:auto;color:${col}">${axiEscapeHTML(fmt(t.balance))} gls</strong></div>
+        <div style="font-size:.72rem;color:var(--ax-muted);margin-top:.3rem">Último llenado: ${fechaTanque(t.fecha_llenado)} · ${axiEscapeHTML(fmt(t.galones_llenado))} gls</div>
       </div>
     </div></div>`;
 }
@@ -3508,7 +3521,7 @@ async function cargarRepGlp() {
   const f = $('rglp-filtros'); if (!f.innerHTML.trim()) f.innerHTML = repFiltrosHTML('rglp', 'cargarRepGlp', 'glp');
   const { desde, hasta } = repRango('rglp');
   const { data, error } = await sb.rpc('fn_reporte_glp', { p_condominio_id: sesion.condominio_id, p_desde: desde, p_hasta: hasta });
-  if (error) { $('rglp-lista').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rglp-lista').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   // Tarjetas: solo lecturas de consumo vigentes (sin ANULADAS ni depositos con monto negativo), igual que Mi Gas y el tanque
   const vig = rows.filter(r => String(r.estado || 'ACTIVO').toUpperCase() !== 'ANULADO' && Number(r.monto_consumo || 0) >= 0);
@@ -3519,10 +3532,10 @@ async function cargarRepGlp() {
   $('rglp-lista').innerHTML = `<table>
     <thead><tr><th>Período</th><th>Unidad</th><th>Medidor</th><th>Fecha</th><th class="text-right">Lect. ant.</th><th class="text-right">Lect. act.</th><th class="text-right">Consumo</th><th class="text-right">Precio</th><th class="text-right">Monto</th><th>Estado</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${r.periodo || ''}</td><td>${r.unidad_codigo || ''}</td><td>${r.medidor || ''}</td><td>${r.fecha_lectura || ''}</td>
-      <td class="text-right money">${fmt(r.lectura_anterior)}</td><td class="text-right money">${fmt(r.lectura_actual)}</td>
-      <td class="text-right money">${fmt(r.consumo)}</td><td class="text-right money">${fmt(r.precio_unitario)}</td>
-      <td class="text-right money">${fmt(r.monto_consumo)}</td><td>${r.estado || ''}</td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(r.periodo || '')}</td><td>${axiEscapeHTML(r.unidad_codigo || '')}</td><td>${axiEscapeHTML(r.medidor || '')}</td><td>${axiEscapeHTML(r.fecha_lectura || '')}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.lectura_anterior))}</td><td class="text-right money">${axiEscapeHTML(fmt(r.lectura_actual))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.consumo))}</td><td class="text-right money">${axiEscapeHTML(fmt(r.precio_unitario))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.monto_consumo))}</td><td>${axiEscapeHTML(r.estado || '')}</td></tr>`).join('')}</tbody></table>`;
   repData.glp = {
     titulo: 'Reporte de GLP — Consumo', subtitulo: repSubtitulo(desde, hasta), orientacion: 'l',
     kpis: [{ label: 'Lecturas', value: vig.length }, { label: 'Consumo total', value: fmt(tc) }, { label: 'Monto consumo', value: fmtMoney(tm) }],
@@ -3547,7 +3560,7 @@ async function cargarAutomatizaciones() {
     sb.rpc('fn_automatizaciones_estado'),
     sb.rpc('fn_recordatorios_listar', { p_condominio_id: sesion.condominio_id })
   ]);
-  if (est.error) { $('auto-jobs').innerHTML = `<div class="empty">${est.error.message}</div>`; return; }
+  if (est.error) { $('auto-jobs').innerHTML = `<div class="empty">${axiEscapeHTML(est.error.message)}</div>`; return; }
   const d = est.data || {};
   const jobs = d.jobs || [];
   $('auto-jobs').innerHTML = `<table>
@@ -3555,7 +3568,7 @@ async function cargarAutomatizaciones() {
     <tbody>${jobs.map(j => {
       const meta = AUTO_JOBS[j.nombre] || { titulo: j.nombre, desc: '', accion: '' };
       return `<tr>
-        <td><b>${meta.titulo}</b><div style="font-size:.75rem;color:var(--ax-muted)">${meta.desc}</div></td>
+        <td><b>${axiEscapeHTML(meta.titulo)}</b><div style="font-size:.75rem;color:var(--ax-muted)">${axiEscapeHTML(meta.desc)}</div></td>
         <td>${autoSchedTexto(j.schedule)}</td>
         <td class="text-center">${j.activo ? '<span class="badge badge-success">Sí</span>' : '<span class="badge">No</span>'}</td>
         <td class="text-center">${meta.accion ? `<button class="btn btn-sm btn-outline" onclick="autoEjecutar('${meta.accion}')">▶ Ahora</button>` : ''}</td>
@@ -3571,13 +3584,13 @@ async function cargarAutomatizaciones() {
     $('auto-cola').innerHTML = `<table>
       <thead><tr><th>Unidad</th><th class="text-center">Días atraso</th><th>Prioridad</th><th>Canal</th><th>Email</th><th>WhatsApp</th><th>Estado</th></tr></thead>
       <tbody>${rows.map(r => `<tr>
-        <td>#${r.unidad_id}</td>
-        <td class="text-center">${r.dias_atraso ?? ''}</td>
-        <td>${r.prioridad || ''}</td>
-        <td>${r.canal || ''}</td>
-        <td>${r.email_destino || '—'}</td>
-        <td>${r.whatsapp_destino || '—'}</td>
-        <td><span class="badge">${r.estatus_envio}</span></td>
+        <td>#${axiEscapeHTML(r.unidad_id)}</td>
+        <td class="text-center">${axiEscapeHTML(r.dias_atraso ?? '')}</td>
+        <td>${axiEscapeHTML(r.prioridad || '')}</td>
+        <td>${axiEscapeHTML(r.canal || '')}</td>
+        <td>${axiEscapeHTML(r.email_destino || '—')}</td>
+        <td>${axiEscapeHTML(r.whatsapp_destino || '—')}</td>
+        <td><span class="badge">${axiEscapeHTML(r.estatus_envio)}</span></td>
       </tr>`).join('')}</tbody></table>
       <p style="font-size:.78rem;color:var(--ax-muted);margin-top:.6rem">La cola queda en espera (no se envía). El envío real por email/WhatsApp requiere configurar un proveedor.</p>`;
   }
@@ -3586,9 +3599,9 @@ async function cargarAutomatizaciones() {
   $('auto-logs').innerHTML = logs.length ? `<table>
     <thead><tr><th>Fecha</th><th>Módulo</th><th>Evento</th><th>Estado</th><th>Resultado</th></tr></thead>
     <tbody>${logs.map(l => `<tr>
-      <td>${(l.fecha || '').replace('T', ' ').slice(0, 16)}</td>
-      <td>${l.modulo || ''}</td><td>${l.evento || ''}</td>
-      <td>${l.estado || ''}</td><td>${l.resultado || ''}</td>
+      <td>${axiEscapeHTML((l.fecha || '').replace('T', ' ').slice(0, 16))}</td>
+      <td>${axiEscapeHTML(l.modulo || '')}</td><td>${axiEscapeHTML(l.evento || '')}</td>
+      <td>${axiEscapeHTML(l.estado || '')}</td><td>${axiEscapeHTML(l.resultado || '')}</td>
     </tr>`).join('')}</tbody></table>` : '<div class="empty">Sin eventos registrados aún</div>';
 }
 async function autoEjecutar(accion) {
@@ -3612,21 +3625,21 @@ async function cargarFacturacion() {
     p_periodo: periodo
   });
 
-  if (error) { $('fact-preview').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('fact-preview').innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('fact-preview').innerHTML = '<div class="empty">Sin unidades para facturar</div>'; return; }
 
   const total = data.reduce((s,r) => s + parseFloat(r.monto_calculado || 0), 0);
   $('fact-preview').innerHTML = `
-    <p style="margin-bottom:1rem;font-size:.9rem">Período <strong>${periodo}</strong> — ${data.length} unidades — Total: <strong class="money">${fmtMoney(total)}</strong></p>
+    <p style="margin-bottom:1rem;font-size:.9rem">Período <strong>${periodo}</strong> — ${axiEscapeHTML(data.length)} unidades — Total: <strong class="money">${fmtMoney(total)}</strong></p>
     <table>
       <thead><tr><th>Unidad</th><th>Propietario</th><th class="text-right">Cuota</th><th class="text-right">Calculado</th><th class="text-center">Prorrateada</th><th class="text-center">Ya facturada</th></tr></thead>
       <tbody>${data.map(r => `
         <tr>
-          <td><strong>${r.unidad_codigo}</strong></td>
-          <td>${r.propietario_nombre}</td>
-          <td class="text-right money">${fmt(r.cuota)}</td>
-          <td class="text-right money">${fmt(r.monto_calculado)}</td>
-          <td class="text-center">${r.prorrateada ? '✓' : '—'}</td>
+          <td><strong>${axiEscapeHTML(r.unidad_codigo)}</strong></td>
+          <td>${axiEscapeHTML(r.propietario_nombre)}</td>
+          <td class="text-right money">${axiEscapeHTML(fmt(r.cuota))}</td>
+          <td class="text-right money">${axiEscapeHTML(fmt(r.monto_calculado))}</td>
+          <td class="text-center">${axiEscapeHTML(r.prorrateada ? '✓' : '—')}</td>
           <td class="text-center">${r.ya_facturada ? '<span class="badge badge-info">Sí</span>' : '—'}</td>
         </tr>`).join('')}
       </tbody>
@@ -3644,12 +3657,12 @@ async function cargarPagos() {
     <thead><tr><th>Fecha</th><th>Código</th><th>Recibido de</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th><th></th></tr></thead>
     <tbody>${data.map(r => `
       <tr>
-        <td>${r.fecha_pago}</td>
-        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
-        <td>${r.recibido_de || '—'}</td>
-        <td>${r.metodo || '—'}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span>${badgeAprob(r.estado_aprobacion)}</td>
+        <td>${axiEscapeHTML(r.fecha_pago)}</td>
+        <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td>
+        <td>${axiEscapeHTML(r.recibido_de || '—')}</td>
+        <td>${axiEscapeHTML(r.metodo || '—')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado === 'Aplicado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning')}">${axiEscapeHTML(r.estado)}</span>${badgeAprob(r.estado_aprobacion)}</td>
         <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' && !['anulado','anulada'].includes(String(r.estado||'').toLowerCase()) ? `<button class="btn btn-sm btn-outline" onclick="editarPago(${r.id})">✏️</button> ` : ''}${pagoTieneRecibo(r) ? `<button class="btn btn-sm btn-outline" title="Descargar recibo PDF" onclick="abrirReciboPago(${r.id},true)">↓ PDF</button> ` : ''}${accionAnular('pagos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`).join('')}
     </tbody>
@@ -3669,13 +3682,13 @@ async function cargarGastos() {
     <tbody>${data.map(r => {
       const estadoBadge = r.estado === 'Pagado' ? 'badge-success' : r.estado === 'Anulado' ? 'badge-danger' : 'badge-warning';
       return `<tr>
-        <td>${r.fecha}</td>
-        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
-        <td>${r.proveedores?.nombre || '—'}</td>
-        <td>${r.categoria || '—'}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descripcion || '—'}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge ${estadoBadge}">${r.estado || '—'}</span>${badgeAprob(r.estado_aprobacion)}</td>
+        <td>${axiEscapeHTML(r.fecha)}</td>
+        <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td>
+        <td>${axiEscapeHTML(r.proveedores?.nombre || '—')}</td>
+        <td>${axiEscapeHTML(r.categoria || '—')}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(r.descripcion || '—')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+        <td class="text-center"><span class="badge ${estadoBadge}">${axiEscapeHTML(r.estado || '—')}</span>${badgeAprob(r.estado_aprobacion)}</td>
         <td class="text-center" style="white-space:nowrap"><button class="btn btn-sm btn-outline" onclick="verDetalleGasto(${r.id})">🔍</button> ${accionAnular('gastos', r.id, r.estado, r.estado_aprobacion)}</td>
       </tr>`;
     }).join('')}
@@ -3707,11 +3720,11 @@ async function verDetalleGasto(gastoId) {
         <table>
           <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Banco</th><th>Referencia</th><th>Comprobante</th></tr></thead>
           <tbody>${pagos.map(p => `<tr>
-            <td>${p.fecha_pago}</td>
-            <td class="text-right money">${fmt(p.monto)}</td>
-            <td>${p.metodo_pago || '—'}</td>
-            <td>${p.banco || '—'}</td>
-            <td style="font-family:monospace;font-size:.8rem">${p.referencia || '—'}</td>
+            <td>${axiEscapeHTML(p.fecha_pago)}</td>
+            <td class="text-right money">${axiEscapeHTML(fmt(p.monto))}</td>
+            <td>${axiEscapeHTML(p.metodo_pago || '—')}</td>
+            <td>${axiEscapeHTML(p.banco || '—')}</td>
+            <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(p.referencia || '—')}</td>
             <td class="text-center">${btnComprobantesRow(p)}</td>
           </tr>`).join('')}</tbody>
         </table>
@@ -3722,25 +3735,25 @@ async function verDetalleGasto(gastoId) {
 
   $('detalle-gasto-content').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem 1.5rem;margin-bottom:1rem">
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Código</span><div style="font-weight:600;font-family:monospace">${gasto.codigo || '—'}</div></div>
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Estado</span><div><span class="badge ${estadoBadge}">${gasto.estado}</span></div></div>
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Fecha</span><div>${gasto.fecha}</div></div>
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Monto</span><div style="font-weight:700;font-size:1.1rem" class="money">${fmtMoney(gasto.monto)}</div></div>
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Categoría</span><div>${gasto.categoria || '—'}</div></div>
-      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Área</span><div>${gasto.area_aplicacion || '—'} ${gasto.area_aplicacion_otro ? '('+gasto.area_aplicacion_otro+')' : ''}</div></div>
-      <div style="grid-column:1/-1"><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Descripción</span><div>${gasto.descripcion || '—'}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Código</span><div style="font-weight:600;font-family:monospace">${axiEscapeHTML(gasto.codigo || '—')}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Estado</span><div><span class="badge ${estadoBadge}">${axiEscapeHTML(gasto.estado)}</span></div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Fecha</span><div>${axiEscapeHTML(gasto.fecha)}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Monto</span><div style="font-weight:700;font-size:1.1rem" class="money">${axiEscapeHTML(fmtMoney(gasto.monto))}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Categoría</span><div>${axiEscapeHTML(gasto.categoria || '—')}</div></div>
+      <div><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Área</span><div>${axiEscapeHTML(gasto.area_aplicacion || '—')} ${axiEscapeHTML(gasto.area_aplicacion_otro ? '('+gasto.area_aplicacion_otro+')' : '')}</div></div>
+      <div style="grid-column:1/-1"><span style="font-size:.7rem;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.5px">Descripción</span><div>${axiEscapeHTML(gasto.descripcion || '—')}</div></div>
     </div>
     <div style="background:var(--ax-bg);border-radius:8px;padding:1rem;margin-bottom:.5rem">
       <h4 style="font-size:.85rem;margin-bottom:.5rem;color:var(--ax-primary)">🛠️ Proveedor</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem 1rem;font-size:.9rem">
-        <div><strong>${prov.nombre || '—'}</strong></div>
-        <div style="font-family:monospace;font-size:.8rem">${prov.codigo || ''}</div>
-        <div>RNC: ${prov.rnc_cedula || '—'}</div>
-        <div>Servicio: ${prov.servicio || '—'}</div>
+        <div><strong>${axiEscapeHTML(prov.nombre || '—')}</strong></div>
+        <div style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(prov.codigo || '')}</div>
+        <div>RNC: ${axiEscapeHTML(prov.rnc_cedula || '—')}</div>
+        <div>Servicio: ${axiEscapeHTML(prov.servicio || '—')}</div>
       </div>
     </div>
-    ${gasto.factura_proveedor ? `<div style="margin-bottom:.5rem;font-size:.9rem">📑 <strong>Factura proveedor:</strong> ${gasto.factura_proveedor}</div>` : ''}
-    ${gasto.foto_factura_url ? `<div style="margin-bottom:.5rem"><a href="${gasto.foto_factura_url}" target="_blank" class="btn btn-sm btn-outline">📄 Ver factura del proveedor</a></div>` : ''}
+    ${gasto.factura_proveedor ? `<div style="margin-bottom:.5rem;font-size:.9rem">📑 <strong>Factura proveedor:</strong> ${axiEscapeHTML(gasto.factura_proveedor)}</div>` : ''}
+    ${gasto.foto_factura_url ? `<div style="margin-bottom:.5rem"><a href="${axiEscapeHTML(axiWebURL(gasto.foto_factura_url))}" target="_blank" class="btn btn-sm btn-outline">📄 Ver factura del proveedor</a></div>` : ''}
     ${pagosHtml}
   `;
 }
@@ -3753,27 +3766,27 @@ async function cargarPagosGastos() {
     .order('fecha_pago', {ascending: false})
     .limit(50);
 
-  if (error) { $('pagos-gastos-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('pagos-gastos-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('pagos-gastos-lista').innerHTML = '<div class="empty">Sin pagos a proveedores registrados</div>'; return; }
 
   const totalPagado = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
 
   $('pagos-gastos-lista').innerHTML = `
-    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(totalPagado)}</strong> — ${data.length} comprobantes</p>
+    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(totalPagado)}</strong> — ${axiEscapeHTML(data.length)} comprobantes</p>
     <table>
       <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th><th class="text-center">Acción</th></tr></thead>
       <tbody>${data.map(r => {
         const g = r.gastos || {};
         const prov = g.proveedores || {};
         return `<tr>
-          <td>${r.fecha_pago}</td>
-          <td style="font-family:monospace;font-size:.8rem;cursor:pointer;color:var(--ax-accent)" onclick="verDetalleGasto(${r.gasto_id})">${g.codigo || '—'}</td>
-          <td>${prov.nombre || '—'}</td>
-          <td>${g.categoria || '—'}</td>
-          <td>${r.metodo_pago || '—'}</td>
-          <td>${r.banco || '—'}</td>
-          <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
-          <td class="text-right money">${fmt(r.monto)}${badgeAprob(r.estado_aprobacion)}</td>
+          <td>${axiEscapeHTML(r.fecha_pago)}</td>
+          <td style="font-family:monospace;font-size:.8rem;cursor:pointer;color:var(--ax-accent)" onclick="verDetalleGasto(${r.gasto_id})">${axiEscapeHTML(g.codigo || '—')}</td>
+          <td>${axiEscapeHTML(prov.nombre || '—')}</td>
+          <td>${axiEscapeHTML(g.categoria || '—')}</td>
+          <td>${axiEscapeHTML(r.metodo_pago || '—')}</td>
+          <td>${axiEscapeHTML(r.banco || '—')}</td>
+          <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.referencia || '—')}</td>
+          <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}${badgeAprob(r.estado_aprobacion)}</td>
           <td class="text-center">${btnComprobantesRow(r)}</td>
           <td class="text-center" style="white-space:nowrap">${r.estado_aprobacion === 'Aprobado' ? `<button class="btn btn-sm btn-outline" onclick="editarPagoGasto(${r.id})">✏️ Editar</button>` : ''}</td>
         </tr>`;
@@ -3807,14 +3820,14 @@ async function abrirModalPagoGasto() {
   }
 
   sel.innerHTML = '<option value="">— Seleccionar gasto —</option>' +
-    data.map(g => `<option value="${g.id}" data-monto="${g.monto}" data-desc="${g.descripcion || ''}" data-prov="${g.proveedores?.nombre || '—'}" data-cat="${g.categoria || ''}">${g.codigo} — ${(g.proveedores?.nombre || 'Sin proveedor')} — ${fmtMoney(g.monto)}</option>`).join('');
+    data.map(g => `<option value="${axiEscapeHTML(g.id)}" data-monto="${axiEscapeHTML(g.monto)}" data-desc="${axiEscapeHTML(g.descripcion || '')}" data-prov="${axiEscapeHTML(g.proveedores?.nombre || '—')}" data-cat="${axiEscapeHTML(g.categoria || '')}">${axiEscapeHTML(g.codigo)} — ${(axiEscapeHTML(g.proveedores?.nombre || 'Sin proveedor'))} — ${axiEscapeHTML(fmtMoney(g.monto))}</option>`).join('');
 
   sel.onchange = function() {
     const opt = sel.options[sel.selectedIndex];
     if (!opt.value) { $('pg-gasto-info').style.display = 'none'; $('pg-monto').value = ''; return; }
     $('pg-monto').value = opt.dataset.monto || '';
     $('pg-gasto-info').style.display = 'block';
-    $('pg-gasto-info').innerHTML = `<strong>Proveedor:</strong> ${opt.dataset.prov} · <strong>Categoría:</strong> ${opt.dataset.cat}<br><strong>Descripción:</strong> ${opt.dataset.desc}`;
+    $('pg-gasto-info').innerHTML = `<strong>Proveedor:</strong> ${axiEscapeHTML(opt.dataset.prov)} · <strong>Categoría:</strong> ${axiEscapeHTML(opt.dataset.cat)}<br><strong>Descripción:</strong> ${axiEscapeHTML(opt.dataset.desc)}`;
   };
 }
 
@@ -3827,7 +3840,7 @@ async function editarPagoGasto(id) {
   $('modal-pago-gasto').classList.add('show');
   // Bloquear selector de gasto (no se cambia el gasto al editar)
   const sel = $('pg-gasto-id');
-  sel.innerHTML = `<option value="${r.gasto_id}">Gasto #${r.gasto_id} (no se cambia al editar)</option>`;
+  sel.innerHTML = `<option value="${axiEscapeHTML(r.gasto_id)}">Gasto #${axiEscapeHTML(r.gasto_id)} (no se cambia al editar)</option>`;
   sel.value = r.gasto_id; sel.disabled = true; sel.required = false;
   $('pg-gasto-info').style.display = 'none';
   $('pg-fecha').value = r.fecha_pago || '';
@@ -3975,17 +3988,17 @@ async function guardarMiContacto(e) {
 async function cargarMisSolicitudes() {
   const cont = $('mc-solicitudes');
   const {data, error} = await sb.rpc('fn_mis_solicitudes');
-  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">Sin solicitudes.</p>'; return; }
   const etiqueta = {telefono:'Teléfono', whatsapp:'WhatsApp', email:'Correo',
     contacto_emergencia_nombre:'Emergencia: nombre', contacto_emergencia_telefono:'Emergencia: teléfono', contacto_emergencia_relacion:'Emergencia: relación'};
   cont.innerHTML = `<div style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Campo</th><th>Nuevo valor</th><th>Estado</th><th>Comentario</th></tr></thead><tbody>${
     data.map(s => `<tr>
-      <td style="font-size:.8rem">${(s.fecha||'').slice(0,10)}</td>
-      <td>${etiqueta[s.campo] || s.campo}</td>
-      <td>${s.valor_nuevo || '—'}</td>
+      <td style="font-size:.8rem">${axiEscapeHTML((s.fecha||'').slice(0,10))}</td>
+      <td>${axiEscapeHTML(etiqueta[s.campo] || s.campo)}</td>
+      <td>${axiEscapeHTML(s.valor_nuevo || '—')}</td>
       <td>${badgeAprob(s.estado) || '<span class="badge badge-success">Aprobado</span>'}</td>
-      <td style="font-size:.8rem">${s.comentario || '—'}</td>
+      <td style="font-size:.8rem">${axiEscapeHTML(s.comentario || '—')}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -4035,8 +4048,8 @@ async function cargarMiCuenta() {
   const r = resumen.data?.[0] || {};
   const bal = parseFloat(r.balance_pendiente || 0);
   $('mi-resumen').innerHTML = `
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${r.unidad_codigo || '—'}</div></div>
-    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total pagado</div><div class="value green money">${fmtMoney(r.total_pagado)}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${axiEscapeHTML(r.unidad_codigo || '—')}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total pagado</div><div class="value green money">${axiEscapeHTML(fmtMoney(r.total_pagado))}</div></div>
     <div class="stat-card"><div class="accent-bar ${bal > 0 ? 'red' : 'green'}"></div><div class="label">Balance pendiente</div><div class="value ${bal > 0 ? 'red' : 'green'} money">${fmtMoney(bal)}</div></div>
   `;
 
@@ -4046,12 +4059,12 @@ async function cargarMiCuenta() {
     <thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Concepto</th><th class="text-right">Cargo</th><th class="text-right">Abono</th></tr></thead>
     <tbody>${rows.map(r => `
       <tr>
-        <td>${r.fecha}</td>
-        <td><span class="badge ${r.tipo === 'Factura' ? 'badge-warning' : 'badge-success'}">${r.tipo}</span></td>
-        <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
-        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || '—'}</td>
-        <td class="text-right money" style="color:var(--ax-danger)">${r.cargo > 0 ? fmt(r.cargo) : ''}</td>
-        <td class="text-right money" style="color:var(--ax-success)">${r.abono > 0 ? fmt(r.abono) : ''}</td>
+        <td>${axiEscapeHTML(r.fecha)}</td>
+        <td><span class="badge ${axiEscapeHTML(r.tipo === 'Factura' ? 'badge-warning' : 'badge-success')}">${axiEscapeHTML(r.tipo)}</span></td>
+        <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.referencia || '—')}</td>
+        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(r.concepto || '—')}</td>
+        <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(r.cargo > 0 ? fmt(r.cargo) : '')}</td>
+        <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(r.abono > 0 ? fmt(r.abono) : '')}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -4069,39 +4082,39 @@ async function cargarMiGas() {
   const saldo = parseFloat(g.saldo || 0);
   const aFavor = saldo >= 0;
   $('glp-stats').innerHTML = `
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${g.unidad || '—'}</div></div>
-    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total depositado</div><div class="value green money">${fmtMoney(g.total_depositos)}</div></div>
-    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Total consumido</div><div class="value red money">${fmtMoney(g.total_consumos)}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Unidad</div><div class="value blue">${axiEscapeHTML(g.unidad || '—')}</div></div>
+    <div class="stat-card"><div class="accent-bar green"></div><div class="label">Total depositado</div><div class="value green money">${axiEscapeHTML(fmtMoney(g.total_depositos))}</div></div>
+    <div class="stat-card"><div class="accent-bar red"></div><div class="label">Total consumido</div><div class="value red money">${axiEscapeHTML(fmtMoney(g.total_consumos))}</div></div>
     <div class="stat-card"><div class="accent-bar ${aFavor ? 'green' : 'red'}"></div><div class="label">${aFavor ? 'Saldo a favor' : 'Balance pendiente'}</div><div class="value ${aFavor ? 'green' : 'red'} money">${fmtMoney(Math.abs(saldo))}</div></div>`;
   const m = g.medidor;
   $('glp-medidor').innerHTML = m ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;font-size:.9rem">
-      <div><strong>No. de serie</strong><br>${m.serie || '—'}</div>
-      <div><strong>Marca/modelo</strong><br>${m.marca || '—'}</div>
-      <div><strong>Ubicación</strong><br>${m.ubicacion || '—'}</div>
-      <div><strong>Unidad de medida</strong><br>${m.unidad_medida || '—'}</div>
-      <div><strong>Precio vigente</strong><br>${g.precio_vigente != null ? fmtMoney(g.precio_vigente) : '—'}</div>
+      <div><strong>No. de serie</strong><br>${axiEscapeHTML(m.serie || '—')}</div>
+      <div><strong>Marca/modelo</strong><br>${axiEscapeHTML(m.marca || '—')}</div>
+      <div><strong>Ubicación</strong><br>${axiEscapeHTML(m.ubicacion || '—')}</div>
+      <div><strong>Unidad de medida</strong><br>${axiEscapeHTML(m.unidad_medida || '—')}</div>
+      <div><strong>Precio vigente</strong><br>${axiEscapeHTML(g.precio_vigente != null ? fmtMoney(g.precio_vigente) : '—')}</div>
     </div>` : '<div class="empty">Sin medidor registrado</div>';
   const movs = g.movimientos || [];
   $('glp-movimientos').innerHTML = !movs.length ? '<div class="empty">Sin movimientos</div>' : `<table>
     <thead><tr><th>Fecha</th><th>Tipo</th><th>Período</th><th>Concepto</th><th class="text-right">Depósito</th><th class="text-right">Consumo</th><th class="text-right">Saldo</th></tr></thead>
     <tbody>${movs.map(x => { const dep = (x.tipo || '').toUpperCase() === 'DEPOSITO'; const sal = parseFloat(x.saldo || 0); return `<tr>
-      <td>${x.fecha || ''}</td>
+      <td>${axiEscapeHTML(x.fecha || '')}</td>
       <td><span class="badge ${dep ? 'badge-success' : 'badge-danger'}">${dep ? 'Depósito' : 'Consumo'}</span></td>
-      <td>${x.periodo || ''}</td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.concepto || ''}</td>
-      <td class="text-right money" style="color:var(--ax-success)">${dep ? fmt(x.monto) : ''}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${dep ? '' : fmt(x.monto)}</td>
-      <td class="text-right money" style="color:${sal >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'}">${fmt(x.saldo)}</td>
+      <td>${axiEscapeHTML(x.periodo || '')}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(x.concepto || '')}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(dep ? fmt(x.monto) : '')}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(dep ? '' : fmt(x.monto))}</td>
+      <td class="text-right money" style="color:${sal >= 0 ? 'var(--ax-success)' : 'var(--ax-danger)'}">${axiEscapeHTML(fmt(x.saldo))}</td>
     </tr>`; }).join('')}</tbody></table>`;
   const lect = g.lecturas || [];
   $('glp-lecturas').innerHTML = !lect.length ? '<div class="empty">Sin lecturas</div>' : `<table>
     <thead><tr><th>Fecha</th><th>Período</th><th class="text-right">Lectura anterior</th><th class="text-right">Lectura actual</th><th class="text-right">Consumo</th><th class="text-right">Precio</th><th class="text-right">Monto</th></tr></thead>
     <tbody>${lect.map(l => `<tr>
-      <td>${l.fecha || ''}</td><td>${l.periodo || ''}</td>
-      <td class="text-right">${l.anterior ?? ''}</td><td class="text-right">${l.actual ?? ''}</td>
-      <td class="text-right">${l.consumo ?? ''}</td>
-      <td class="text-right money">${l.precio != null ? fmt(l.precio) : ''}</td>
-      <td class="text-right money">${fmt(l.monto)}</td>
+      <td>${axiEscapeHTML(l.fecha || '')}</td><td>${axiEscapeHTML(l.periodo || '')}</td>
+      <td class="text-right">${axiEscapeHTML(l.anterior ?? '')}</td><td class="text-right">${axiEscapeHTML(l.actual ?? '')}</td>
+      <td class="text-right">${axiEscapeHTML(l.consumo ?? '')}</td>
+      <td class="text-right money">${axiEscapeHTML(l.precio != null ? fmt(l.precio) : '')}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(l.monto))}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 
@@ -4123,20 +4136,20 @@ async function cargarMisAverias() {
     : !rowsMis.length ? '<div class="empty">No ha enviado reportes</div>' : `<table>
     <thead><tr><th>Código</th><th>Fecha</th><th>Tipo</th><th>Área</th><th>Prioridad</th><th>Descripción</th><th class="text-center">Estado</th><th>Respuesta</th></tr></thead>
     <tbody>${rowsMis.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td><td>${fechaCorta(r.fecha_solicitud)}</td>
-      <td>${r.tipo || ''}</td><td>${r.area_aplicacion || 'Mi unidad'}</td><td>${r.prioridad || ''}</td>
-      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.descripcion || '').replace(/"/g, '')}">${r.descripcion || ''}</td>
-      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${r.estatus || ''}</span></td>
-      <td style="font-size:.8rem">${r.observaciones_admin || ''}</td></tr>`).join('')}</tbody></table>`;
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td><td>${axiEscapeHTML(fechaCorta(r.fecha_solicitud))}</td>
+      <td>${axiEscapeHTML(r.tipo || '')}</td><td>${axiEscapeHTML(r.area_aplicacion || 'Mi unidad')}</td><td>${axiEscapeHTML(r.prioridad || '')}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${axiEscapeHTML((r.descripcion || '').replace(/"/g, ''))}">${axiEscapeHTML(r.descripcion || '')}</td>
+      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${axiEscapeHTML(r.estatus || '')}</span></td>
+      <td style="font-size:.8rem">${axiEscapeHTML(r.observaciones_admin || '')}</td></tr>`).join('')}</tbody></table>`;
   const rowsC = condo.data || [];
   $('av-condo').innerHTML = condo.error ? '<div class="alert alert-error" style="display:block">' + condo.error.message + '</div>'
     : !rowsC.length ? '<div class="empty">Sin mantenimientos registrados</div>' : `<table>
     <thead><tr><th>Código</th><th>Fecha</th><th>Tipo</th><th>Área</th><th class="text-center">Estado</th><th>Cierre</th></tr></thead>
     <tbody>${rowsC.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td><td>${fechaCorta(r.fecha_solicitud)}</td>
-      <td>${r.tipo || ''}</td><td>${r.area_aplicacion || ''}</td>
-      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${r.estatus || ''}</span></td>
-      <td>${fechaCorta(r.fecha_cierre)}</td></tr>`).join('')}</tbody></table>`;
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td><td>${axiEscapeHTML(fechaCorta(r.fecha_solicitud))}</td>
+      <td>${axiEscapeHTML(r.tipo || '')}</td><td>${axiEscapeHTML(r.area_aplicacion || '')}</td>
+      <td class="text-center"><span class="badge ${badgeEstatusAv(r.estatus)}">${axiEscapeHTML(r.estatus || '')}</span></td>
+      <td>${axiEscapeHTML(fechaCorta(r.fecha_cierre))}</td></tr>`).join('')}</tbody></table>`;
 }
 async function enviarAveria() {
   const al = $('av-alert'), btn = $('av-btn');
@@ -4172,11 +4185,11 @@ async function cargarEnviarComprobante() {
     : !rows.length ? '<div class="empty">No ha enviado comprobantes</div>' : `<table>
     <thead><tr><th>Enviado</th><th>Factura</th><th>Fecha pago</th><th class="text-right">Monto</th><th>Método</th><th class="text-center">Estado</th><th>Comentario</th><th></th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td>${fechaCorta(r.created_at)}</td><td style="font-family:monospace;font-size:.8rem">${r.facturas?.no_factura || '—'}</td>
-      <td>${r.fecha_pago || ''}</td><td class="text-right money">${fmt(r.monto)}</td><td>${r.metodo || ''}</td>
-      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${r.estado || ''}</span></td>
-      <td style="font-size:.8rem">${r.comentario_revision || ''}</td>
-      <td><button class="btn btn-sm" onclick="verArchivoComprobante('${r.archivo_ruta}')">📄 Ver</button></td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(fechaCorta(r.created_at))}</td><td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.facturas?.no_factura || '—')}</td>
+      <td>${axiEscapeHTML(r.fecha_pago || '')}</td><td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td><td>${axiEscapeHTML(r.metodo || '')}</td>
+      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${axiEscapeHTML(r.estado || '')}</span></td>
+      <td style="font-size:.8rem">${axiEscapeHTML(r.comentario_revision || '')}</td>
+      <td><button class="btn btn-sm" onclick="verArchivoComprobante('${axiJSString(r.archivo_ruta)}')">📄 Ver</button></td></tr>`).join('')}</tbody></table>`;
 }
 
 // ==================== CEO: COMPROBANTES DE RESIDENTES ====================
@@ -4188,19 +4201,19 @@ async function cargarComprobantesRecibidos() {
     .eq('condominio_id', sesion.condominio_id).order('created_at', {ascending: false}).limit(100);
   if (estado) q = q.eq('estado', estado);
   const {data, error} = await q;
-  if (error) { $('cr-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { $('cr-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   compRecibidos = data || [];
   if (!compRecibidos.length) { $('cr-lista').innerHTML = '<div class="empty">Sin comprobantes</div>'; return; }
   $('cr-lista').innerHTML = `<table>
     <thead><tr><th>Recibido</th><th>Unidad</th><th>Residente</th><th>Factura</th><th>Fecha pago</th><th class="text-right">Monto</th><th>Método / Ref.</th><th class="text-center">Estado</th><th>Acciones</th></tr></thead>
     <tbody>${compRecibidos.map(r => `<tr>
-      <td>${fechaCorta(r.created_at)}</td><td>${r.unidades?.codigo || ''}</td>
-      <td>${r.inquilinos?.nombre ? r.inquilinos.nombre + ' (inq.)' : (r.propietarios?.nombre || '')}</td>
-      <td style="font-family:monospace;font-size:.8rem">${r.facturas?.no_factura || ''}</td>
-      <td>${r.fecha_pago || ''}</td><td class="text-right money">${fmt(r.monto)}</td>
-      <td style="font-size:.8rem">${r.metodo || ''}${r.banco ? ' · ' + r.banco : ''}${r.referencia ? ' · ' + r.referencia : ''}${r.nota ? '<br><em>' + r.nota + '</em>' : ''}</td>
-      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${r.estado}</span>${r.comentario_revision ? '<br><small>' + r.comentario_revision + '</small>' : ''}</td>
-      <td style="white-space:nowrap"><button class="btn btn-sm" onclick="verArchivoComprobante('${r.archivo_ruta}')">📄 Ver</button>
+      <td>${axiEscapeHTML(fechaCorta(r.created_at))}</td><td>${axiEscapeHTML(r.unidades?.codigo || '')}</td>
+      <td>${axiEscapeHTML(r.inquilinos?.nombre ? r.inquilinos.nombre + ' (inq.)' : (r.propietarios?.nombre || ''))}</td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.facturas?.no_factura || '')}</td>
+      <td>${axiEscapeHTML(r.fecha_pago || '')}</td><td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+      <td style="font-size:.8rem">${axiEscapeHTML(r.metodo || '')}${axiEscapeHTML(r.banco ? ' · ' + r.banco : '')}${axiEscapeHTML(r.referencia ? ' · ' + r.referencia : '')}${r.nota ? '<br><em>' + r.nota + '</em>' : ''}</td>
+      <td class="text-center"><span class="badge ${badgeComp(r.estado)}">${axiEscapeHTML(r.estado)}</span>${r.comentario_revision ? '<br><small>' + r.comentario_revision + '</small>' : ''}</td>
+      <td style="white-space:nowrap"><button class="btn btn-sm" onclick="verArchivoComprobante('${axiJSString(r.archivo_ruta)}')">📄 Ver</button>
         ${r.estado === 'Pendiente' ? `<button class="btn btn-sm btn-success" onclick="revisarComprobante(${r.id},'Validado')">Validar</button>
         <button class="btn btn-sm btn-danger" onclick="revisarComprobante(${r.id},'Rechazado')">Rechazar</button>` : ''}</td>
     </tr>`).join('')}</tbody></table>`;
@@ -4255,15 +4268,15 @@ async function cargarMisDocumentos() {
     for (const u of (us || [])) (await listarCarpeta(carpetaUnidad(u.condominio_id, u.id))).forEach(d => filas.push({...d, unidad: u.codigo}));
     if (!filas.length) { $('md-lista').innerHTML = '<div class="empty">Aún no hay documentos para su unidad</div>'; return; }
     $('md-lista').innerHTML = `<table><thead><tr><th>Documento</th><th>Unidad</th><th>Fecha</th><th>Tamaño</th><th></th></tr></thead>
-      <tbody>${filas.map(d => `<tr><td>${d.name}</td><td>${d.unidad}</td><td>${fechaCorta(d.created_at)}</td><td>${tamano(d.metadata?.size)}</td>
-        <td><button class="btn btn-sm" onclick="abrirDocumento('${d.ruta.replace(/'/g, "\\'")}')">⬇ Descargar</button></td></tr>`).join('')}</tbody></table>`;
-  } catch (e) { $('md-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + e.message + '</div>'; }
+      <tbody>${filas.map(d => `<tr><td>${axiEscapeHTML(d.name)}</td><td>${axiEscapeHTML(d.unidad)}</td><td>${axiEscapeHTML(fechaCorta(d.created_at))}</td><td>${axiEscapeHTML(tamano(d.metadata?.size))}</td>
+        <td><button class="btn btn-sm" onclick="abrirDocumento('${axiJSString(d.ruta)}')">⬇ Descargar</button></td></tr>`).join('')}</tbody></table>`;
+  } catch (e) { $('md-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(e.message) + '</div>'; }
 }
 async function cargarDocsUnidades() {
   const sel = $('du-unidad');
   const {data} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
   const actual = sel.value;
-  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (data || []).map(u => `<option value="${u.id}">${u.codigo}</option>`).join('');
+  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (data || []).map(u => `<option value="${axiEscapeHTML(u.id)}">${axiEscapeHTML(u.codigo)}</option>`).join('');
   if (actual) { sel.value = actual; listarDocsUnidad(); }
 }
 async function listarDocsUnidad() {
@@ -4272,10 +4285,10 @@ async function listarDocsUnidad() {
   try {
     const docs = await listarCarpeta(carpetaUnidad(sesion.condominio_id, uid));
     $('du-lista').innerHTML = !docs.length ? '<div class="empty">Sin documentos</div>' : `<table><thead><tr><th>Documento</th><th>Fecha</th><th>Tamaño</th><th></th></tr></thead>
-      <tbody>${docs.map(d => { const r = d.ruta.replace(/'/g, "\\'"); return `<tr><td>${d.name}</td><td>${fechaCorta(d.created_at)}</td><td>${tamano(d.metadata?.size)}</td>
+      <tbody>${docs.map(d => { const r = axiJSString(d.ruta); return `<tr><td>${axiEscapeHTML(d.name)}</td><td>${axiEscapeHTML(fechaCorta(d.created_at))}</td><td>${axiEscapeHTML(tamano(d.metadata?.size))}</td>
         <td style="white-space:nowrap"><button class="btn btn-sm" onclick="abrirDocumento('${r}')">⬇ Ver</button>
         <button class="btn btn-sm btn-danger" onclick="borrarDocUnidad('${r}')">Borrar</button></td></tr>`; }).join('')}</tbody></table>`;
-  } catch (e) { $('du-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + e.message + '</div>'; }
+  } catch (e) { $('du-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(e.message) + '</div>'; }
 }
 async function subirDocUnidad() {
   const al = $('du-alert'), uid = $('du-unidad').value, f = $('du-archivo').files[0];
@@ -4304,18 +4317,18 @@ async function borrarDocUnidad(ruta) {
 async function cargarMiInquilino() {
   const el = $('mi-inq-lista');
   const {data, error} = await sb.rpc('portal_mis_inquilinos');
-  if (error) { el.innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { el.innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   if (!data?.length) { el.innerHTML = '<div class="card"><div class="card-body"><div class="empty">Su unidad no tiene inquilino registrado</div></div></div>'; return; }
-  const dato = (k, v) => `<div><strong>${k}</strong><br>${v || '—'}</div>`;
-  const tel = t => t ? `<a href="tel:${t.replace(/[^0-9+]/g, '')}">${t}</a>` : '';
-  const wa = t => t ? `<a href="https://wa.me/${t.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener">${t}</a>` : '';
+  const dato = (k, v, trustedMarkup = false) => `<div><strong>${axiEscapeHTML(k)}</strong><br>${trustedMarkup ? (v || '—') : axiEscapeHTML(v || '—')}</div>`;
+  const tel = t => t ? `<a href="tel:${axiEscapeHTML(t.replace(/[^0-9+]/g, ''))}">${axiEscapeHTML(t)}</a>` : '';
+  const wa = t => t ? `<a href="https://wa.me/${axiEscapeHTML(t.replace(/[^0-9]/g, ''))}" target="_blank" rel="noopener">${axiEscapeHTML(t)}</a>` : '';
   el.innerHTML = data.map(i => `<div class="card" style="margin-bottom:1rem">
-    <div class="card-header">${i.nombre || 'Inquilino'} — ${i.unidad || ''}
-      <span class="badge ${String(i.estado).toLowerCase() === 'activo' ? 'badge-success' : 'badge-warning'}" style="margin-left:.5rem">${i.estado || ''}</span></div>
+    <div class="card-header">${axiEscapeHTML(i.nombre || 'Inquilino')} — ${axiEscapeHTML(i.unidad || '')}
+      <span class="badge ${axiEscapeHTML(String(i.estado).toLowerCase() === 'activo' ? 'badge-success' : 'badge-warning')}" style="margin-left:.5rem">${axiEscapeHTML(i.estado || '')}</span></div>
     <div class="card-body"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.7rem;font-size:.9rem">
-      ${dato('Teléfono', tel(i.telefono))}${dato('WhatsApp', wa(i.whatsapp))}
-      ${dato('Correo', i.email ? `<a href="mailto:${i.email}">${i.email}</a>` : '')}${dato('Desde', i.desde)}
-      ${dato('Contacto de emergencia', [i.emergencia_nombre, i.emergencia_relacion].filter(Boolean).join(' · '))}${dato('Tel. emergencia', tel(i.emergencia_telefono))}
+      ${dato('Teléfono', tel(i.telefono), true)}${dato('WhatsApp', wa(i.whatsapp), true)}
+      ${dato('Correo', i.email ? `<a href="mailto:${axiEscapeHTML(i.email)}">${axiEscapeHTML(i.email)}</a>` : '', true)}${dato('Desde', i.desde)}
+      ${dato('Contacto de emergencia', [i.emergencia_nombre, i.emergencia_relacion].filter(Boolean).join(' · '))}${dato('Tel. emergencia', tel(i.emergencia_telefono), true)}
     </div></div></div>`).join('');
 }
 
@@ -4331,12 +4344,12 @@ let mtActual = null;
 async function cargarMantenimiento() {
   const todos = $('mt-filtro').value === 'todos';
   const {data, error} = await sb.rpc('fn_mant_bandeja', {p_condominio_id: sesion.condominio_id, p_incluir_cerrados: todos});
-  if (error) { $('mt-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { $('mt-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   const rows = data || [];
   const abiertos = rows.filter(r => !['Cerrado','Cancelado'].includes(r.estado));
   const cuenta = e => abiertos.filter(r => r.estado === e).length;
   $('mt-stats').innerHTML = `
-    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Abiertos</div><div class="value">${abiertos.length}</div></div>
+    <div class="stat-card"><div class="accent-bar blue"></div><div class="label">Abiertos</div><div class="value">${axiEscapeHTML(abiertos.length)}</div></div>
     <div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Sin atender (Recibido)</div><div class="value">${cuenta('Recibido')}</div></div>
     <div class="stat-card"><div class="accent-bar green"></div><div class="label">En proceso</div><div class="value">${cuenta('En proceso')}</div></div>
     <div class="stat-card"><div class="accent-bar red"></div><div class="label">Vencidos</div><div class="value" style="color:var(--ax-danger)">${abiertos.filter(r => r.vencido).length}</div></div>`;
@@ -4345,15 +4358,15 @@ async function cargarMantenimiento() {
   if (!rows.length) { $('mt-lista').innerHTML = '<div class="empty">Sin reportes</div>'; return; }
   $('mt-lista').innerHTML = `<table>
     <thead><tr><th>Referencia</th><th>Recibido</th><th>Unidad / Área</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Avance</th><th>Técnico / Fecha est.</th><th></th></tr></thead>
-    <tbody>${rows.map(r => `<tr style="${r.vencido ? 'background:#fdf1ef' : ''}">
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo || '#' + r.id}${r.es_historico ? '<br><small style="color:#8a8578">histórico</small>' : ''}</td>
+    <tbody>${rows.map(r => `<tr style="${axiEscapeHTML(r.vencido ? 'background:#fdf1ef' : '')}">
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '#' + r.id)}${r.es_historico ? '<br><small style="color:#8a8578">histórico</small>' : ''}</td>
       <td>${fechaHora(r.fecha_solicitud)}</td>
-      <td>${r.unidad || '—'}<br><small>${r.area || ''}${r.bloque ? ' · Bloque ' + r.bloque : ''}</small></td>
-      <td>${r.categoria || ''}</td>
-      <td><span class="badge ${MT_PRI[r.prioridad] || ''}">${r.prioridad || ''}</span>${r.vencido ? '<br><small style="color:var(--ax-danger);font-weight:600">Vencido</small>' : ''}</td>
-      <td><span class="badge" style="background:${MT_COLOR[r.estado] || '#888'};color:#fff">${r.estado}</span></td>
+      <td>${axiEscapeHTML(r.unidad || '—')}<br><small>${axiEscapeHTML(r.area || '')}${axiEscapeHTML(r.bloque ? ' · Bloque ' + r.bloque : '')}</small></td>
+      <td>${axiEscapeHTML(r.categoria || '')}</td>
+      <td><span class="badge ${axiEscapeHTML(MT_PRI[r.prioridad] || '')}">${axiEscapeHTML(r.prioridad || '')}</span>${r.vencido ? '<br><small style="color:var(--ax-danger);font-weight:600">Vencido</small>' : ''}</td>
+      <td><span class="badge" style="background:${axiEscapeHTML(MT_COLOR[r.estado] || '#888')};color:#fff">${axiEscapeHTML(r.estado)}</span></td>
       <td>${barraAvance(r.avance, MT_COLOR[r.estado])}</td>
-      <td style="font-size:.82rem">${r.tecnico || '—'}${r.proveedor ? '<br><small>' + r.proveedor + '</small>' : ''}${r.fecha_estimada ? '<br><small>' + fechaHora(r.fecha_estimada) + '</small>' : ''}</td>
+      <td style="font-size:.82rem">${axiEscapeHTML(r.tecnico || '—')}${r.proveedor ? '<br><small>' + axiEscapeHTML(r.proveedor) + '</small>' : ''}${r.fecha_estimada ? '<br><small>' + fechaHora(r.fecha_estimada) + '</small>' : ''}</td>
       <td><button class="btn btn-sm" onclick="abrirMant(${r.id})">Abrir</button></td></tr>`).join('')}</tbody></table>`;
 }
 async function abrirMant(id) {
@@ -4363,32 +4376,32 @@ async function abrirMant(id) {
   const {data: m, error} = await sb.rpc('fn_mant_detalle', {p_id: id});
   if (error) { $('mm-alert').textContent = error.message; $('mm-alert').style.display = 'block'; return; }
   mtActual = m;
-  $('mm-titulo').innerHTML = `${m.codigo || 'Reporte #' + m.id} <span class="badge" style="background:${MT_COLOR[m.estatus]};color:#fff;margin-left:.4rem">${m.estatus}</span> <small>${m.avance ?? 0}%</small>`;
-  const dato = (k, v) => v ? `<div><strong>${k}</strong><br>${v}</div>` : '';
+  $('mm-titulo').innerHTML = `${axiEscapeHTML(m.codigo || 'Reporte #' + m.id)} <span class="badge" style="background:${axiEscapeHTML(MT_COLOR[m.estatus])};color:#fff;margin-left:.4rem">${axiEscapeHTML(m.estatus)}</span> <small>${axiEscapeHTML(m.avance ?? 0)}%</small>`;
+  const dato = (k, v, trustedMarkup = false) => v ? `<div><strong>${axiEscapeHTML(k)}</strong><br>${trustedMarkup ? v : axiEscapeHTML(v)}</div>` : '';
   const evid = Array.isArray(m.evidencia) ? m.evidencia.map((u, i) => String(u).startsWith('sb:')
-    ? `<a href="#" onclick="return mtVerEvidencia('${String(u).slice(3)}')">📷 ${i + 1}</a>`
-    : `<a href="${u}" target="_blank" rel="noopener">📷 ${i + 1}</a>`).join(' ') : '';
+    ? `<a href="#" onclick="return mtVerEvidencia('${axiJSString(String(u).slice(3))}')">📷 ${i + 1}</a>`
+    : `<a href="${axiEscapeHTML(axiWebURL(u))}" target="_blank" rel="noopener">📷 ${i + 1}</a>`).join(' ') : '';
   $('mm-info').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem">
     ${dato('Reportado por', m.reportante_nombre)}${dato('Teléfono', m.reportante_telefono)}${dato('Correo', m.reportante_email)}
     ${dato('Unidad', m.unidad || m.unidad_texto)}${dato('Bloque', m.bloque)}${dato('Área', m.area_aplicacion)}
     ${dato('Categoría', m.tipo)}${dato('Prioridad', m.prioridad)}${dato('Recibido', fechaHora(m.fecha_solicitud))}
-    ${dato('Origen', m.origen)}${dato('Evidencia', evid)}</div>
-    <div style="margin-top:.6rem"><strong>Descripción</strong><br>${(m.descripcion || '').replace(/</g, '&lt;')}</div>
+    ${dato('Origen', m.origen)}${dato('Evidencia', evid, true)}</div>
+    <div style="margin-top:.6rem"><strong>Descripción</strong><br>${axiEscapeHTML(m.descripcion || '')}</div>
     ${m.solucion ? `<div style="margin-top:.6rem"><strong>Solución</strong><br>${m.solucion.replace(/</g, '&lt;')}</div>` : ''}`;
   const a = m.asignacion;
   $('mm-asig').innerHTML = a ? `<div style="background:#f7f5ef;border-left:4px solid var(--ax-gold);padding:.6rem .8rem;border-radius:6px;font-size:.88rem">
-    <strong>Asignado:</strong> ${a.tecnico_nombre} ${a.tecnico_apellido} · Cédula ${a.tecnico_cedula} (en comunicaciones: ${a.cedula_mascara})
-    ${a.tecnico_telefono ? ' · Tel. ' + a.tecnico_telefono : ''}<br>${a.proveedor ? 'Proveedor: ' + a.proveedor + ' · ' : ''}Fecha estimada: <strong>${fechaHora(a.fecha_estimada)}</strong>${a.nota ? '<br>' + a.nota : ''}</div>` : '';
+    <strong>Asignado:</strong> ${axiEscapeHTML(a.tecnico_nombre)} ${axiEscapeHTML(a.tecnico_apellido)} · Cédula ${axiEscapeHTML(a.tecnico_cedula)} (en comunicaciones: ${axiEscapeHTML(a.cedula_mascara)})
+    ${axiEscapeHTML(a.tecnico_telefono ? ' · Tel. ' + a.tecnico_telefono : '')}<br>${axiEscapeHTML(a.proveedor ? 'Proveedor: ' + a.proveedor + ' · ' : '')}Fecha estimada: <strong>${fechaHora(a.fecha_estimada)}</strong>${a.nota ? '<br>' + a.nota : ''}</div>` : '';
   const sig = MT_SIGUIENTES[m.estatus] || [];
-  const botones = sig.map(e => `<button class="btn btn-sm" style="background:${MT_COLOR[e]};color:#fff" onclick="prepararEstado('${e}')">${e === 'En proceso' && m.estatus === 'Resuelto' ? 'Reabrir (En proceso)' : '→ ' + e}</button>`);
-  if (a && ['En proceso','Resuelto'].includes(m.estatus)) botones.push(`<button class="btn btn-sm btn-primary" onclick="emitirComunicacionMant(${m.id})">📣 Comunicación${m.comunicacion_emitida_at ? ' (emitida)' : ''}</button>`);
+  const botones = sig.map(e => `<button class="btn btn-sm" style="background:${MT_COLOR[e]};color:#fff" onclick="prepararEstado('${e}')">${axiEscapeHTML(e === 'En proceso' && m.estatus === 'Resuelto' ? 'Reabrir (En proceso)' : '→ ' + e)}</button>`);
+  if (a && ['En proceso','Resuelto'].includes(m.estatus)) botones.push(`<button class="btn btn-sm btn-primary" onclick="emitirComunicacionMant(${m.id})">📣 Comunicación${axiEscapeHTML(m.comunicacion_emitida_at ? ' (emitida)' : '')}</button>`);
   if (['Recibido','En evaluación','En proceso'].includes(m.estatus) && a) botones.push(`<button class="btn btn-sm" onclick="prepararEstado('__reasignar')">Reasignar técnico</button>`);
   $('mm-acciones').innerHTML = sig.length ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center"><strong style="font-size:.85rem">Cambiar estado:</strong> ${botones.join('')}</div>
     <div id="mm-confirmar" style="margin-top:.6rem"></div>` : '<em>Reporte finalizado; no admite cambios.</em>';
   const h = m.historial || [];
   $('mm-hist').innerHTML = `<strong style="font-size:.85rem">Historial</strong><table style="font-size:.82rem"><tbody>${h.map(x => `<tr>
-    <td style="white-space:nowrap">${fechaHora(x.fecha)}</td><td>${x.accion || ''}</td>
-    <td>${x.de && x.de !== x.a ? x.de + ' → ' : ''}<strong>${x.a || ''}</strong></td><td>${(x.comentario || '').replace(/</g, '&lt;')}</td><td>${x.usuario || ''}</td></tr>`).join('')}</tbody></table>`;
+    <td style="white-space:nowrap">${fechaHora(x.fecha)}</td><td>${axiEscapeHTML(x.accion || '')}</td>
+    <td>${axiEscapeHTML(x.de && x.de !== x.a ? x.de + ' → ' : '')}<strong>${axiEscapeHTML(x.a || '')}</strong></td><td>${(x.comentario || '').replace(/</g, '&lt;')}</td><td>${axiEscapeHTML(x.usuario || '')}</td></tr>`).join('')}</tbody></table>`;
 }
 async function prepararEstado(estado) {
   const m = mtActual; if (!m) return;
@@ -4531,7 +4544,7 @@ async function cargarGLP() {
   if (error) { glpMsg(error.message); return; }
   glpUnidades = data || [];
   const sel = $('gx-unidad'), actual = glpU ? String(glpU.unidad_id) : sel.value;
-  sel.innerHTML = '<option value=""></option>' + glpUnidades.map(r => `<option value="${r.unidad_id}">${r.unidad} | ${r.inquilino || r.propietario || ''} | ${r.inquilino ? 'Inquilino' : 'Propietario'}</option>`).join('');
+  sel.innerHTML = '<option value=""></option>' + glpUnidades.map(r => `<option value="${axiEscapeHTML(r.unidad_id)}">${axiEscapeHTML(r.unidad)} | ${axiEscapeHTML(r.inquilino || r.propietario || '')} | ${axiEscapeHTML(r.inquilino ? 'Inquilino' : 'Propietario')}</option>`).join('');
   sel.value = actual || '';
   $('gd-btn').disabled = !glpEsCEO(); $('gd-btn').title = glpEsCEO() ? '' : 'Solo el CEO registra depósitos';
   $('gx-anular').disabled = !glpEsCEO(); $('gx-anular').title = glpEsCEO() ? '' : 'Solo el CEO anula transacciones';
@@ -4587,13 +4600,13 @@ async function glpCargarUnidad(id) {
   // Record/Factura
   const movs = g.movimientos || [];
   $('gx-record').innerHTML = '<option value=""></option>' + movs.filter(x => x.factura).slice().reverse()
-    .map(x => `<option value="${x.id}">${x.factura} | ${x.periodo || ''} | ${fmt(x.monto)} | ${glpEstado(x)}</option>`).join('');
+    .map(x => `<option value="${axiEscapeHTML(x.id)}">${axiEscapeHTML(x.factura)} | ${axiEscapeHTML(x.periodo || '')} | ${axiEscapeHTML(fmt(x.monto))} | ${glpEstado(x)}</option>`).join('');
   // Anexo B
   $('gx-hist').innerHTML = movs.map(x => {
     const dep = glpEsDep(x), an = (x.estado || '').toUpperCase() === 'ANULADO';
-    return `<tr data-id="${x.id}" class="${an ? 'anu' : ''}" onclick="glpSeleccionar(${x.id})" title="${an ? 'Anulado: ' + (x.motivo_anulacion || '').replace(/"/g, '') : ''}">
-      <td>${x.periodo || ''}</td><td>${x.fecha ? fechaCorta(x.fecha) : ''}</td><td>${x.concepto || ''}${x.factura ? ' · ' + x.factura : ''}${!glpAct(x) && !an ? ' · ' + glpEstado(x) : ''}</td>
-      <td class="r">${dep ? fmt(x.monto) : ''}</td><td class="r">${dep ? '' : fmt(x.monto)}</td><td class="r">${glpAct(x) ? fmt(x.saldo) : ''}</td></tr>`;
+    return `<tr data-id="${axiEscapeHTML(x.id)}" class="${an ? 'anu' : ''}" onclick="glpSeleccionar(${x.id})" title="${axiEscapeHTML(an ? 'Anulado: ' + (x.motivo_anulacion || '').replace(/"/g, '') : '')}">
+      <td>${axiEscapeHTML(x.periodo || '')}</td><td>${axiEscapeHTML(x.fecha ? fechaCorta(x.fecha) : '')}</td><td>${axiEscapeHTML(x.concepto || '')}${axiEscapeHTML(x.factura ? ' · ' + x.factura : '')}${!glpAct(x) && !an ? ' · ' + glpEstado(x) : ''}</td>
+      <td class="r">${axiEscapeHTML(dep ? fmt(x.monto) : '')}</td><td class="r">${axiEscapeHTML(dep ? '' : fmt(x.monto))}</td><td class="r">${glpAct(x) ? fmt(x.saldo) : ''}</td></tr>`;
   }).join('') || '<tr><td colspan="6" style="color:#888;cursor:default">Sin movimientos</td></tr>';
   const h = $('gx-hist').parentElement.parentElement; h.scrollTop = 0;
   // Sumario
@@ -4895,7 +4908,7 @@ async function cargarReservar() {
   const { data } = await sb.rpc('fn_reserva_mis_datos');
   rvMisDatos = data || [];
   if (!rvMisDatos.length) { rvMsg('Su cuenta no tiene una unidad asignada. Contacte a la Administración.'); }
-  $('rv-unidad').innerHTML = rvMisDatos.map(u => `<option value="${u.unidad_id}">${u.unidad} (${u.rol})</option>`).join('');
+  $('rv-unidad').innerHTML = rvMisDatos.map(u => `<option value="${axiEscapeHTML(u.unidad_id)}">${axiEscapeHTML(u.unidad)} (${axiEscapeHTML(u.rol)})</option>`).join('');
   $('rv-unidad-grp').style.display = rvMisDatos.length > 1 ? 'block' : 'none';
   const d = rvMisDatos[0] || {};
   if (!$('rv-responsable').value) $('rv-responsable').value = d.nombre || '';
@@ -4915,15 +4928,15 @@ async function rvCargarDisponibilidad(silencioso) {
   const fecha = $('rv-fecha').value; if (!fecha) return;
   if (!silencioso) $('rv-franjas').innerHTML = '<div class="loading" style="padding:1rem">Consultando disponibilidad...</div>';
   const { data, error } = await sb.rpc('fn_reserva_disponibilidad', { p_fecha: fecha });
-  if (error) { $('rv-franjas').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rv-franjas').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   // En modo cambio, el horario actual de la reserva no cuenta como ocupado para mostrarlo
   if (rvSel && !(data || []).some(f => f.franja === rvSel && f.estado === 'Disponible')) rvSel = null;
   $('rv-franjas').innerHTML = (data || []).map(f => {
     const off = f.estado !== 'Disponible';
     const esp = f.estado === 'Reservado'
-      ? `<div class="esp"><label class="rv-check" style="justify-content:center;font-size:.72rem" onclick="event.stopPropagation()"><input type="checkbox" ${f.en_espera ? 'checked' : ''} onchange="rvEspera('${f.franja}', this.checked)"> Avísame si se libera</label></div>` : '';
-    return `<div class="rv-slot ${off ? 'off' : ''} ${rvSel === f.franja ? 'sel' : ''}" ${off ? '' : `onclick="rvElegir('${f.franja}')"`}>
-      <div class="h">${f.etiqueta}</div><div class="e">${f.estado}</div>${esp}</div>`;
+      ? `<div class="esp"><label class="rv-check" style="justify-content:center;font-size:.72rem" onclick="event.stopPropagation()"><input type="checkbox" ${axiEscapeHTML(f.en_espera ? 'checked' : '')} onchange="rvEspera('${axiJSString(f.franja)}', this.checked)"> Avísame si se libera</label></div>` : '';
+    return `<div class="rv-slot ${off ? 'off' : ''} ${axiEscapeHTML(rvSel === f.franja ? 'sel' : '')}" ${off ? '' : `onclick="rvElegir('${f.franja}')"`}>
+      <div class="h">${axiEscapeHTML(f.etiqueta)}</div><div class="e">${axiEscapeHTML(f.estado)}</div>${esp}</div>`;
   }).join('');
   $('rv-actualizado').textContent = 'Disponibilidad actualizada ' + new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' · se actualiza sola cada 30 segundos';
 }
@@ -4961,25 +4974,25 @@ async function rvEnviar() {
 
 async function rvCargarMias() {
   const { data, error } = await sb.rpc('fn_reserva_mias');
-  if (error) { $('rv-mias').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('rv-mias').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   const activa = r => ['Pendiente', 'Aprobada'].includes(r.estado) && new Date(r.fecha + 'T' + r.hora_inicio + '-04:00') > new Date();
   const conCambio = new Set(rows.filter(r => r.reserva_origen_id && r.estado === 'Pendiente').map(r => r.reserva_origen_id));
   $('rv-mias').innerHTML = !rows.length ? '<div class="empty">Aún no tiene reservaciones</div>' : `<table>
     <thead><tr><th>Reserva</th><th>Fecha</th><th>Horario</th><th>Área</th><th class="text-center">Estado</th><th>Detalle</th><th></th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo}${r.reserva_origen_id ? '<div style="font-size:.7rem;color:var(--ax-muted)">cambio</div>' : ''}</td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo)}${r.reserva_origen_id ? '<div style="font-size:.7rem;color:var(--ax-muted)">cambio</div>' : ''}</td>
       <td>${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-DO')}</td>
       <td>${rvHora(r.hora_inicio)} - ${rvHora(r.hora_fin)}</td><td>${rvTipo(r)}</td>
-      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${r.estado}</span></td>
-      <td style="font-size:.78rem;max-width:220px;white-space:normal">${r.motivo_rechazo ? 'Razón: ' + r.motivo_rechazo : (r.motivo_cancelacion || '')}</td>
+      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${axiEscapeHTML(r.estado)}</span></td>
+      <td style="font-size:.78rem;max-width:220px;white-space:normal">${axiEscapeHTML(r.motivo_rechazo ? 'Razón: ' + r.motivo_rechazo : (r.motivo_cancelacion || ''))}</td>
       <td style="white-space:nowrap">${activa(r) ? `${!r.reserva_origen_id || r.estado === 'Aprobada' ? (conCambio.has(r.id) ? '<span style="font-size:.72rem;color:var(--ax-muted)">Cambio en revisión</span> ' : `<button class="btn btn-sm btn-outline" onclick='rvIniciarCambio(${JSON.stringify({ id: r.id, codigo: r.codigo })})'>Cambiar fecha/horario</button> `) : ''}<button class="btn btn-sm btn-danger" onclick="rvCancelar(${r.id}, '${r.codigo}')">Cancelar</button>` : ''}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 function rvIniciarCambio(r) {
   rvCambio = r; rvSel = null;
   $('rv-titulo').textContent = 'Cambiar fecha u horario de ' + r.codigo;
-  $('rv-banner').innerHTML = `Está solicitando un <strong>cambio</strong> de la reserva <strong>${r.codigo}</strong>. Elija la nueva fecha y horario. Su reserva actual se mantiene hasta que la Administración apruebe el cambio.`;
+  $('rv-banner').innerHTML = `Está solicitando un <strong>cambio</strong> de la reserva <strong>${axiEscapeHTML(r.codigo)}</strong>. Elija la nueva fecha y horario. Su reserva actual se mantiene hasta que la Administración apruebe el cambio.`;
   $('rv-banner').style.display = 'block'; $('rv-cancelar-cambio').style.display = 'inline-block';
   $('rv-enviar').textContent = 'SOLICITAR CAMBIO';
   window.scrollTo(0, 0);
@@ -5003,7 +5016,7 @@ async function cargarReservasAdmin() {
     sb.rpc('fn_reserva_bandeja', { p_condominio_id: cid, p_filtro: $('ra-filtro').value }),
     sb.rpc('fn_reserva_bandeja', { p_condominio_id: cid, p_filtro: 'proximas' }),
   ]);
-  if (lista.error) { $('ra-lista').innerHTML = `<div class="empty">${lista.error.message}</div>`; return; }
+  if (lista.error) { $('ra-lista').innerHTML = `<div class="empty">${axiEscapeHTML(lista.error.message)}</div>`; return; }
   const prox = pend.data || [];
   const nP = prox.filter(r => r.estado === 'Pendiente').length, nA = prox.filter(r => r.estado === 'Aprobada').length;
   $('ra-stats').innerHTML = `<div class="stat-card"><div class="accent-bar yellow"></div><div class="label">Pendientes</div><div class="value">${nP}</div></div>
@@ -5013,12 +5026,12 @@ async function cargarReservasAdmin() {
   $('ra-lista').innerHTML = !rows.length ? '<div class="empty">Sin reservas en esta vista</div>' : `<table>
     <thead><tr><th>Reserva</th><th>Fecha</th><th>Horario</th><th>Unidad</th><th>Responsable</th><th>Área</th><th class="text-center">Personas</th><th class="text-center">Estado</th><th>Acciones</th></tr></thead>
     <tbody>${rows.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo}${r.cambio_de ? `<div style="font-size:.7rem;color:var(--ax-gold)">Cambio de ${r.cambio_de}<br>(antes ${new Date(r.original_fecha + 'T12:00:00').toLocaleDateString('es-DO')} ${r.original_horario})</div>` : ''}</td>
-      <td>${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-DO')}</td><td>${r.horario}</td><td>${r.unidad_texto || ''}</td>
-      <td>${r.responsable}<div style="font-size:.72rem;color:var(--ax-muted)">${r.telefono} · ${r.email}</div></td>
-      <td>${r.tipo}<div style="font-size:.72rem;color:var(--ax-muted);white-space:normal;max-width:200px">${r.motivo}</div></td>
-      <td class="text-center">${r.cantidad_personas}${r.cantidad_personas > 5 ? ' ⚠️' : ''}</td>
-      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${r.estado}</span>${r.motivo_rechazo ? `<div style="font-size:.7rem;white-space:normal">${r.motivo_rechazo}</div>` : ''}</td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo)}${r.cambio_de ? `<div style="font-size:.7rem;color:var(--ax-gold)">Cambio de ${axiEscapeHTML(r.cambio_de)}<br>(antes ${new Date(r.original_fecha + 'T12:00:00').toLocaleDateString('es-DO')} ${axiEscapeHTML(r.original_horario)})</div>` : ''}</td>
+      <td>${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-DO')}</td><td>${axiEscapeHTML(r.horario)}</td><td>${axiEscapeHTML(r.unidad_texto || '')}</td>
+      <td>${axiEscapeHTML(r.responsable)}<div style="font-size:.72rem;color:var(--ax-muted)">${axiEscapeHTML(r.telefono)} · ${axiEscapeHTML(r.email)}</div></td>
+      <td>${axiEscapeHTML(r.tipo)}<div style="font-size:.72rem;color:var(--ax-muted);white-space:normal;max-width:200px">${axiEscapeHTML(r.motivo)}</div></td>
+      <td class="text-center">${axiEscapeHTML(r.cantidad_personas)}${axiEscapeHTML(r.cantidad_personas > 5 ? ' ⚠️' : '')}</td>
+      <td class="text-center"><span class="badge ${rvEstadoBadge(r.estado)}">${axiEscapeHTML(r.estado)}</span>${r.motivo_rechazo ? `<div style="font-size:.7rem;white-space:normal">${axiEscapeHTML(r.motivo_rechazo)}</div>` : ''}</td>
       <td style="white-space:nowrap">${r.estado === 'Pendiente' ? `<button class="btn btn-sm btn-success" onclick="raDecidir(${r.id}, true, '${r.codigo}')">Aprobar</button> <button class="btn btn-sm btn-danger" onclick="raDecidir(${r.id}, false, '${r.codigo}')">Rechazar</button>` : ''}
         ${['Pendiente', 'Aprobada'].includes(r.estado) ? ` <button class="btn btn-sm btn-outline" onclick="raCancelar(${r.id}, '${r.codigo}')">Cancelar</button>` : ''}</td>
     </tr>`).join('')}</tbody></table>`;
@@ -5063,13 +5076,13 @@ async function raNuevaToggle() {
   await ranCargarUnidades();
   $('ran-unidad').innerHTML = '<option value="">— Seleccione —</option>' + ranUnidades.map(u => {
     const t = titularesDe(u), ocu = t.find(x => x.tipo === 'Inquilino') || t[0];
-    return `<option value="${u.id}">${u.codigo} | ${ocu ? ocu.nombre + ' | ' + ocu.tipo : ''}</option>`; }).join('');
+    return `<option value="${axiEscapeHTML(u.id)}">${axiEscapeHTML(u.codigo)} | ${axiEscapeHTML(ocu ? ocu.nombre + ' | ' + ocu.tipo : '')}</option>`; }).join('');
   $('ran-titular').innerHTML = ''; $('ran-fecha').min = hoyStr();
 }
 function ranUnidad() {
   const u = ranUnidades.find(x => String(x.id) === $('ran-unidad').value);
   const t = titularesDe(u);
-  $('ran-titular').innerHTML = t.map((x, i) => `<option value="${i}">${x.tipo}: ${x.nombre}</option>`).join('');
+  $('ran-titular').innerHTML = t.map((x, i) => `<option value="${i}">${axiEscapeHTML(x.tipo)}: ${axiEscapeHTML(x.nombre)}</option>`).join('');
   if (t.length > 1) $('ran-titular').value = String(t.findIndex(x => x.tipo === 'Inquilino'));
   ranTitular();
 }
@@ -5081,10 +5094,10 @@ function ranTitular() {
 async function ranDisponibilidad() {
   const fecha = $('ran-fecha').value; if (!fecha) return;
   const { data, error } = await sb.rpc('fn_reserva_disponibilidad', { p_fecha: fecha });
-  if (error) { $('ran-franjas').innerHTML = `<div class="empty">${error.message}</div>`; return; }
+  if (error) { $('ran-franjas').innerHTML = `<div class="empty">${axiEscapeHTML(error.message)}</div>`; return; }
   if (ranSel && !(data || []).some(f => f.franja === ranSel && f.estado === 'Disponible')) ranSel = null;
   $('ran-franjas').innerHTML = (data || []).map(f => { const off = f.estado !== 'Disponible';
-    return `<div class="rv-slot ${off ? 'off' : ''} ${ranSel === f.franja ? 'sel' : ''}" ${off ? '' : `onclick="ranSel='${f.franja}';ranDisponibilidad()"`}><div class="h">${f.etiqueta}</div><div class="e">${f.estado}</div></div>`; }).join('');
+    return `<div class="rv-slot ${off ? 'off' : ''} ${axiEscapeHTML(ranSel === f.franja ? 'sel' : '')}" ${off ? '' : `onclick="ranSel='${f.franja}';ranDisponibilidad()"`}><div class="h">${axiEscapeHTML(f.etiqueta)}</div><div class="e">${axiEscapeHTML(f.estado)}</div></div>`; }).join('');
 }
 async function ranGuardar() {
   const err = t => { $('ran-alert').textContent = t; $('ran-alert').style.display = 'block'; };
@@ -5116,14 +5129,14 @@ async function abrirReporteCEO() {
   $('rpt-alert').style.display = 'none';
   await ranCargarUnidades();
   $('rpt-condo').value = ($('topbar-condo-name') && $('topbar-condo-name').textContent) || 'Residencial DH2';
-  $('rpt-unidad').innerHTML = '<option value="">— Seleccione —</option>' + ranUnidades.map(u => `<option value="${u.id}">${u.codigo}</option>`).join('');
+  $('rpt-unidad').innerHTML = '<option value="">— Seleccione —</option>' + ranUnidades.map(u => `<option value="${axiEscapeHTML(u.id)}">${axiEscapeHTML(u.codigo)}</option>`).join('');
   $('rpt-titular').innerHTML = ''; ['rpt-nombre', 'rpt-telefono', 'rpt-correo', 'rpt-desc', 'rpt-bloque', 'rpt-categoria', 'rpt-area'].forEach(i => $(i).value = '');
   document.querySelectorAll('input[name="rpt-pri"]').forEach(r => r.checked = false); $('rpt-fotos').value = '';
   $('modal-rpt').classList.add('show');
 }
 function rptUnidad() {
   const u = ranUnidades.find(x => String(x.id) === $('rpt-unidad').value), t = titularesDe(u);
-  $('rpt-titular').innerHTML = t.map((x, i) => `<option value="${i}">${x.tipo}: ${x.nombre}</option>`).join('') + '<option value="otro">Otra persona (escribir datos)</option>';
+  $('rpt-titular').innerHTML = t.map((x, i) => `<option value="${i}">${axiEscapeHTML(x.tipo)}: ${axiEscapeHTML(x.nombre)}</option>`).join('') + '<option value="otro">Otra persona (escribir datos)</option>';
   if (t.length > 1) $('rpt-titular').value = String(t.findIndex(x => x.tipo === 'Inquilino'));
   rptTitular();
 }
@@ -5180,6 +5193,7 @@ async function rptEnviar() {
   const pri = (document.querySelector('input[name="rpt-pri"]:checked') || {}).value;
   const files = [...$('rpt-fotos').files];
   if (files.length > 3) return err('Máximo 3 fotos.');
+  if (files.some(f => !/\.(png|jpe?g)$/i.test(f.name) || !['image/png','image/jpeg'].includes(f.type))) return err('Solo se aceptan imágenes PNG o JPG/JPEG.');
   if (files.some(f => f.size > 10 * 1024 * 1024)) return err('Cada foto debe pesar máximo 10 MB.');
   const u = ranUnidades.find(x => String(x.id) === $('rpt-unidad').value);
   const d = { condominio: $('rpt-condo').value, unidad: u ? u.codigo : '', nombre: $('rpt-nombre').value.trim(), telefono: $('rpt-telefono').value.trim(),
@@ -5309,7 +5323,7 @@ function donutEstadosHTML(lista) {
   const pct = tot ? Math.round(100 * aten / tot) : null;
   const R = 14, C = 2 * Math.PI * R; let acc = 0;
   const segs = cont.filter(x => Number(x.n) > 0).map(x => { const len = C * Number(x.n) / tot;
-    const seg = `<circle cx="18" cy="18" r="${R}" fill="none" stroke="${MT_COLOR[x.estado] || '#888'}" stroke-width="4" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}"/>`;
+    const seg = `<circle cx="18" cy="18" r="${R}" fill="none" stroke="${axiEscapeHTML(MT_COLOR[x.estado] || '#888')}" stroke-width="4" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}"/>`;
     acc += len; return seg; }).join('');
   return `<div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap">
     <div style="position:relative;width:110px;height:110px">
@@ -5318,7 +5332,7 @@ function donutEstadosHTML(lista) {
         <span style="font-size:1.2rem;font-weight:700;color:var(--ax-navy)">${pct === null ? '—' : pct + '%'}</span>
         <span style="font-size:.6rem;color:var(--ax-muted)">atendidos</span></div></div>
     <div style="font-size:.78rem;line-height:1.75">
-      ${cont.map(x => `<div><span style="display:inline-block;width:10px;height:10px;background:${MT_COLOR[x.estado] || '#888'};border-radius:50%;vertical-align:middle"></span> ${x.estado}: <strong>${x.n}</strong></div>`).join('')}
+      ${cont.map(x => `<div><span style="display:inline-block;width:10px;height:10px;background:${axiEscapeHTML(MT_COLOR[x.estado] || '#888')};border-radius:50%;vertical-align:middle"></span> ${axiEscapeHTML(x.estado)}: <strong>${axiEscapeHTML(x.n)}</strong></div>`).join('')}
       <div style="margin-top:.3rem;color:var(--ax-muted);font-size:.72rem">Cancelados (fuera del %): ${canc}</div>
     </div></div>`;
 }
@@ -5328,7 +5342,7 @@ async function cargarSaludResidencial() {
   const [{data: h, error}, {data: estRes, error: errEst}] = await Promise.all([
     sb.rpc('fn_salud_residencial', {p_condominio_id: sesion.condominio_id}),
     sb.rpc('fn_mant_resumen_estados', {p_condominio_id: sesion.condominio_id})]);
-  if (error) { el.innerHTML = '<div class="empty" style="font-size:.85rem">' + error.message + '</div>'; return; }
+  if (error) { el.innerHTML = '<div class="empty" style="font-size:.85rem">' + axiEscapeHTML(error.message) + '</div>'; return; }
   const bloqueEst = errEst ? '' : `<div style="font-size:.72rem;font-weight:600;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Estado de reportes · todos</div>${donutEstadosHTML(estRes)}
     <div style="border-top:1px solid var(--ax-border);margin:.8rem 0 .6rem"></div>
     <div style="font-size:.72rem;font-weight:600;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Índice de salud</div>`;
@@ -5336,22 +5350,22 @@ async function cargarSaludResidencial() {
   const col = {verde: 'var(--ax-success)', amarillo: '#d4a017', rojo: 'var(--ax-danger)'}[h.semaforo] || 'var(--ax-muted)';
   if (h.indice === null) { el.innerHTML = bloqueEst + '<div class="empty" style="font-size:.85rem">Aún no hay reportes desde la fecha de arranque.<br>El índice se calcula con los reportes recibidos por el formulario.</div>'; return; }
   const ind = Number(h.indice), R = 44, C = 2 * Math.PI * R, off = C * (1 - ind / 100);
-  const comp = (k, v, w) => `<div style="margin-bottom:.45rem"><div style="display:flex;justify-content:space-between;font-size:.75rem"><span>${k} <small style="color:var(--ax-muted)">(${w}%)</small></span><strong>${v === null ? '—' : v + '%'}</strong></div>
+  const comp = (k, v, w) => `<div style="margin-bottom:.45rem"><div style="display:flex;justify-content:space-between;font-size:.75rem"><span>${axiEscapeHTML(k)} <small style="color:var(--ax-muted)">(${w}%)</small></span><strong>${v === null ? '—' : v + '%'}</strong></div>
       <div style="background:#eee;border-radius:4px;height:6px"><div style="width:${v || 0}%;background:${col};height:6px;border-radius:4px"></div></div></div>`;
   const est = h.por_estado || {};
   el.innerHTML = bloqueEst + `<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
     <svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="${R}" fill="none" stroke="#eee" stroke-width="10"/>
       <circle cx="55" cy="55" r="${R}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 55 55)"/>
       <text x="55" y="55" text-anchor="middle" font-size="22" font-weight="700" fill="${col}">${Math.round(ind)}</text>
-      <text x="55" y="72" text-anchor="middle" font-size="9" fill="#888">${h.semaforo.toUpperCase()}</text></svg>
+      <text x="55" y="72" text-anchor="middle" font-size="9" fill="#888">${axiEscapeHTML(h.semaforo.toUpperCase())}</text></svg>
     <div style="flex:1;min-width:170px">
       ${comp('Avance de reportes', h.componentes.avance, h.pesos.avance)}
       ${comp('Cumplimiento de plazo', h.componentes.plazo, h.pesos.plazo)}
       ${comp('Sin atrasos', h.componentes.atrasos, h.pesos.atrasos)}
     </div></div>
     <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem;font-size:.72rem">
-      ${Object.entries(est).map(([k, n]) => `<span class="badge" style="background:${MT_COLOR[k] || '#888'};color:#fff">${k}: ${n}</span>`).join('')}
-      ${h.vencidos ? `<span class="badge badge-danger">Vencidos: ${h.vencidos}</span>` : ''}
+      ${Object.entries(est).map(([k, n]) => `<span class="badge" style="background:${MT_COLOR[k] || '#888'};color:#fff">${axiEscapeHTML(k)}: ${n}</span>`).join('')}
+      ${h.vencidos ? `<span class="badge badge-danger">Vencidos: ${axiEscapeHTML(h.vencidos)}</span>` : ''}
     </div>`;
 }
 
@@ -5380,10 +5394,10 @@ async function emitirComunicacionMant(id, alcance) {
   $('mc2-preview').textContent = comTexto(c);
   const d = c.destinatarios || [];
   const tel = x => (x.whatsapp || x.telefono || '').replace(/[^0-9]/g, '');
-  $('mc2-dest').innerHTML = `<strong style="font-size:.85rem">${d.length} destinatario(s)</strong> <small>(${d.filter(x => x.email).length} con correo · ${d.filter(x => tel(x)).length} con teléfono)</small>
-    <table style="font-size:.8rem"><tbody>${d.map(x => `<tr><td>${x.nombre || ''}</td><td>${x.unidad || ''}</td><td>${x.tipo || ''}</td>
+  $('mc2-dest').innerHTML = `<strong style="font-size:.85rem">${axiEscapeHTML(d.length)} destinatario(s)</strong> <small>(${d.filter(x => x.email).length} con correo · ${d.filter(x => tel(x)).length} con teléfono)</small>
+    <table style="font-size:.8rem"><tbody>${d.map(x => `<tr><td>${axiEscapeHTML(x.nombre || '')}</td><td>${axiEscapeHTML(x.unidad || '')}</td><td>${axiEscapeHTML(x.tipo || '')}</td>
       <td>${tel(x) ? `<a href="https://wa.me/${tel(x).length === 10 ? '1' + tel(x) : tel(x)}?text=${encodeURIComponent(comTexto(c))}" target="_blank" rel="noopener" onclick="comMarcar('WhatsApp individual',1)">WhatsApp</a>` : ''}</td>
-      <td>${x.email || ''}</td></tr>`).join('')}</tbody></table>`;
+      <td>${axiEscapeHTML(x.email || '')}</td></tr>`).join('')}</tbody></table>`;
 }
 async function comMarcar(canal, n) {
   if (!mtCom) return;
@@ -5478,13 +5492,13 @@ async function cargarMisFacturas() {
     <thead><tr><th>No.</th><th>Fecha</th><th>Concepto</th><th class="text-right">Monto</th><th class="text-right">Pagado</th><th class="text-right">Balance</th><th class="text-center">Estado</th></tr></thead>
     <tbody>${data.map(r => `
       <tr>
-        <td style="font-family:monospace">${r.no_factura}</td>
-        <td>${r.fecha_factura}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.concepto || ''}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-right money">${fmt(r.monto_pagado)}</td>
-        <td class="text-right money" style="color:${parseFloat(r.balance_pendiente||0) > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${fmt(r.balance_pendiente)}</td>
-        <td class="text-center"><span class="badge ${r.estado === 'Pagada' ? 'badge-success' : r.estado === 'Vencida' ? 'badge-danger' : 'badge-warning'}">${r.estado}</span></td>
+        <td style="font-family:monospace">${axiEscapeHTML(r.no_factura)}</td>
+        <td>${axiEscapeHTML(r.fecha_factura)}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${axiEscapeHTML(r.concepto || '')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto_pagado))}</td>
+        <td class="text-right money" style="color:${parseFloat(r.balance_pendiente||0) > 0 ? 'var(--ax-danger)' : 'var(--ax-success)'}">${axiEscapeHTML(fmt(r.balance_pendiente))}</td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado === 'Pagada' ? 'badge-success' : r.estado === 'Vencida' ? 'badge-danger' : 'badge-warning')}">${axiEscapeHTML(r.estado)}</span></td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -5509,11 +5523,11 @@ async function cargarMisPagos() {
     <thead><tr><th>Fecha</th><th>Código</th><th>Método</th><th class="text-right">Monto</th><th class="text-center">Estado</th></tr></thead>
     <tbody>${data.map(r => `
       <tr>
-        <td>${r.fecha_pago}</td>
-        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
-        <td>${r.metodo || '—'}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
-        <td class="text-center"><span class="badge ${r.estado === 'Aplicado' ? 'badge-success' : 'badge-warning'}">${r.estado}</span></td>
+        <td>${axiEscapeHTML(r.fecha_pago)}</td>
+        <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td>
+        <td>${axiEscapeHTML(r.metodo || '—')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado === 'Aplicado' ? 'badge-success' : 'badge-warning')}">${axiEscapeHTML(r.estado)}</span></td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -5524,7 +5538,7 @@ async function cargarFondoComun() {
   const cid = sesion.condominio_id;
   $('fc-movimientos').innerHTML = '<div class="loading">Cargando...</div>';
   const {data, error} = await sb.rpc('portal_fondo_comun', {p_condominio_id: cid});
-  if (error) { $('fc-stats').innerHTML = ''; $('fc-movimientos').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { $('fc-stats').innerHTML = ''; $('fc-movimientos').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   const rows = data || [];
   const ing = rows.reduce((a, r) => a + parseFloat(r.ingresos || 0), 0);
   const egr = rows.reduce((a, r) => a + parseFloat(r.egresos || 0), 0);
@@ -5538,11 +5552,11 @@ async function cargarFondoComun() {
   <table>
     <thead><tr><th>Mes</th><th class="text-right">Ingresos</th><th class="text-right">Egresos</th><th class="text-right">Balance del mes</th><th class="text-right">Balance acumulado</th></tr></thead>
     <tbody>${rows.slice().reverse().map(r => `<tr>
-      <td>${r.periodo}</td>
-      <td class="text-right money" style="color:var(--ax-success)">${fmt(r.ingresos)}</td>
-      <td class="text-right money" style="color:var(--ax-danger)">${fmt(r.egresos)}</td>
-      <td class="text-right money">${fmt(r.balance_periodo)}</td>
-      <td class="text-right money"><strong>${fmt(r.balance_acumulado)}</strong></td>
+      <td>${axiEscapeHTML(r.periodo)}</td>
+      <td class="text-right money" style="color:var(--ax-success)">${axiEscapeHTML(fmt(r.ingresos))}</td>
+      <td class="text-right money" style="color:var(--ax-danger)">${axiEscapeHTML(fmt(r.egresos))}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.balance_periodo))}</td>
+      <td class="text-right money"><strong>${axiEscapeHTML(fmt(r.balance_acumulado))}</strong></td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
@@ -5562,10 +5576,10 @@ async function cargarMorosidad() {
     const claseU = pctU >= 50 ? 'red' : pctU >= 25 ? '' : 'green';
     const claseM = pctM >= 50 ? 'red' : pctM >= 25 ? '' : 'green';
     cont.innerHTML = `
-      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">Unidades en mora</div><div class="value ${claseU}">${m.unidades_en_mora ?? 0} / ${m.unidades_total ?? 0}</div></div>
-      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">% unidades en mora</div><div class="value ${claseU}">${pctU.toFixed(1)}%</div></div>
-      <div class="stat-card"><div class="accent-bar red"></div><div class="label">Monto vencido</div><div class="value red money">${fmtMoney(m.monto_vencido)}</div></div>
-      <div class="stat-card"><div class="accent-bar ${claseM}"></div><div class="label">% monto en mora</div><div class="value ${claseM}">${pctM.toFixed(1)}%</div></div>
+      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">Unidades en mora</div><div class="value ${claseU}">${axiEscapeHTML(m.unidades_en_mora ?? 0)} / ${axiEscapeHTML(m.unidades_total ?? 0)}</div></div>
+      <div class="stat-card"><div class="accent-bar ${claseU}"></div><div class="label">% unidades en mora</div><div class="value ${claseU}">${axiEscapeHTML(pctU.toFixed(1))}%</div></div>
+      <div class="stat-card"><div class="accent-bar red"></div><div class="label">Monto vencido</div><div class="value red money">${axiEscapeHTML(fmtMoney(m.monto_vencido))}</div></div>
+      <div class="stat-card"><div class="accent-bar ${claseM}"></div><div class="label">% monto en mora</div><div class="value ${claseM}">${axiEscapeHTML(pctM.toFixed(1))}%</div></div>
     `;
     const corte = m.fecha_corte ? new Date(m.fecha_corte).toLocaleDateString('es-DO') : '—';
     nota.textContent = `Monto exigible total: ${fmtMoney(m.monto_exigible)} · Fecha de corte: ${corte}`;
@@ -5609,11 +5623,11 @@ async function cargarAprobaciones() {
   const esCEO = sesion.rol === 'CEO';
   $('aprob-rol-nota').textContent = esCEO ? 'Como CEO puedes aprobar, poner en proceso o rechazar.' : 'Ves el estado de lo que tú sometiste.';
   const {data, error} = await sb.rpc('fn_aprobaciones_bandeja', {p_condominio_id: sesion.condominio_id});
-  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">No hay elementos pendientes.</p>'; return; }
   const filas = data.map((r, i) => {
     const color = APROB_BADGE[r.estado] || '#777';
-    const badge = `<span style="background:${color};color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.75rem">${r.estado}</span>`;
+    const badge = `<span style="background:${color};color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.75rem">${axiEscapeHTML(r.estado)}</span>`;
     const monto = r.monto != null ? 'RD$ ' + fmt(r.monto) : '—';
     let acciones = '';
     if (esCEO && (r.estado === 'Sometido' || r.estado === 'En proceso')) {
@@ -5623,12 +5637,12 @@ async function cargarAprobaciones() {
         ${r.estado === 'Sometido' ? `<button class="btn btn-sm btn-outline" onclick="revisarAprob('${mod}',${r.registro_id},'En proceso')">En proceso</button>` : ''}
         <button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="revisarAprob('${mod}',${r.registro_id},'Rechazado')">Rechazar</button>`;
     }
-    const rechazo = r.motivo_rechazo ? `<div style="font-size:.78rem;color:#a63a2b;margin-top:.2rem">Rechazo: ${r.motivo_rechazo}</div>` : '';
+    const rechazo = r.motivo_rechazo ? `<div style="font-size:.78rem;color:#a63a2b;margin-top:.2rem">Rechazo: ${axiEscapeHTML(r.motivo_rechazo)}</div>` : '';
     return `<tr>
-      <td><strong>${r.modulo}</strong><br><span style="font-size:.8rem;color:#4d4742">${r.referencia || ''}</span></td>
-      <td>${r.descripcion || ''}${rechazo}</td>
+      <td><strong>${axiEscapeHTML(r.modulo)}</strong><br><span style="font-size:.8rem;color:#4d4742">${axiEscapeHTML(r.referencia || '')}</span></td>
+      <td>${axiEscapeHTML(r.descripcion || '')}${rechazo}</td>
       <td style="text-align:right">${monto}</td>
-      <td>${badge}<br><span style="font-size:.72rem;color:#777">${r.sometido_por || ''}</span></td>
+      <td>${badge}<br><span style="font-size:.72rem;color:#777">${axiEscapeHTML(r.sometido_por || '')}</span></td>
       <td style="white-space:nowrap">${acciones}</td>
     </tr>`;
   }).join('');
@@ -5659,18 +5673,18 @@ async function cargarSolicitudesContacto() {
   const cont = $('sc-lista');
   cont.innerHTML = '<div class="loading">Cargando...</div>';
   const {data, error} = await sb.rpc('fn_contacto_solicitudes', {p_condominio_id: sesion.condominio_id});
-  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { cont.innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { cont.innerHTML = '<p style="color:#4d4742">No hay solicitudes pendientes.</p>'; return; }
   const etiqueta = {telefono:'Teléfono', whatsapp:'WhatsApp', email:'Correo',
     contacto_emergencia_nombre:'Emergencia: nombre', contacto_emergencia_telefono:'Emergencia: teléfono', contacto_emergencia_relacion:'Emergencia: relación'};
   cont.innerHTML = `<div style="overflow-x:auto"><table><thead><tr>
     <th>Fecha</th><th>Residente</th><th>Campo</th><th>Antes</th><th>Nuevo</th><th>Acciones</th></tr></thead><tbody>${
     data.map(s => `<tr>
-      <td style="font-size:.8rem">${(s.fecha||'').slice(0,10)}</td>
-      <td>${s.solicitante || '—'}<br><span style="font-size:.72rem;color:#777">${s.rol || ''}</span></td>
-      <td>${etiqueta[s.campo] || s.campo}</td>
-      <td style="color:#777">${s.valor_anterior || '—'}</td>
-      <td><strong>${s.valor_nuevo || '—'}</strong></td>
+      <td style="font-size:.8rem">${axiEscapeHTML((s.fecha||'').slice(0,10))}</td>
+      <td>${axiEscapeHTML(s.solicitante || '—')}<br><span style="font-size:.72rem;color:#777">${axiEscapeHTML(s.rol || '')}</span></td>
+      <td>${axiEscapeHTML(etiqueta[s.campo] || s.campo)}</td>
+      <td style="color:#777">${axiEscapeHTML(s.valor_anterior || '—')}</td>
+      <td><strong>${axiEscapeHTML(s.valor_nuevo || '—')}</strong></td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm btn-success" onclick="revisarContacto(${s.id},'Aprobado')">Aprobar</button>
         <button class="btn btn-sm btn-outline" style="color:#a63a2b;border-color:#a63a2b" onclick="revisarContacto(${s.id},'Rechazado')">Rechazar</button>
@@ -5720,7 +5734,7 @@ async function abrirModalPago() {
   }
 
   sel.innerHTML = '<option value="">— Seleccione factura —</option>' +
-    data.map(f => `<option value="${f.id}" data-balance="${f.balance_pendiente}">${f.no_factura} — ${f.unidades?.codigo || ''} — ${f.concepto || ''} (Pend: RD$ ${fmt(f.balance_pendiente)})</option>`).join('');
+    data.map(f => `<option value="${axiEscapeHTML(f.id)}" data-balance="${axiEscapeHTML(f.balance_pendiente)}">${axiEscapeHTML(f.no_factura)} — ${axiEscapeHTML(f.unidades?.codigo || '')} — ${axiEscapeHTML(f.concepto || '')} (Pend: RD$ ${axiEscapeHTML(fmt(f.balance_pendiente))})</option>`).join('');
 
   // Auto-fill monto al seleccionar factura
   sel.onchange = () => {
@@ -5739,7 +5753,7 @@ async function editarPago(id) {
   $('form-pago').reset();
   $('modal-pago').classList.add('show');
   const sel = $('pago-factura');
-  sel.innerHTML = `<option value="${r.factura_id}">${r.facturas?.no_factura || ('Factura #'+r.factura_id)} (no se cambia)</option>`;
+  sel.innerHTML = `<option value="${axiEscapeHTML(r.factura_id)}">${axiEscapeHTML(r.facturas?.no_factura || ('Factura #'+r.factura_id))} (no se cambia)</option>`;
   sel.value = r.factura_id; sel.disabled = true; sel.required = false;
   $('pago-fecha').value = r.fecha_pago || '';
   $('pago-monto').value = r.monto ?? '';
@@ -5924,8 +5938,8 @@ async function abrirModalGasto() {
       sb.from('inquilinos').select('id, nombre, telefono, email, estado').eq('unidad_id', uid).ilike('estado', 'activo%'),
     ]);
     const pr = u && u.propietarios, ops = ['<option value="">— Seleccione —</option>'];
-    if (u && u.propietario_id) ops.push(`<option value="Propietario" data-id="${u.propietario_id}">Propietario: ${pr ? pr.nombre : '(sin nombre)'}</option>`);
-    (inqs || []).forEach(i => ops.push(`<option value="Inquilino" data-id="${i.id}">Inquilino: ${i.nombre}</option>`));
+    if (u && u.propietario_id) ops.push(`<option value="Propietario" data-id="${axiEscapeHTML(u.propietario_id)}">Propietario: ${axiEscapeHTML(pr ? pr.nombre : '(sin nombre)')}</option>`);
+    (inqs || []).forEach(i => ops.push(`<option value="Inquilino" data-id="${axiEscapeHTML(i.id)}">Inquilino: ${axiEscapeHTML(i.nombre)}</option>`));
     cg.innerHTML = ops.join(''); cg.required = true; $('gasto-cargo-grp').style.display = 'block';
     $('gasto-cargo-info').textContent = (inqs && inqs.length) ? 'Esta unidad tiene propietario e inquilino: elija a quién se le cobra.' : 'Esta unidad solo tiene propietario.';
     cg.onchange = () => {
@@ -5942,7 +5956,7 @@ async function abrirModalGasto() {
     else if ($('gasto-unidad').value) $('gasto-unidad').onchange();
     if (esU && $('gasto-unidad').options.length <= 1) {
       const {data: us} = await sb.from('unidades').select('id, codigo').eq('condominio_id', sesion.condominio_id).order('codigo');
-      $('gasto-unidad').innerHTML = '<option value="">— Seleccione unidad —</option>' + (us || []).map(u => `<option value="${u.id}">${u.codigo || ('Unidad ' + u.id)}</option>`).join('');
+      $('gasto-unidad').innerHTML = '<option value="">— Seleccione unidad —</option>' + (us || []).map(u => `<option value="${axiEscapeHTML(u.id)}">${axiEscapeHTML(u.codigo || ('Unidad ' + u.id))}</option>`).join('');
     }
   };
 
@@ -5959,7 +5973,7 @@ async function abrirModalGasto() {
     return;
   }
   sel.innerHTML = '<option value="">— Seleccione proveedor —</option>' +
-    data.map(p => `<option value="${p.id}">${p.codigo ? p.codigo + ' — ' : ''}${p.nombre}</option>`).join('');
+    data.map(p => `<option value="${axiEscapeHTML(p.id)}">${axiEscapeHTML(p.codigo ? p.codigo + ' — ' : '')}${axiEscapeHTML(p.nombre)}</option>`).join('');
 }
 
 async function guardarGasto(e) {
@@ -6009,30 +6023,30 @@ async function guardarGasto(e) {
 // ==================== RESIDENTE: GASTOS DEL CONDOMINIO ====================
 async function cargarGastosCondo() {
   const {data, error} = await sb.rpc('portal_gastos_fondo_comun', {p_condominio_id: sesion.condominio_id});
-  if (error) { $('gastos-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + error.message + '</div>'; return; }
+  if (error) { $('gastos-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">' + axiEscapeHTML(error.message) + '</div>'; return; }
   if (!data?.length) { $('gastos-condo-lista').innerHTML = '<div class="empty">Sin gastos registrados</div>'; return; }
   const total = data.reduce((a, r) => a + parseFloat(r.monto || 0), 0);
   const badgeClass = e => e === 'Pagado' ? 'badge-success' : e === 'Registrado' ? 'badge-warning' : 'badge-danger';
   const soporte = r => {
     const links = [];
-    if (r.foto_factura_url && /^https?:\/\//.test(r.foto_factura_url)) links.push(`<a href="${r.foto_factura_url}" target="_blank" rel="noopener">📄 Factura</a>`);
+    if (r.foto_factura_url && /^https?:\/\//.test(r.foto_factura_url)) links.push(`<a href="${axiEscapeHTML(axiWebURL(r.foto_factura_url))}" target="_blank" rel="noopener">📄 Factura</a>`);
     const fs = Array.isArray(r.facturas_soporte) ? r.facturas_soporte : [];
-    if (fs.length) links.push(fs.map(f => `<span title="${(f.concepto || '').replace(/"/g, '')}">${f.no_factura || ''}</span>`).join(', '));
+    if (fs.length) links.push(fs.map(f => `<span title="${axiEscapeHTML((f.concepto || '').replace(/"/g, ''))}">${axiEscapeHTML(f.no_factura || '')}</span>`).join(', '));
     return links.join(' · ') || (r.factura_proveedor || '—');
   };
   $('gastos-condo-lista').innerHTML = `
-    <p style="margin-bottom:1rem;font-size:.9rem">Total gastos del fondo común: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} registros</p>
+    <p style="margin-bottom:1rem;font-size:.9rem">Total gastos del fondo común: <strong class="money">${fmtMoney(total)}</strong> — ${axiEscapeHTML(data.length)} registros</p>
     <table>
       <thead><tr><th>Fecha</th><th>Código</th><th>Proveedor</th><th>Categoría</th><th>Descripción</th><th class="text-right">Monto</th><th>Soporte</th><th class="text-center">Estado</th></tr></thead>
       <tbody>${data.map(r => `<tr>
-        <td>${r.fecha}</td>
-        <td style="font-family:monospace;font-size:.8rem">${r.codigo || '—'}</td>
-        <td>${r.proveedor || '—'}</td>
-        <td>${r.categoria || '—'}</td>
-        <td>${(r.descripcion || '').substring(0, 40)}${(r.descripcion || '').length > 40 ? '…' : ''}</td>
-        <td class="text-right money">${fmt(r.monto)}</td>
+        <td>${axiEscapeHTML(r.fecha)}</td>
+        <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo || '—')}</td>
+        <td>${axiEscapeHTML(r.proveedor || '—')}</td>
+        <td>${axiEscapeHTML(r.categoria || '—')}</td>
+        <td>${axiEscapeHTML((r.descripcion || '').substring(0, 40))}${axiEscapeHTML((r.descripcion || '').length > 40 ? '…' : '')}</td>
+        <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
         <td style="font-size:.8rem">${soporte(r)}</td>
-        <td class="text-center"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(badgeClass(r.estado))}">${axiEscapeHTML(r.estado)}</span></td>
       </tr>`).join('')}
       </tbody>
     </table>`;
@@ -6045,27 +6059,27 @@ async function cargarComprobantesCondo() {
     .eq('condominio_id', sesion.condominio_id)
     .order('fecha_pago', {ascending: false}).limit(50);
 
-  if (error) { $('comprobantes-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('comprobantes-condo-lista').innerHTML = '<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('comprobantes-condo-lista').innerHTML = '<div class="empty">Sin comprobantes registrados</div>'; return; }
 
   const total = data.reduce((s, r) => s + parseFloat(r.monto || 0), 0);
 
   $('comprobantes-condo-lista').innerHTML = `
-    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(total)}</strong> — ${data.length} comprobantes</p>
+    <p style="margin-bottom:1rem;font-size:.9rem">Total pagado: <strong class="money">${fmtMoney(total)}</strong> — ${axiEscapeHTML(data.length)} comprobantes</p>
     <table>
       <thead><tr><th>Fecha Pago</th><th>Gasto</th><th>Proveedor</th><th>Categoría</th><th>Método</th><th>Banco</th><th>Referencia</th><th class="text-right">Monto</th><th class="text-center">Comprobante</th></tr></thead>
       <tbody>${data.map(r => {
         const g = r.gastos || {};
         const prov = g.proveedores || {};
         return `<tr>
-          <td>${r.fecha_pago}</td>
-          <td style="font-family:monospace;font-size:.8rem">${g.codigo || '—'}</td>
-          <td>${prov.nombre || '—'}</td>
-          <td>${g.categoria || '—'}</td>
-          <td>${r.metodo_pago || '—'}</td>
-          <td>${r.banco || '—'}</td>
-          <td style="font-family:monospace;font-size:.8rem">${r.referencia || '—'}</td>
-          <td class="text-right money">${fmt(r.monto)}</td>
+          <td>${axiEscapeHTML(r.fecha_pago)}</td>
+          <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(g.codigo || '—')}</td>
+          <td>${axiEscapeHTML(prov.nombre || '—')}</td>
+          <td>${axiEscapeHTML(g.categoria || '—')}</td>
+          <td>${axiEscapeHTML(r.metodo_pago || '—')}</td>
+          <td>${axiEscapeHTML(r.banco || '—')}</td>
+          <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.referencia || '—')}</td>
+          <td class="text-right money">${axiEscapeHTML(fmt(r.monto))}</td>
           <td class="text-center">${btnComprobantesRow(r)}</td>
         </tr>`;
       }).join('')}
@@ -6128,15 +6142,15 @@ async function guardarCapCondominio(e) {
 async function cargarCapUnidades() {
   const {data, error} = await sb.from('unidades')
     .select('*, propietarios(nombre)').eq('condominio_id', sesion.condominio_id).order('codigo');
-  if (error) { $('cap-unidades-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cap-unidades-lista').innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cap-unidades-lista').innerHTML='<div class="empty">Sin unidades registradas</div>'; return; }
   $('cap-unidades-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Torre</th><th>Nivel</th><th>Tipo</th><th>Propietario</th><th class="text-right">Cuota</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
-      <td><strong>${r.codigo||''}</strong></td><td>${r.torre||'—'}</td><td>${r.nivel||'—'}</td><td>${r.tipo||'—'}</td>
-      <td>${r.propietarios?.nombre||'<span style="color:var(--ax-muted)">Sin asignar</span>'}</td>
-      <td class="text-right money">${fmt(r.cuota_mantenimiento)}</td>
-      <td class="text-center"><span class="badge ${r.estado==='Ocupado'?'badge-success':r.estado==='Vacío'?'badge-warning':'badge-info'}">${r.estado||'—'}</span></td>
+      <td><strong>${axiEscapeHTML(r.codigo||'')}</strong></td><td>${axiEscapeHTML(r.torre||'—')}</td><td>${axiEscapeHTML(r.nivel||'—')}</td><td>${axiEscapeHTML(r.tipo||'—')}</td>
+      <td>${r.propietarios?.nombre ? axiEscapeHTML(r.propietarios.nombre) : '<span style="color:var(--ax-muted)">Sin asignar</span>'}</td>
+      <td class="text-right money">${axiEscapeHTML(fmt(r.cuota_mantenimiento))}</td>
+      <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado==='Ocupado'?'badge-success':r.estado==='Vacío'?'badge-warning':'badge-info')}">${axiEscapeHTML(r.estado||'—')}</span></td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapUnidad(${r.id})">✏️</button></td>
     </tr>`).join('')}</tbody></table>`;
 }
@@ -6147,7 +6161,7 @@ async function abrirModalCapUnidad(id) {
   // Cargar propietarios para el selector
   const sel = $('cap-unidad-propietario');
   const {data: props} = await sb.from('propietarios').select('id,nombre,codigo').eq('condominio_id', sesion.condominio_id).order('nombre');
-  sel.innerHTML = '<option value="">— Sin propietario —</option>' + (props||[]).map(p => `<option value="${p.id}">${p.codigo?p.codigo+' — ':''}${p.nombre}</option>`).join('');
+  sel.innerHTML = '<option value="">— Sin propietario —</option>' + (props||[]).map(p => `<option value="${axiEscapeHTML(p.id)}">${axiEscapeHTML(p.codigo?p.codigo+' — ':'')}${axiEscapeHTML(p.nombre)}</option>`).join('');
 
   if (id) {
     $('cap-unidad-titulo').textContent = 'Editar Unidad';
@@ -6230,16 +6244,16 @@ async function aprobarRegistro(id,boton) {
 // ==================== CAPTURA: PROPIETARIOS ====================
 async function cargarCapPropietarios() {
   const {data, error} = await sb.from('propietarios').select('*').eq('condominio_id', sesion.condominio_id).order('nombre');
-  if (error) { $('cap-propietarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cap-propietarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cap-propietarios-lista').innerHTML='<div class="empty">Sin propietarios registrados</div>'; return; }
   const {data: accesosProp}=await sb.from('accesos').select('propietario_id').eq('activo',true);
   const conAcceso=new Set((accesosProp||[]).map(x=>x.propietario_id));
   $('cap-propietarios-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Email</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
-      <td>${r.documento||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
-      <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo||'—')}</td><td><strong>${axiEscapeHTML(r.nombre)}</strong></td>
+      <td>${axiEscapeHTML(r.documento||'—')}</td><td>${axiEscapeHTML(r.telefono||'—')}</td><td>${axiEscapeHTML(r.email||'—')}</td>
+      <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado==='Activo'?'badge-success':'badge-danger')}">${axiEscapeHTML(r.estado)}</span></td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapPropietario(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!conAcceso.has(r.id)&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Propietario',${r.id},this)">Invitar</button>`:''}</td>
     </tr>`).join('')}</tbody></table>`;
 }
@@ -6298,16 +6312,16 @@ async function guardarCapPropietario(e) {
 async function cargarCapInquilinos() {
   const {data, error} = await sb.from('inquilinos')
     .select('*, unidades(codigo), propietarios(nombre)').eq('condominio_id', sesion.condominio_id).order('nombre');
-  if (error) { $('cap-inquilinos-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cap-inquilinos-lista').innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cap-inquilinos-lista').innerHTML='<div class="empty">Sin inquilinos registrados</div>'; return; }
   const {data: accesosInq}=await sb.from('accesos').select('inquilino_id').eq('activo',true);
   const conAcceso=new Set((accesosInq||[]).map(x=>x.inquilino_id));
   $('cap-inquilinos-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Nombre</th><th>Unidad</th><th>Propietario</th><th>Teléfono</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
-      <td>${r.unidades?.codigo||'—'}</td><td>${r.propietarios?.nombre||'—'}</td><td>${r.telefono||'—'}</td>
-      <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo||'—')}</td><td><strong>${axiEscapeHTML(r.nombre)}</strong></td>
+      <td>${axiEscapeHTML(r.unidades?.codigo||'—')}</td><td>${axiEscapeHTML(r.propietarios?.nombre||'—')}</td><td>${axiEscapeHTML(r.telefono||'—')}</td>
+      <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado==='Activo'?'badge-success':'badge-danger')}">${axiEscapeHTML(r.estado)}</span></td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapInquilino(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!conAcceso.has(r.id)&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Inquilino',${r.id},this)">Invitar</button>`:''}</td>
     </tr>`).join('')}</tbody></table>`;
 }
@@ -6317,7 +6331,7 @@ async function abrirModalCapInquilino(id) {
   // Cargar unidades
   const sel = $('cap-inq-unidad');
   const {data: unis} = await sb.from('unidades').select('id,codigo,propietario_id').eq('condominio_id', sesion.condominio_id).order('codigo');
-  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (unis||[]).map(u => `<option value="${u.id}" data-prop="${u.propietario_id||''}">${u.codigo}</option>`).join('');
+  sel.innerHTML = '<option value="">— Seleccione unidad —</option>' + (unis||[]).map(u => `<option value="${axiEscapeHTML(u.id)}" data-prop="${axiEscapeHTML(u.propietario_id||'')}">${axiEscapeHTML(u.codigo)}</option>`).join('');
 
   if (id) {
     $('cap-inq-titulo').textContent = 'Editar Inquilino';
@@ -6369,14 +6383,14 @@ async function guardarCapInquilino(e) {
 // ==================== CAPTURA: PROVEEDORES ====================
 async function cargarCapProveedores() {
   const {data, error} = await sb.from('proveedores').select('*').order('nombre');
-  if (error) { $('cap-proveedores-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cap-proveedores-lista').innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cap-proveedores-lista').innerHTML='<div class="empty">Sin proveedores registrados</div>'; return; }
   $('cap-proveedores-lista').innerHTML = `<table>
     <thead><tr><th>Código</th><th>Nombre</th><th>RNC</th><th>Servicio</th><th>Teléfono</th><th>Email</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
-      <td style="font-family:monospace;font-size:.8rem">${r.codigo||'—'}</td><td><strong>${r.nombre}</strong></td>
-      <td>${r.rnc_cedula||'—'}</td><td>${r.servicio||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
-      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Activo':'Inactivo'}</span>${badgeAprob(r.estado_aprobacion)}</td>
+      <td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.codigo||'—')}</td><td><strong>${axiEscapeHTML(r.nombre)}</strong></td>
+      <td>${axiEscapeHTML(r.rnc_cedula||'—')}</td><td>${axiEscapeHTML(r.servicio||'—')}</td><td>${axiEscapeHTML(r.telefono||'—')}</td><td>${axiEscapeHTML(r.email||'—')}</td>
+      <td class="text-center"><span class="badge ${axiEscapeHTML(r.activo?'badge-success':'badge-danger')}">${axiEscapeHTML(r.activo?'Activo':'Inactivo')}</span>${badgeAprob(r.estado_aprobacion)}</td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapProveedor(${r.id})">✏️</button></td>
     </tr>`).join('')}</tbody></table>`;
 }
@@ -6470,16 +6484,16 @@ async function cargarCapUsuarios() {
   if (sesion.rol==='CEO') { $('card-registro-aprobaciones').style.display=''; await cargarRegistroAprobaciones(); }
   else $('card-registro-aprobaciones').style.display='none';
   const {data, error} = await sb.from('usuarios').select('*').order('nombre_completo');
-  if (error) { $('cap-usuarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+  if (error) { $('cap-usuarios-lista').innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
   if (!data?.length) { $('cap-usuarios-lista').innerHTML='<div class="empty">Sin usuarios registrados</div>'; return; }
   $('cap-usuarios-lista').innerHTML = `<table>
     <thead><tr><th>Nombre</th><th>Login</th><th>Rol</th><th>Email</th><th>WhatsApp</th><th class="text-center">Activo</th><th class="text-center">Último Login</th><th class="text-center">Acciones</th></tr></thead>
     <tbody>${data.map(r => `<tr>
-      <td><strong>${r.nombre_completo||'—'}</strong></td><td style="font-family:monospace;font-size:.8rem">${r.usuario_login||'—'}</td>
-      <td><span class="badge badge-info">${r.rol||'—'}</span></td>
-      <td>${r.email||'—'}</td><td>${r.whatsapp||'—'}</td>
-      <td class="text-center"><span class="badge ${r.activo?'badge-success':'badge-danger'}">${r.activo?'Sí':'No'}</span></td>
-      <td class="text-center" style="font-size:.8rem">${r.ultimo_login||'Nunca'}</td>
+      <td><strong>${axiEscapeHTML(r.nombre_completo||'—')}</strong></td><td style="font-family:monospace;font-size:.8rem">${axiEscapeHTML(r.usuario_login||'—')}</td>
+      <td><span class="badge badge-info">${axiEscapeHTML(r.rol||'—')}</span></td>
+      <td>${axiEscapeHTML(r.email||'—')}</td><td>${axiEscapeHTML(r.whatsapp||'—')}</td>
+      <td class="text-center"><span class="badge ${axiEscapeHTML(r.activo?'badge-success':'badge-danger')}">${axiEscapeHTML(r.activo?'Sí':'No')}</span></td>
+      <td class="text-center" style="font-size:.8rem">${axiEscapeHTML(r.ultimo_login||'Nunca')}</td>
       <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapUsuario(${r.id})">✏️</button></td>
     </tr>`).join('')}</tbody></table>
     <p style="margin-top:1rem;font-size:.8rem;color:var(--ax-muted)">⚠️ Crear usuarios con acceso al sistema requiere también crear credenciales en Supabase Auth y registro en la tabla accesos.</p>`;
@@ -6531,18 +6545,18 @@ async function cargarCapAdministradores() {
   const el = $('cap-admin-lista');
   try {
     const {data, error} = await sb.rpc('fn_admin_listar', {p_condominio_id: sesion.condominio_id});
-    if (error) { el.innerHTML='<div class="alert alert-error" style="display:block">'+error.message+'</div>'; return; }
+    if (error) { el.innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(error.message) +'</div>'; return; }
     if (!data?.length) { el.innerHTML='<div class="empty">Sin administradores registrados</div>'; return; }
     el.innerHTML = `<table>
       <thead><tr><th>Código</th><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Unidades</th><th>Estado</th><th class="text-center">Acceso</th><th></th></tr></thead>
       <tbody>${data.map(r => `<tr>
-        <td>${r.codigo||'—'}</td><td>${r.nombre}</td><td>${r.documento||'—'}</td><td>${r.telefono||'—'}</td><td>${r.email||'—'}</td>
-        <td>${(r.unidades||[]).map(u => '<span class="badge badge-info" style="margin:.1rem">'+u.codigo+'</span>').join('') || '—'}</td>
-        <td class="text-center"><span class="badge ${r.estado==='Activo'?'badge-success':'badge-danger'}">${r.estado}</span></td>
+        <td>${axiEscapeHTML(r.codigo||'—')}</td><td>${axiEscapeHTML(r.nombre)}</td><td>${axiEscapeHTML(r.documento||'—')}</td><td>${axiEscapeHTML(r.telefono||'—')}</td><td>${axiEscapeHTML(r.email||'—')}</td>
+        <td>${(r.unidades||[]).map(u => '<span class="badge badge-info" style="margin:.1rem">'+axiEscapeHTML(u.codigo)+'</span>').join('') || '—'}</td>
+        <td class="text-center"><span class="badge ${axiEscapeHTML(r.estado==='Activo'?'badge-success':'badge-danger')}">${axiEscapeHTML(r.estado)}</span></td>
         <td class="text-center">${r.con_acceso ? '<span class="badge badge-success">Sí</span>' : '<span class="badge" style="background:#ccc">No</span>'}</td>
         <td class="text-center"><button class="btn btn-sm btn-outline" onclick="abrirModalCapAdmin(${r.id})">✏️</button> ${sesion.rol==='CEO'&&r.estado==='Activo'&&!r.con_acceso&&r.email?`<button class="btn btn-sm btn-success" onclick="enviarInvitacionRegistro('Administrador',${r.id},this)">Invitar</button>`:''}</td>
       </tr>`).join('')}</tbody></table>`;
-  } catch(e) { el.innerHTML='<div class="alert alert-error" style="display:block">'+e.message+'</div>'; }
+  } catch(e) { el.innerHTML='<div class="alert alert-error" style="display:block">'+ axiEscapeHTML(e.message) +'</div>'; }
 }
 
 async function abrirModalCapAdmin(id) {
@@ -6580,7 +6594,7 @@ function renderChipsAdmin(asignadas, adminId) {
   cont.innerHTML = _adminUnidades.map(u => {
     const activa = asignadas.has(u.id);
     return `<button type="button" class="badge ${activa?'badge-success':'badge-outline'}" style="cursor:pointer;padding:.3rem .6rem;font-size:.8rem;border:1px solid ${activa?'var(--ax-success)':'#ccc'}"
-      onclick="toggleUnidadAdmin(${adminId},${u.id},${!activa})">${u.codigo} ${activa?'✓':''}</button>`;
+      onclick="toggleUnidadAdmin(${adminId},${u.id},${!activa})">${axiEscapeHTML(u.codigo)} ${activa?'✓':''}</button>`;
   }).join('');
 }
 
