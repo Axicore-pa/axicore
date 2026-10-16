@@ -409,3 +409,6 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Estado: preparado y probado localmente; publicación y comprobación de Pages se anotarán al finalizar. Pruebas con credenciales reales y MFA real no ejecutadas en esta tarea.
 - Reversión, sólo con autorización separada: restaurar index.html previo y retirar referencias a assets/login-carrusel; no hay datos que revertir.
 - Para Claude: revisar esta implementación visual y conservar el logo original, la aprobación de las escenas residenciales y la lógica de acceso existente.
+
+
+- Cierre verificado AXI-CGPT-013: [implementación 0f6c596](https://github.com/Axicore-pa/axicore/commit/0f6c596a9c3a2b1bed3e9338b7f827dd6d5b9d6b); [GitHub Pages completado con success](https://github.com/Axicore-pa/axicore/actions/runs/38844150716). Sitio público abierto en Chrome limpio sin iniciar sesión: cuatro escenas y logo cargados, controles operativos, siete assets públicos idénticos a los preparados y cero errores JavaScript. Revisión de escritorio y móvil realizada localmente; pruebas de sesión con servicios simulados. Para ver el cambio en una página antigua, Ctrl+F5.
