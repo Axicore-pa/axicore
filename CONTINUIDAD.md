@@ -2,7 +2,7 @@
 Última actualización documental: 16/10/2026.
 Responsable del proyecto: Misael.
 Colaboradores: Claude y ChatGPT/Codex.
-Estado: SQL 25–27 contrastados con Supabase; registro por invitación y aprobación administrativa implementado en Supabase (AXI-CGPT-014); pruebas con usuarios reales pendientes.
+Estado: dominio y envíos de invitación verificados; cargas y circulares publicados; remitente administrativo, firma APA y código manual de circular aplicados y verificados (AXI-CGPT-018).
 
 ## Leer primero al retomar
 Este archivo es la referencia compartida para retomar el proyecto desde cualquiera de las dos IA. No conecta ni sincroniza sus memorias. Cada asistente necesita acceso al repositorio y debe leer la versión actual antes de trabajar.
@@ -427,3 +427,57 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Validación: SQL ejecutado en transacción y revertido antes de aplicar; migraciones verificadas en Supabase; permisos comprobaron anon=false y service_role-only para RPCs de invitación/perfil; RLS habilitado en la tabla privada; el HTML/JS pasó node --check; Edge Function desplegada con compilación aceptada. El asesor de seguridad muestra las advertencias preexistentes del proyecto y las funciones SECDEF de registro que tienen controles de auth.uid/CEO+AAL2 revisados.
 - Límites: no se probó el envío real de invitación ni el correo de aprobación para evitar crear cuentas o enviar mensajes reales. La entrega del mensaje final depende del procesador de correos existente.
 - Siguiente paso: Misael puede invitar desde el registro de la persona y probar con una cuenta controlada; luego verificar que el CEO vea la solicitud, apruebe y el usuario reciba el correo antes de acceder.
+
+
+### AXI-CGPT-015 — 16/10/2026 — Cierre de invitaciones y dominio propio
+- Autorización de Misael: enlazar axicorepard.com, comprado en GoDaddy, para los envíos de AXICORE. Dominio verificado en Resend después de registrar DKIM y CNAME de envío. El sitio continúa en https://axicore-pa.github.io/axicore/.
+- Supabase Auth usa SMTP de Resend configurado directamente por Misael. Remitente de invitaciones invitaciones@axicorepard.com. Error SMTP 535 resuelto al corregir la clave. No registrar claves aquí.
+- Evidencia nueva respecto a AXI-CGPT-014: una invitación real enviada correctamente desde el portal a una propietaria; mensaje de éxito observado por Misael. No se verificó en esta tarea completar registro, aprobación CEO ni entrega del correo final.
+- Otro perfil consultado ya tenía cuenta Auth confirmada pero sin acceso activo del flujo nuevo; no se borró ni se volvió a invitar. No divulgar datos personales de esos perfiles en esta bitácora.
+
+### AXI-CGPT-016 — 16/10/2026 — Cargas exclusivas de CEO y Asistente
+- Autorización expresa: restringir las cargas accesibles por perfil a CEO y Asistente, tipos PDF/PNG/JPG/JPEG. Residentes Inquilino/Propietario/Administrador conservan consulta.
+- Publicado: PR https://github.com/Axicore-pa/axicore/pull/1 ; commit 8567ec81e0e131eb14921220b89fc1e7cc0cebfa ; Pages exitoso https://github.com/Axicore-pa/axicore/actions/runs/38856438677 .
+- Supabase: migración 20261016053142_axicore_restringir_cargas_residentes_y_extensiones aplicada. Archivo y reversión conservadora en supabase/migrations y sql/rollback_axicore_restringir_cargas_residentes_y_extensiones.sql.
+- Se retiró carga nueva de comprobantes del portal residente. El flujo actual exige adjunto, por lo que residentes no pueden enviar nuevos comprobantes. Historial conservado.
+- Evidencia de mantenimiento permanece CEO-only por regla previa; no se amplió a Asistente. No se modificaron tablas de negocio ni sesión única.
+- Validación: pruebas simuladas de roles, permisos, aislamiento, extensiones y reversión; políticas de Storage verificadas; sin cargas con cuentas reales.
+
+### AXI-CGPT-017 — 16/10/2026 — Informaciones y circulares con acuses
+- Autorización: menú Informaciones y circulares. CEO/Asistente publican para condominio seleccionado; residentes solo consultan. PDF/PNG/JPG hasta 10 MB en bucket privado circulares.
+- Publicado: PR https://github.com/Axicore-pa/axicore/pull/2 ; commit ce255ea0a04b617a8b4d3d623c783b41c28dac28 ; Pages exitoso https://github.com/Axicore-pa/axicore/actions/runs/38863973522 .
+- Migraciones aplicadas por MCP: 20261016065357_axicore_circulares_confirmacion y 20261016065508_axicore_circulares_programacion. Archivos fuente CLI: 20261016063556 y 20261016064911 respectivamente.
+- Tablas privadas axi_circulares, axi_circular_lecturas, axi_circular_correos con RLS y sin acceso directo de anon/authenticated. Funciones validan cuenta, sesión/tab, rol y condominio; staff y Administrador requieren MFA donde corresponde.
+- Formulario Subir y publicar / Enviar. Enviar publica y pide confirmar el lote. Avisos separados TO a email válido de residentes activos (inquilinos, propietarios, administradores) del condominio, deduplicados; CC axispard@gmail.com. Sin adjuntos; enlace al portal. Aceptación del proveedor no implica llegada a bandeja ni lectura.
+- Login: Nueva Circular Disponible con Abrir circular / Leída / No leída. No leída reaparece al próximo inicio. Leída confirma directamente; Abrir confirma tras render correcto de imagen/primera página PDF. No exige recorrer todas las páginas ni acredita comprensión/aprobación.
+- Acuse por perfil/circular idempotente, con comprobante al CEO y datos del perfil/unidad/condominio/fecha UTC. Texto visible: Se ha notificado a la Asamblea de que está en conocimiento de esta información. El correo se dirige al CEO; no implica correo colectivo a Asamblea.
+- Visor canvas con marca personal y X/Cerrar para volver al inicio de unidad; sin controles de descarga/impresión. Un usuario autorizado puede copiar datos o capturas; no existe garantía absoluta de impedir descarga.
+- Edge Function axi-circulares-correo v1 con JWT activo, secreto RESEND_API_KEY agregado directamente por Misael. Cron axicore-circulares-correo cada minuto, solo cola propia; no modifica axi-correo-cola/Gmail. Lotes de 5, idempotencia y reintentos acotados.
+- Pruebas al publicar: 35 verificaciones SQL simuladas, navegador con imagen y PDF real de dos páginas, cierre/acuses/errores/móvil, worker Resend simulado. Producción con cola vacía respondió HTTP 200 (0 envíos). No se crearon circulares ni envíos de prueba reales.
+- Estado visto al retomar el ajuste de correo: seis circulares reales ya publicadas por uso posterior; la cola estaba vacía. No confundir con datos de prueba de Codex.
+
+### AXI-CGPT-018 — 16/10/2026 — Checkpoint de reanudación: correo de circulares
+- Autorizado por Misael después de revisar la vista previa: remitente AXICORE <Admin@axicorepard.com>; firma APA | AxiCore Property Administration / Tel. 809-282-7776 / axispard@gmail.com; asunto código - título, ejemplo CIR-DH2-006-2026 - Importancia de la Asamblea.
+- Misael eligió introducir manualmente el código del documento al subirlo. Nuevo campo separado, obligatorio, mayúsculas y código único; no generación automática.
+- Estado al guardar este checkpoint: cambios locales y pruebas preparados; publicación todavía pendiente. No asumir que este bloque acredita despliegue.
+- Compatibilidad: conservar títulos y acuses anteriores. Recuperar únicamente códigos CIR inequívocos ya incluidos en títulos; asunto no repite prefijo. Títulos históricos sin código separado conservan su texto.
+- Pruebas locales actuales: 44 verificaciones SQL aprobadas; navegador aprobado (carga, aviso, apertura, acuse, PDF, móvil); worker con remitente Admin aprobado con Resend simulado. No envíos reales durante las pruebas.
+- Incidencia: ejecución local de la ayuda CLI Supabase bloqueada por escritura fuera del proyecto; escalación no ejecutada porque revisión automática agotó su límite de uso. No se eludió. Cambios y despliegues se continuarán por herramientas conectadas dentro del alcance autorizado.
+- Siguiente paso: publicar migración/worker/formulario, verificar estado efectivo y actualizar este bloque con resultado, versiones y enlaces. Invitaciones Auth conservan su remitente propio; el cambio solicitado corresponde a circulares.
+
+
+#### Cierre verificado de AXI-CGPT-018 — 16/10/2026
+- Estado final: aplicado y publicado. Autorización explícita: Misael indicó “Bien, aplícalo” y pidió retomar, registrar el checkpoint y actualizar este archivo al terminar.
+- PR de implementación integrado: https://github.com/Axicore-pa/axicore/pull/3 . Commit a5bc21040acd93c94184256e65e1c17c3bfe90e6.
+- GitHub Pages completó con success: https://github.com/Axicore-pa/axicore/actions/runs/38868899873 . Portal público abierto después en Chrome limpio: assets/circulares.js?v=20261016-2 coincide con el código probado, módulo cargado, sin sesión y cero errores JavaScript.
+- Supabase: migración 20261016074139_axicore_circulares_codigo_firma aplicada. SQL exacto guardado en supabase/migrations/20261016074139_axicore_circulares_codigo_firma.sql y sql/circulares_codigo_correo.sql. La migración recibió su identificador del servicio conectado; no se inventó una fecha local.
+- Edge Function axi-circulares-correo versión 2 ACTIVE con verify_jwt=true. Lectura posterior confirmó AXICORE <Admin@axicorepard.com> como remitente. No requiere compartir ni modificar RESEND_API_KEY.
+- Verificación efectiva: seis circulares conservadas; dos códigos CIR recuperados de títulos existentes; cola vacía; índice de código único presente; código manual obligatorio para nuevas cargas; anon sin ejecutar preparar y authenticated sin INSERT directo. Cron de circulares activo.
+- Asunto del ejemplo confirmado en producción: CIR-DH2-006-2026 - Importancia de la Asamblea, tanto con título nuevo sin prefijo como con el título previo que ya lo contiene. Firma y teléfono presentes en la función de encolado; el comprobante también identifica código y firma.
+- Pruebas locales: 44 comprobaciones SQL, navegador con carga de código manual normalizado/imagen/PDF real/móvil y worker con Resend simulado aprobados. Se actualizó la firma de preparar en rollback_circulares.sql. testing/circulares-publicado.cjs documenta la comprobación pública.
+- Asesor de seguridad: mismos tipos y conteos de avisos antes/después; no surgieron avisos nuevos por esta actualización. Se mantienen controles de sesión, MFA, rol y condominio previos.
+- Límites y pendientes: no se publicó una circular de prueba ni se envió un email real de prueba; la llegada a bandeja del primer aviso con el nuevo remitente debe observarse al usar Enviar. Admin@axicorepard.com está configurado como remitente de circulares; no se creó un buzón de recepción. Las cuatro circulares históricas sin código CIR separado conservan su título completo original; no se les asignaron códigos inventados.
+- Incidencia de verificación: la lectura pública inicial no resolvió DNS dentro del entorno restringido; la misma comprobación de solo lectura fue autorizada y pasó fuera de esa restricción. El bloqueo anterior de la ayuda CLI no impidió aplicar y verificar los cambios mediante el conector.
+- Para Claude: leer este cierre y contrastar estado antes de trabajar. No repetir migración, reenvíos, invitaciones ni pruebas con residentes por considerar pendientes los estados históricos anteriores. El trabajo autorizado de este ajuste está completo; una prueba real de correo o cambios adicionales requieren el alcance que Misael indique.
+
+
