@@ -1,5 +1,11 @@
 # Circulares y confirmación de conocimiento
 
+Actualización de correo autorizada el 16/10/2026: remitente AXICORE <Admin@axicorepard.com>, firma APA | AxiCore Property Administration / Tel. 809-282-7776 / axispard@gmail.com en avisos y comprobantes. Las invitaciones Auth siguen su configuración SMTP propia.
+
+Código de documento manual, obligatorio para nuevas cargas, normalizado a mayúsculas y único. Campo separado del título, de 3 a 80 caracteres alfanuméricos y guiones, sin saltos de línea. Asunto: código - título. La lista, aviso, visor, envío y comprobante identifican la circular con ese encabezado. La confirmación de envío muestra remitente y asunto antes de encolar.
+
+SQL de actualización: sql/circulares_codigo_correo.sql (también registrado como migración en Supabase al desplegar). Conserva títulos históricos y acuses; solo recupera prefijos CIR inequívocos existentes sin duplicarlos en el asunto. Los títulos previos sin código separado se conservan completos. No se reenvían correos ni se crean circulares durante el despliegue.
+
 Autorizado: CEO/Asistente cargan PDF, PNG o JPG de hasta 10 MB para el condominio seleccionado. Los perfiles de residentes con acceso activo a ese condominio consultan sus publicaciones. Una dirección válida por perfil activo (Inquilino/Propietario/Administrador), deduplicada y normalizada, recibe un aviso con CC a axispard@gmail.com cuando staff pulsa Enviar. No se envían adjuntos ni se modifican los correos de otros módulos.
 
 Al iniciar sesión se ofrece Leída, No leída y Abrir circular. Leída es una declaración explícita de conocimiento; Abrir circular genera la misma declaración tras renderizar correctamente la primera página o imagen. No leída no cambia el estado persistente. No se exige llegar a la última página. Un acuse por acceso/perfil y circular, transaccional con su correo al CEO; no acredita comprensión, asistencia ni aprobación. El texto notifica a la Asamblea dentro del registro de AXICORE; la interfaz distingue el correo en cola de su aceptación por el proveedor.

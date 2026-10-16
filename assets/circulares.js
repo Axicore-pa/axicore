@@ -4,6 +4,7 @@
  const $=id=>document.getElementById(id);
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const date=v=>v?new Date(v).toLocaleString('es-DO'):'—';
+ const heading=c=>c.codigo&&!c.titulo.toUpperCase().startsWith(c.codigo+' - ')?c.codigo+' - '+c.titulo:c.titulo;
  let ctx=null,generation=0,listSeq=0,rows=[],staff=false,recipients=0,dismissed=new Set(),scope='';
  let pdfModule=null,viewerCleanup=null;
  const dialogs=new Set();
@@ -33,7 +34,7 @@
   if(!rows.length){root.append(el('div','Todavía no hay circulares disponibles.','axi-circ-card'));return;}
   for(const c of rows){
    const card=el('article',undefined,'axi-circ-card'),state=!c.publicado_at?'Borrador':c.leido_at?'Leída':staff?'Publicada':'No leída';
-   card.append(el('span',state,'axi-circ-state '+(c.leido_at?'read':!staff?'pending':'')),el('h3',c.titulo),el('p',c.descripcion));
+   card.append(el('span',state,'axi-circ-state '+(c.leido_at?'read':!staff?'pending':'')),el('h3',heading(c)),el('p',c.descripcion));
    card.append(el('div',(c.publicado_at?'Publicada: '+date(c.publicado_at):'Creada: '+date(c.creado_at))+(c.leido_at?' · Lectura: '+date(c.leido_at):''),'axi-circ-meta'));
    const actions=el('div',undefined,'axi-circ-actions');
    actions.append(button('Abrir circular',()=>open(c)));
@@ -53,7 +54,7 @@
   if(!ctx||staff||[...dialogs].some(d=>d.open))return;
   const c=rows.find(r=>r.publicado_at&&!r.leido_at&&!dismissed.has(r.id));if(!c)return;
   const d=dialog('Nueva Circular Disponible','axi-circ-notice');
-  d.append(el('h3',c.titulo),el('p',ctx.nombreCondominio),el('p','Al elegir Leída o Abrir circular se registrará tu acuse de conocimiento y se enviará un comprobante al CEO. No leída mantiene el aviso para tu próximo inicio de sesión.'));
+  d.append(el('h3',heading(c)),el('p',ctx.nombreCondominio),el('p','Al elegir Leída o Abrir circular se registrará tu acuse de conocimiento y se enviará un comprobante al CEO. No leída mantiene el aviso para tu próximo inicio de sesión.'));
   const actions=el('div',undefined,'axi-circ-actions');
   actions.append(button('Abrir circular',()=>{d.close();open(c);},'btn btn-primary'),button('Leída',()=>{d.close();readDirect(c);}),button('No leída',()=>{dismissed.add(c.id);d.close();notice();}));d.append(actions);
   d.addEventListener('cancel',()=>dismissed.add(c.id));d.querySelector('.axi-circ-close').onclick=()=>{dismissed.add(c.id);d.close();notice();};d.showModal();
@@ -72,7 +73,7 @@
  }
  async function open(c){
   if(!ctx)return;const g=generation,session={...ctx.sesion},isStaff=staff;
-  const d=dialog(c.titulo,'axi-circ-viewer');const title=d.querySelector('h2');const bar=el('div',undefined,'axi-circ-viewer-bar');bar.append(title);
+  const d=dialog(heading(c),'axi-circ-viewer');const title=d.querySelector('h2');const bar=el('div',undefined,'axi-circ-viewer-bar');bar.append(title);
   const x=d.querySelector('.axi-circ-close');bar.append(x);d.prepend(bar);
   const msg=el('p','Cargando circular…'),wrap=el('div',undefined,'axi-circ-canvas-wrap'),canvas=el('canvas');wrap.append(canvas);wrap.oncontextmenu=e=>e.preventDefault();
   const nav=el('div',undefined,'axi-circ-page-nav'),counter=el('span'),prev=button('Anterior',()=>turn(-1)),next=button('Siguiente',()=>turn(1));nav.append(prev,counter,next);nav.hidden=true;
@@ -102,10 +103,11 @@
  }
  function create(){
   if(!staff)return;const g=generation,condo=ctx.sesion.condominio_id;
-  const d=dialog('Nueva circular'),form=el('form'),t=el('input'),desc=el('textarea'),file=el('input'),msg=el('p');
+  const d=dialog('Nueva circular'),form=el('form'),code=el('input'),t=el('input'),desc=el('textarea'),file=el('input'),msg=el('p');
+  code.id='axi-circ-code';code.required=true;code.maxLength=80;code.placeholder='CIR-DH2-006-2026';code.pattern='[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*';code.title='Código del documento: letras, números y guiones, sin espacios.';code.onchange=()=>{code.value=code.value.trim().toUpperCase();};
   t.id='axi-circ-title';t.required=true;t.maxLength=180;desc.id='axi-circ-description';desc.maxLength=3000;file.id='axi-circ-file';file.type='file';file.required=true;file.accept='.pdf,.png,.jpg,.jpeg';
   const field=(text,input)=>{const label=el('label',text);label.htmlFor=input.id;form.append(label,input);};
-  form.append(el('p','Condominio: '+ctx.nombreCondominio));field('Título',t);field('Descripción',desc);field('Circular (PDF, PNG o JPG · máximo 10 MB)',file);
+  form.append(el('p','Condominio: '+ctx.nombreCondominio));field('Código de la circular',code);field('Título (sin repetir el código)',t);field('Descripción',desc);field('Circular (PDF, PNG o JPG · máximo 10 MB)',file);
   const save=button('Subir y publicar',null,'btn btn-outline');save.type='submit';const send=button('Enviar',null,'btn btn-primary');send.type='submit';const actions=el('div',undefined,'axi-circ-actions');actions.append(save,send,button('Cancelar',()=>d.close()));form.append(el('p','Enviar sube y publica la circular y luego permite confirmar los destinatarios del aviso.'),msg,actions);d.append(form);d.showModal();
   let draft=null,uploaded=false;
   form.onsubmit=async e=>{e.preventDefault();if(!active(g))return;const wantSend=e.submitter===send;save.disabled=send.disabled=true;
@@ -114,8 +116,8 @@
      const ext=f.name.split('.').pop().toLowerCase(),mime={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg'}[ext];if(!mime)throw Error('Solo PDF, PNG o JPG.');
      const bytes=new Uint8Array(await f.slice(0,8).arrayBuffer());const magic=mime==='application/pdf'?String.fromCharCode(...bytes.slice(0,5))==='%PDF-':mime==='image/png'?bytes.slice(0,8).join(',')==='137,80,78,71,13,10,26,10':bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
      if(!magic)throw Error('El contenido no corresponde al tipo de archivo.');
-     status(msg,'Subiendo circular…','axi-circ-meta');draft=await rpc('axi_circular_preparar',{p_condominio_id:condo,p_titulo:t.value.trim(),p_descripcion:desc.value.trim(),p_mime:mime,p_tamano:f.size});
-     draft.file=f;draft.mime=mime;t.disabled=desc.disabled=file.disabled=true;
+     status(msg,'Subiendo circular…','axi-circ-meta');draft=await rpc('axi_circular_preparar',{p_condominio_id:condo,p_titulo:t.value.trim(),p_descripcion:desc.value.trim(),p_mime:mime,p_tamano:f.size,p_codigo:code.value.trim().toUpperCase()});
+     draft.file=f;draft.mime=mime;code.disabled=t.disabled=desc.disabled=file.disabled=true;
     }
     if(!active(g))return;
     if(!uploaded){const r=await ctx.sb.storage.from('circulares').upload(draft.archivo,draft.file,{contentType:draft.mime,upsert:false});if(r.error)throw Error(r.error.message);uploaded=true;}
@@ -127,14 +129,14 @@
  async function publish(c){const g=generation;try{await rpc('axi_circular_publicar',{p_id:c.id});if(active(g))await load();}catch(e){if(active(g))alert(e.message);}}
  function sendMail(c){
   const g=generation,d=dialog('Enviar circular'),msg=el('p',`Se enviará un correo individual a ${recipients} direcciones únicas de residentes activos de ${ctx.nombreCondominio}. Cada correo llevará CC a axispard@gmail.com.`);
-  d.append(msg,el('p','Los correos incluirán el enlace al portal, sin adjuntar el archivo. El estado Enviado confirma aceptación por el proveedor, no lectura ni entrega en bandeja.'));
+  d.append(el('p','De: AXICORE <Admin@axicorepard.com>'),el('p','Asunto: '+heading(c)),msg,el('p','Los correos incluirán el enlace al portal y la firma de APA, sin adjuntar el archivo. El estado Enviado confirma aceptación por el proveedor, no lectura ni entrega en bandeja.'));
   const send=button('Enviar',async()=>{send.disabled=true;try{const n=await rpc('axi_circular_enviar',{p_id:c.id});if(!active(g))return;status(msg,`${n} avisos en cola de envío.`,'axi-circ-success');send.remove();await load();}catch(e){if(active(g)){status(msg,e.message);send.disabled=false;}}},'btn btn-primary');
   const actions=el('div',undefined,'axi-circ-actions');actions.append(send,button('Cerrar',()=>d.close()));d.append(actions);d.showModal();
  }
  async function details(c){
   const g=generation,d=dialog('Lecturas y envíos'),body=el('div'),msg=el('p','Cargando…');d.append(msg,body);
   const refresh=button('Actualizar',draw);d.append(refresh,button('Cerrar',()=>d.close()));d.showModal();await draw();
-  async function draw(){refresh.disabled=true;try{const data=await rpc('axi_circular_comprobantes',{p_id:c.id});if(!active(g)||!d.open)return;body.replaceChildren();msg.textContent=c.titulo;
+  async function draw(){refresh.disabled=true;try{const data=await rpc('axi_circular_comprobantes',{p_id:c.id});if(!active(g)||!d.open)return;body.replaceChildren();msg.textContent=heading(c);
    function table(title,headers,records){body.append(el('h3',title));if(!records.length){body.append(el('p','Sin registros.'));return;}const wrap=el('div',undefined,'axi-circ-table-wrap'),t=el('table',undefined,'axi-circ-details'),head=el('tr');for(const h of headers)head.append(el('th',h));t.append(head);for(const record of records){const r=el('tr');for(const value of record)r.append(el('td',value||'—'));t.append(r);}wrap.append(t);body.append(wrap);}
    table('Confirmaciones de conocimiento',['Perfil','Correo','Unidades','Fecha','Comprobante'],data.lecturas.map(r=>[r.perfil.nombre+' · '+r.perfil.rol,r.perfil.correo,r.perfil.unidades,date(r.leido_at),r.comprobante]));
    table('Correos',['Destino','Tipo','Estado','Detalle'],data.correos.map(r=>[r.para,r.tipo,r.estado,r.error||date(r.enviado_at)]));
@@ -147,4 +149,3 @@
  };
  document.addEventListener('DOMContentLoaded',()=>{$('axi-circ-new').onclick=create;$('axi-circ-refresh').onclick=()=>load();});
 })();
-
