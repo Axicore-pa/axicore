@@ -2,7 +2,7 @@
 Última actualización documental: 16/10/2026.
 Responsable del proyecto: Misael.
 Colaboradores: Claude y ChatGPT/Codex.
-Estado: invitaciones y dominio verificados; cargas y circulares publicados; ajuste de remitente/firma/código de circular en preparación (AXI-CGPT-018).
+Estado: dominio y envíos de invitación verificados; cargas y circulares publicados; remitente administrativo, firma APA y código manual de circular aplicados y verificados (AXI-CGPT-018).
 
 ## Leer primero al retomar
 Este archivo es la referencia compartida para retomar el proyecto desde cualquiera de las dos IA. No conecta ni sincroniza sus memorias. Cada asistente necesita acceso al repositorio y debe leer la versión actual antes de trabajar.
@@ -464,4 +464,20 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - Pruebas locales actuales: 44 verificaciones SQL aprobadas; navegador aprobado (carga, aviso, apertura, acuse, PDF, móvil); worker con remitente Admin aprobado con Resend simulado. No envíos reales durante las pruebas.
 - Incidencia: ejecución local de la ayuda CLI Supabase bloqueada por escritura fuera del proyecto; escalación no ejecutada porque revisión automática agotó su límite de uso. No se eludió. Cambios y despliegues se continuarán por herramientas conectadas dentro del alcance autorizado.
 - Siguiente paso: publicar migración/worker/formulario, verificar estado efectivo y actualizar este bloque con resultado, versiones y enlaces. Invitaciones Auth conservan su remitente propio; el cambio solicitado corresponde a circulares.
+
+
+#### Cierre verificado de AXI-CGPT-018 — 16/10/2026
+- Estado final: aplicado y publicado. Autorización explícita: Misael indicó “Bien, aplícalo” y pidió retomar, registrar el checkpoint y actualizar este archivo al terminar.
+- PR de implementación integrado: https://github.com/Axicore-pa/axicore/pull/3 . Commit a5bc21040acd93c94184256e65e1c17c3bfe90e6.
+- GitHub Pages completó con success: https://github.com/Axicore-pa/axicore/actions/runs/38868899873 . Portal público abierto después en Chrome limpio: assets/circulares.js?v=20261016-2 coincide con el código probado, módulo cargado, sin sesión y cero errores JavaScript.
+- Supabase: migración 20261016074139_axicore_circulares_codigo_firma aplicada. SQL exacto guardado en supabase/migrations/20261016074139_axicore_circulares_codigo_firma.sql y sql/circulares_codigo_correo.sql. La migración recibió su identificador del servicio conectado; no se inventó una fecha local.
+- Edge Function axi-circulares-correo versión 2 ACTIVE con verify_jwt=true. Lectura posterior confirmó AXICORE <Admin@axicorepard.com> como remitente. No requiere compartir ni modificar RESEND_API_KEY.
+- Verificación efectiva: seis circulares conservadas; dos códigos CIR recuperados de títulos existentes; cola vacía; índice de código único presente; código manual obligatorio para nuevas cargas; anon sin ejecutar preparar y authenticated sin INSERT directo. Cron de circulares activo.
+- Asunto del ejemplo confirmado en producción: CIR-DH2-006-2026 - Importancia de la Asamblea, tanto con título nuevo sin prefijo como con el título previo que ya lo contiene. Firma y teléfono presentes en la función de encolado; el comprobante también identifica código y firma.
+- Pruebas locales: 44 comprobaciones SQL, navegador con carga de código manual normalizado/imagen/PDF real/móvil y worker con Resend simulado aprobados. Se actualizó la firma de preparar en rollback_circulares.sql. testing/circulares-publicado.cjs documenta la comprobación pública.
+- Asesor de seguridad: mismos tipos y conteos de avisos antes/después; no surgieron avisos nuevos por esta actualización. Se mantienen controles de sesión, MFA, rol y condominio previos.
+- Límites y pendientes: no se publicó una circular de prueba ni se envió un email real de prueba; la llegada a bandeja del primer aviso con el nuevo remitente debe observarse al usar Enviar. Admin@axicorepard.com está configurado como remitente de circulares; no se creó un buzón de recepción. Las cuatro circulares históricas sin código CIR separado conservan su título completo original; no se les asignaron códigos inventados.
+- Incidencia de verificación: la lectura pública inicial no resolvió DNS dentro del entorno restringido; la misma comprobación de solo lectura fue autorizada y pasó fuera de esa restricción. El bloqueo anterior de la ayuda CLI no impidió aplicar y verificar los cambios mediante el conector.
+- Para Claude: leer este cierre y contrastar estado antes de trabajar. No repetir migración, reenvíos, invitaciones ni pruebas con residentes por considerar pendientes los estados históricos anteriores. El trabajo autorizado de este ajuste está completo; una prueba real de correo o cambios adicionales requieren el alcance que Misael indique.
+
 
