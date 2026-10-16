@@ -106,9 +106,9 @@
   t.id='axi-circ-title';t.required=true;t.maxLength=180;desc.id='axi-circ-description';desc.maxLength=3000;file.id='axi-circ-file';file.type='file';file.required=true;file.accept='.pdf,.png,.jpg,.jpeg';
   const field=(text,input)=>{const label=el('label',text);label.htmlFor=input.id;form.append(label,input);};
   form.append(el('p','Condominio: '+ctx.nombreCondominio));field('Título',t);field('Descripción',desc);field('Circular (PDF, PNG o JPG · máximo 10 MB)',file);
-  const save=button('Subir y publicar',null,'btn btn-primary');save.type='submit';const actions=el('div',undefined,'axi-circ-actions');actions.append(save,button('Cancelar',()=>d.close()));form.append(msg,actions);d.append(form);d.showModal();
+  const save=button('Subir y publicar',null,'btn btn-outline');save.type='submit';const send=button('Enviar',null,'btn btn-primary');send.type='submit';const actions=el('div',undefined,'axi-circ-actions');actions.append(save,send,button('Cancelar',()=>d.close()));form.append(el('p','Enviar sube y publica la circular y luego permite confirmar los destinatarios del aviso.'),msg,actions);d.append(form);d.showModal();
   let draft=null,uploaded=false;
-  form.onsubmit=async e=>{e.preventDefault();if(!active(g))return;save.disabled=true;
+  form.onsubmit=async e=>{e.preventDefault();if(!active(g))return;const wantSend=e.submitter===send;save.disabled=send.disabled=true;
    try{
     if(!draft){const f=file.files[0];if(!f||f.size<1||f.size>10485760)throw Error('Seleccione un archivo de hasta 10 MB.');
      const ext=f.name.split('.').pop().toLowerCase(),mime={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg'}[ext];if(!mime)throw Error('Solo PDF, PNG o JPG.');
@@ -119,9 +119,9 @@
     }
     if(!active(g))return;
     if(!uploaded){const r=await ctx.sb.storage.from('circulares').upload(draft.archivo,draft.file,{contentType:draft.mime,upsert:false});if(r.error)throw Error(r.error.message);uploaded=true;}
-    if(!active(g))return;await rpc('axi_circular_publicar',{p_id:draft.id});if(!active(g))return;d.close();await load();
+    if(!active(g))return;await rpc('axi_circular_publicar',{p_id:draft.id});if(!active(g))return;d.close();await load();if(active(g)&&wantSend){const published=rows.find(r=>r.id===draft.id);if(published)sendMail(published);else alert('La circular está publicada. Actualice la lista para enviarla.');}
    }catch(e){if(active(g)){status(msg,e.message+(draft?' El borrador se conserva; puede reintentar o publicarlo desde la lista.':''));save.textContent='Reintentar';}}
-   finally{save.disabled=false;}
+   finally{save.disabled=send.disabled=false;}
   };
  }
  async function publish(c){const g=generation;try{await rpc('axi_circular_publicar',{p_id:c.id});if(active(g))await load();}catch(e){if(active(g))alert(e.message);}}
@@ -147,3 +147,4 @@
  };
  document.addEventListener('DOMContentLoaded',()=>{$('axi-circ-new').onclick=create;$('axi-circ-refresh').onclick=()=>load();});
 })();
+
