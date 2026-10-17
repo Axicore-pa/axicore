@@ -83,3 +83,19 @@ No hay otra Edge Function en AXICORE que sirva HTML directamente — este es el 
 - Despacho: id=1, mantenimiento_id=40, estado='En espera', ventana_minutos=30
 - Respuesta: id=1, despacho_id=1, proveedor_id=12, token='989c5197-...'
 - Asignación temporal: proveedor_categorias (proveedor_id=12 → categoria_id=1)
+
+
+## Cierre — ChatGPT/Codex — 17/10/2026
+
+**Estado: corregido y verificado en producción.**
+
+La causa es una restricción documentada del gateway: bajo el dominio estándar de Supabase, un GET text/html se reescribe como text/plain. Se confirmó en la respuesta pública; el helper de Response y UTF-8 no eran la causa primaria. Fuente: https://supabase.com/docs/guides/functions/limits.
+
+Se conserva el formulario con las siete opciones en https://axicorepard.com/despacho.html. axi-despacho-responder v3 redirige los enlaces antiguos (302, token en fragmento) y mantiene el POST al mismo RPC, sin cambiar verify_jwt=false. No requiere reenviar los correos.
+
+Implementación: https://github.com/Axicore-pa/axicore/pull/8, commit 78d8564272c3f441c682ef7a009e1f9f0fc67757.
+Pages: https://github.com/Axicore-pa/axicore/actions/runs/39032838082 (success).
+Pruebas: testing/despacho.cjs (18 verificaciones locales), testing/DESPACHO-RESPONDER.md (alcance y reversión).
+Navegador público limpio: formulario renderizado con acentos, siete opciones, móvil correcto y cero errores JavaScript. POST real con UUID inexistente devolvió Token inválido.
+
+No se consumió el token de prueba de este informe ni se registraron respuestas, asignaciones o correos de prueba nuevos. Conteos/huellas de las tres tablas y definición del RPC idénticos antes/después. Los registros de prueba indicados arriba se conservaron; su limpieza queda como tarea separada. Ver continuidad compartida AXI-CGPT-023 para detalle y límites.
