@@ -1,0 +1,15 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {stripTypeScriptTypes}=require('node:module');
+(async()=>{let n=0;const ok=(v,l)=>{assert(v,l);n++;console.log('OK '+l);};let calls=[],sent=[],mode='ok';
+ const source=stripTypeScriptTypes(fs.readFileSync(path.join(__dirname,'../supabase/functions/axi-despacho-correo/index.ts'),'utf8')).replace(/^import .*;\s*$/m,'');
+ const ctx={Response,JSON,String,Array,Promise,Error,AbortSignal,setTimeout:(fn)=>{fn();},Deno:{env:{get:()=> 'fixture'},serve:fn=>ctx.handler=fn},createClient:()=>({rpc:async(name,args)=>{calls.push({name,args});if(name==='despacho_cola_correo')return {data:[],error:null};if(name==='axi_despacho_seguimiento_cola')return {data:mode==='empty'?[]:[{id:1,reserva:'fixture-reserva',email:'proveedor@example.test',cc:'axispard@gmail.com',asunto:'Asignacion TEST',texto:'A <img src=x onerror=alert(1)>',proveedor:'<script>alert(1)</script>',reporte:'TEST',link:'https://axicorepard.com/despacho-seguimiento.html#token=00000000-0000-0000-0000-000000000001'}],error:null};return {data:null,error:null};}}),fetch:async(url,opts)=>{sent.push({url,opts,body:JSON.parse(opts.body)});return new Response(JSON.stringify(mode==='fail'?{error:'fixture'}:{id:'mock-resend'}),{status:mode==='fail'?429:200});}};
+ vm.runInNewContext(source,ctx);let r=await ctx.handler(new Request('https://fixture.test',{method:'POST'}));ok(r.status===200,'procesa seguimiento aunque no haya invitaciones originales');
+ ok(sent.length===1,'un envío simulado');ok(sent[0].body.from==='AXICORE <Admin@axicorepard.com>','remitente administrativo conservado');ok(sent[0].body.cc[0]==='axispard@gmail.com','CC de administración');
+ ok(sent[0].opts.headers['Idempotency-Key']==='axi-despacho-seg-1','idempotencia independiente de invitación original');
+ ok(!sent[0].body.html.includes('<script>')&&!sent[0].body.html.includes('<img'),'contenido dinámico escapado');
+ ok(sent[0].body.html.includes('#token=')&&sent[0].body.text.includes('Confirmar hora o avisar llegada'),'enlace de hora y llegada en HTML y texto');
+ ok(calls.some(x=>x.name==='axi_despacho_seguimiento_correo_resultado'&&x.args.p_ok&&x.args.p_reserva==='fixture-reserva'),'resultado exige reserva de la cola');
+ mode='fail';sent=[];calls=[];await ctx.handler(new Request('https://fixture.test',{method:'POST'}));ok(calls.some(x=>x.name==='axi_despacho_seguimiento_correo_resultado'&&x.args.p_ok===false),'rechazo del proveedor de correo no se marca enviado');
+ mode='empty';sent=[];await ctx.handler(new Request('https://fixture.test',{method:'POST'}));ok(sent.length===0,'cola vacía no envía');
+ console.log(JSON.stringify({checks:n,synthetic:true,emails:0}));
+})().catch(e=>{console.error(e);process.exit(1);});
