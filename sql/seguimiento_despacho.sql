@@ -1,6 +1,11 @@
 -- Seguimiento de nuevas asignaciones; no modifica ni notifica registros históricos.
 set lock_timeout='5s';
 set statement_timeout='30s';
+DO $guard$ BEGIN
+ IF md5(pg_get_functiondef('public.despacho_cerrar_ventana(bigint)'::regprocedure))<> '170e5ff60d870a80da8244a67984f97f' THEN RAISE EXCEPTION 'Cambió public.despacho_cerrar_ventana'; END IF;
+ IF md5(pg_get_functiondef('private.axi_despacho_tick()'::regprocedure))<> '7c2776155404ee9baf9897e9ccfb1a12' THEN RAISE EXCEPTION 'Cambió private.axi_despacho_tick'; END IF;
+END $guard$;
+
 
 create table private.axi_despacho_seguimientos (
  id bigint generated always as identity primary key,

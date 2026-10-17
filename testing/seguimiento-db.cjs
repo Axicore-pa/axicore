@@ -19,7 +19,8 @@ const root=path.resolve(__dirname,'..');
  create function public.despachos_vencidos() returns table(despacho_id bigint) language sql as $$select id from public.mant_despachos where false$$;
  insert into public.proveedores values(1,'A',null,'a@example.test',true,'Aprobado'),(2,'B',null,'b@example.test',true,'Aprobado'),(3,'C',null,'c@example.test',true,'Aprobado'),(4,'Inactivo',null,'d@example.test',false,'Aprobado');
  `);
- await db.exec(fs.readFileSync(path.join(root,'sql/seguimiento_despacho.sql'),'utf8')+fs.readFileSync(path.join(root,'sql/seguimiento_despacho_integracion.sql'),'utf8'));
+ // El guard compara las dos definiciones originales del servidor. Esta base usa stubs mínimos.
+ await db.exec(fs.readFileSync(path.join(root,'sql/seguimiento_despacho.sql'),'utf8').replace(/DO \$guard\$[\s\S]*?END \$guard\$;/,'')+fs.readFileSync(path.join(root,'sql/seguimiento_despacho_integracion.sql'),'utf8'));
  const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
  async function fixture(id,condo=1){await db.query("insert into public.mantenimientos values($1,'TEST-'||$1::bigint::text,$2,null,'Recibido',now());",[id,condo]);await db.query("insert into public.mant_despachos(id,mantenimiento_id,estado) values($1,$1,'En espera')",[id]);
  for(const [p,peso] of [[1,1],[2,2],[3,2],[4,1]])await db.query("insert into public.mant_despacho_respuestas values($1,$2,$3,'Fixture',$4,now()+make_interval(secs=>$3::bigint::int),false,true)",[id*10+p,id,p,peso]);
@@ -64,3 +65,4 @@ const root=path.resolve(__dirname,'..');
  for(const canal of ['Llamada','Correo','Presencial']){const s=await fixture(20+checks);await db.exec("select set_config('test.role','CEO',false);select set_config('test.aal','aal2',false);select set_config('test.valid','true',false);set role authenticated");const r=(await q("select public.axi_despacho_seguimiento_registrar($1,'llegada',null,$2,'Confirmación recibida por administración') r",[s.id,canal]))[0].r;ok(r.ok,'llegada manual por '+canal);await db.exec('reset role');}
  console.log(JSON.stringify({checks,synthetic:true,remoteWrites:0}));await db.close();
 })().catch(e=>{console.error(e.message,e.detail||'');process.exit(1);});
+
