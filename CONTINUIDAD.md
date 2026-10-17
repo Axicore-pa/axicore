@@ -516,3 +516,12 @@ Por solicitud expresa de Misael, toda tarea realizada desde ChatGPT/Codex debe d
 - No se inició sesión con cuentas reales ni se crearon transacciones/correos reales de prueba. Se preservó la sesión de inquilino abierta en la demo. La validación de pantallas con usuarios reales no se ha ejecutado; recargar el portal hace que consulte las reglas nuevas.
 - Prueba reproducible: testing/tenant-maintenance.cjs; explicación testing/INQUILINOS-MANTENIMIENTO.md; reversión conservadora sql/rollback_inquilinos_mantenimiento.sql. La reversión devuelve la regla incorrecta y requiere decisión explícita antes de ejecutarla.
 - Demo vigente: https://demo.axicorepard.com, acceso web directo SIN cuenta de ChatGPT, datos/acciones protegidos por AXICORE. Guías y contraseñas de demo permanecen locales y privadas; no publicarlas en este repositorio. La comercialización y el headquarters de soporte siguen diferidos.
+
+
+### AXI-CGPT-022 — 17/10/2026 — Búsqueda de nueva nota de Claude
+- Solicitud de Misael: leer la bitácora compartida dejada por Claude y resolver el problema descrito allí.
+- Estado: parcial; referencia nueva pendiente de localizar. Se leyó CONTINUIDAD.md desde GitHub, el checkpoint histórico docs/CHECKPOINT_Migracion_web-3.md, el árbol del repositorio, los cinco commits recientes, las ramas y los PR abiertos.
+- Evidencia: main seguía en a42f6dec60e588b07473acbabad40f47bba096b0; la última minuta antes de esta lectura era AXI-CGPT-021. La única entrada identificada de Claude es AXI-CLAUDE-001 del 14/10/2026. No había PR abiertos ni una nueva nota identificable en los archivos del repositorio revisados.
+- No se ha determinado a qué problema nuevo se refiere la solicitud. Se pidió a Misael el enlace o texto de la nota para evitar atribuirle un diagnóstico no comprobado.
+- Código funcional, base de datos, demo, producción y servicios: sin cambios. No se ejecutaron pruebas funcionales; esta tarea fue de lectura documental.
+- Siguiente paso: localizar y leer la nota correcta, contrastar su diagnóstico con el sistema y resolver dentro del alcance autorizado. No tomar esta entrada como resolución del problema.
