@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://qfgyftsnwznsqizriggr.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>AXICORE - Responder Despacho</title>
+  <link rel="stylesheet" href="assets/despacho.css?v=20261017-1">
+  <script defer src="assets/despacho.js?v=20261017-1"></script>
+</head>
+<body>
+  <div class="card">
+    <div class="header"><h1>AXICORE</h1><p>Respuesta de disponibilidad</p></div>
+    <div class="body" id="form">
+      <h2 id="pregunta">¿Cuándo puede asistir?</h2>
+      <div role="group" aria-labelledby="pregunta">
+        <button type="button" class="opt" data-val="De inmediato" aria-pressed="false"><span class="icon" aria-hidden="true">⚡</span><span>De inmediato</span></button>
+        <button type="button" class="opt" data-val="Dentro de 2 horas" aria-pressed="false"><span class="icon" aria-hidden="true">🕑</span><span>Dentro de 2 horas</span></button>
+        <button type="button" class="opt" data-val="Dentro de 4 horas" aria-pressed="false"><span class="icon" aria-hidden="true">🕓</span><span>Dentro de 4 horas</span></button>
+        <button type="button" class="opt" data-val="En algún momento del día de hoy" aria-pressed="false"><span class="icon" aria-hidden="true">☀️</span><span>En algún momento de hoy</span></button>
+        <button type="button" class="opt" data-val="Mañana en la mañana" aria-pressed="false"><span class="icon" aria-hidden="true">🌅</span><span>Mañana en la mañana</span></button>
+        <button type="button" class="opt" data-val="Mañana en la tarde" aria-pressed="false"><span class="icon" aria-hidden="true">🌇</span><span>Mañana en la tarde</span></button>
+        <button type="button" class="opt" data-val="No puedo atender" aria-pressed="false"><span class="icon" aria-hidden="true">❌</span><span>No puedo atender</span></button>
+      </div>
+      <button type="button" class="btn-enviar" id="btnEnviar" disabled>Confirmar respuesta</button>
+      <p id="estado" role="status" aria-live="polite"></p>
+      <noscript>Active JavaScript para responder a la solicitud.</noscript>
+    </div>
+    <div class="footer"><p>AXICORE Property Administration &bull; 809-282-7776</p></div>
+  </div>
+</body>
+</html>
