@@ -24,7 +24,7 @@ WhatsApp BOT NO activo. Se registra manualmente el canal cuando administración 
 ## Fuente, pruebas y publicación
 - SQL fuente: sql/seguimiento_despacho.sql + sql/seguimiento_despacho_integracion.sql.
 - Migración fuente CLI: supabase/migrations/20261017145831_axicore_seguimiento_despacho.sql. La versión efectiva MCP se documenta en CONTINUIDAD.md.
-- SQL probado en PGlite con fixtures sintéticos: testing/seguimiento-db.cjs (37 comprobaciones).
+- SQL probado en PGlite con fixtures sintéticos: testing/seguimiento-db.cjs (40 comprobaciones).
 - API y navegador Chrome con RPC simulado: testing/seguimiento-ui.cjs (22 comprobaciones), móvil/proveedor y registro por llamada.
 - Resend simulado: testing/seguimiento-correo.cjs (10 comprobaciones). Sin correos/cuentas/transacciones reales.
 - Verificación de sintaxis del index; no se reescriben sus funciones, solo el contenedor/gancho y assets del seguimiento.
@@ -34,3 +34,5 @@ Desplegar esquema y Edge de consulta; publicar/validar estáticos; después actu
 
 ## Reversión
 sql/rollback_seguimiento_despacho.sql restaura el tick y cierre de ventana previos y quita el trigger, conservando historial de seguimiento. Revertir también código de página/worker y retirar Edge nueva. No ejecutar sin decidir reversión: desactiva el relevo automático. No borrar las tablas/historial ni reasignar trabajos reales como prueba.
+
+Ajuste adicional: supabase/migrations/20261017151346_axicore_seguimiento_cola_cierre.sql y sql/seguimiento_cola_cierre.sql cierran avisos interrumpidos tras el cuarto intento como Error desde el tick y restringen despacho_cerrar_ventana al servidor/service_role. Total final:72 comprobaciones locales. La reversión conserva la restricción del cierre al servidor.

@@ -21,6 +21,7 @@ const root=path.resolve(__dirname,'..');
  `);
  // El guard compara las dos definiciones originales del servidor. Esta base usa stubs mínimos.
  await db.exec(fs.readFileSync(path.join(root,'sql/seguimiento_despacho.sql'),'utf8').replace(/DO \$guard\$[\s\S]*?END \$guard\$;/,'')+fs.readFileSync(path.join(root,'sql/seguimiento_despacho_integracion.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'sql/seguimiento_cola_cierre.sql'),'utf8'));
  const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
  async function fixture(id,condo=1){await db.query("insert into public.mantenimientos values($1,'TEST-'||$1::bigint::text,$2,null,'Recibido',now());",[id,condo]);await db.query("insert into public.mant_despachos(id,mantenimiento_id,estado) values($1,$1,'En espera')",[id]);
  for(const [p,peso] of [[1,1],[2,2],[3,2],[4,1]])await db.query("insert into public.mant_despacho_respuestas values($1,$2,$3,'Fixture',$4,now()+make_interval(secs=>$3::bigint::int),false,true)",[id*10+p,id,p,peso]);
@@ -63,6 +64,8 @@ const root=path.resolve(__dirname,'..');
  const g=await fixture(7);await db.exec('update public.mantenimientos set proveedor_id=3 where id=7');await db.query("update private.axi_despacho_seguimientos set estado='Programado',estimada=now()-interval '61 minutes' where id=$1",[g.id]);await db.exec('select private.axi_despacho_seguimiento_tick()');ok((await q('select proveedor_id from public.mantenimientos where id=7'))[0].proveedor_id===3,'relevo no pisa reasignación manual posterior');
  const h=await fixture(8);await db.exec('insert into public.mant_asignaciones values(8,1,true)');await db.query("update private.axi_despacho_seguimientos set estado='Programado',estimada=now()-interval '61 minutes' where id=$1",[h.id]);await db.exec('select private.axi_despacho_seguimiento_tick()');ok((await q('select activa from public.mant_asignaciones where mantenimiento_id=8'))[0].activa===false,'técnico pendiente del proveedor cancelado deja de figurar activo');
  for(const canal of ['Llamada','Correo','Presencial']){const s=await fixture(20+checks);await db.exec("select set_config('test.role','CEO',false);select set_config('test.aal','aal2',false);select set_config('test.valid','true',false);set role authenticated");const r=(await q("select public.axi_despacho_seguimiento_registrar($1,'llegada',null,$2,'Confirmación recibida por administración') r",[s.id,canal]))[0].r;ok(r.ok,'llegada manual por '+canal);await db.exec('reset role');}
+ for(const role of ['anon','authenticated'])ok((await q("select has_function_privilege($1,'public.despacho_cerrar_ventana(bigint)','execute') yes",[role]))[0].yes===false,role+' no fuerza selección anticipada de proveedor');
+ await db.query("update private.axi_despacho_avisos set estado='Enviando',intentos=4,proximo=now()-interval '1 minute' where id=$1",[mail.id]);await db.exec('select private.axi_despacho_seguimiento_tick()');ok((await q('select estado from private.axi_despacho_avisos where id=$1',[mail.id]))[0].estado==='Error','cuarta ejecución interrumpida queda visible como Error, sin ciclo infinito');
  console.log(JSON.stringify({checks,synthetic:true,remoteWrites:0}));await db.close();
 })().catch(e=>{console.error(e.message,e.detail||'');process.exit(1);});
 
