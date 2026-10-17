@@ -1531,6 +1531,7 @@
     <div id="mm-alert" class="alert alert-error"></div>
     <div id="mm-info" style="font-size:.88rem"></div>
     <div id="mm-asig" style="margin:.8rem 0"></div>
+    <div id="mm-despacho"></div>
     <div id="mm-acciones" style="border-top:1px solid #e3ded3;padding-top:.8rem;margin-top:.8rem"></div>
     <div id="mm-form-asig" style="display:none;background:#f7f5ef;border:1px solid #e3ded3;border-radius:8px;padding:.8rem;margin-top:.6rem">
       <strong style="font-size:.85rem">Asignación del trabajo</strong>
@@ -4402,6 +4403,7 @@ async function abrirMant(id) {
   $('mm-hist').innerHTML = `<strong style="font-size:.85rem">Historial</strong><table style="font-size:.82rem"><tbody>${h.map(x => `<tr>
     <td style="white-space:nowrap">${fechaHora(x.fecha)}</td><td>${axiEscapeHTML(x.accion || '')}</td>
     <td>${axiEscapeHTML(x.de && x.de !== x.a ? x.de + ' → ' : '')}<strong>${axiEscapeHTML(x.a || '')}</strong></td><td>${(x.comentario || '').replace(/</g, '&lt;')}</td><td>${axiEscapeHTML(x.usuario || '')}</td></tr>`).join('')}</tbody></table>`;
+  if (window.AXIDespachoSeguimiento) window.AXIDespachoSeguimiento.cargar(id);
 }
 async function prepararEstado(estado) {
   const m = mtActual; if (!m) return;
@@ -6645,6 +6647,8 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
+<link rel="stylesheet" href="assets/despacho-seguimiento.css?v=20261017-1">
+<script src="assets/despacho-seguimiento-admin.js?v=20261017-1"></script>
 </body>
 </html>
 

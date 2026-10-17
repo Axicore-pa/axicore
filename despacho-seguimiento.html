@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://qfgyftsnwznsqizriggr.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>AXICORE — Seguimiento de servicio</title>
+<link rel="stylesheet" href="assets/despacho.css?v=20261017-1">
+<link rel="stylesheet" href="assets/despacho-seguimiento.css?v=20261017-1">
+<script defer src="assets/despacho-seguimiento.js?v=20261017-1"></script>
+</head><body><main class="card">
+<div class="header"><h1>AXICORE</h1><p>Seguimiento de servicio</p></div>
+<div class="body"><h2 id="titulo">Consultando asignación…</h2><p id="detalle"></p>
+<section id="hora" hidden><label for="fecha">Hora estimada de llegada (hora de República Dominicana)</label>
+<input id="fecha" type="datetime-local"><button id="confirmar" class="btn-enviar" type="button">Confirmar hora estimada</button>
+<p class="explicacion">Tolerancia: 60 minutos antes y 60 minutos después. Si se supera el límite sin llegada registrada, la asignación se cancela y se activa el siguiente proveedor.</p></section>
+<button id="llegue" class="btn-enviar" type="button" hidden>Ya llegué al lugar</button>
+<p id="estado" role="status" aria-live="polite"></p>
+<p class="explicacion">También puede avisar a administración por llamada o WhatsApp para que registre su llegada. No necesita responder un correo.</p>
+<button id="actualizar" type="button" class="btn-enviar">Actualizar estado</button>
+<noscript>Active JavaScript para consultar y confirmar su llegada.</noscript></div>
+<div class="footer"><p>APA | AxiCore Property Administration · 809-282-7776</p></div>
+</main></body></html>
